@@ -1,0 +1,90 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\ItemController;
+use Illuminate\Support\Facades\Password;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ResetController;
+use App\Http\Controllers\AuthinticationController;
+use App\Http\Controllers\TesterController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+
+//Authintication
+Route::get('/', [AuthinticationController::class, 'index'])->name('auth.login');
+Route::post('/login-post', [AuthinticationController::class, 'login'])->name('auth.login-post');
+Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logout');
+
+//item
+Route::middleware(['auth'])->group(function () {
+    Route::get('/item', [ItemController::class, 'index'])->name('items.index');
+    Route::get('/item/detail/{id}', [ItemController::class, 'getItemDetails'])->name('items.detail');
+});
+
+//Reset Password
+Route::get('/forgot-password', function () {
+    return view('auth.forgot-password');
+})->middleware('guest')->name('password.request');
+
+Route::post('/forgot-password', function (Request $request) {
+    $request->validate(['email' => 'required|email']); 
+    $status = Password::sendResetLink(
+        $request->only('email')
+    );
+    return $status === Password::RESET_LINK_SENT
+        ? back()->with(['status' => __($status)])
+        : back()->withErrors(['email' => __($status)]);
+})->name('password.email');
+
+Route::get('/reset-password/{token}', function (string $token) {
+    $email = request('email');
+    
+    return view('auth.reset-password', [
+        'token' => $token,
+        'email' => $email,
+]);
+})->middleware('guest')->name('password.reset');
+
+Route::post('/reset-password', [ResetController::class, 'reset'])->name('password.update');
+
+
+//Admin
+Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
+
+
+Route::post('/sync-accurate-users', function () {
+    if (auth()->user()->status !== 'admin') {
+        abort(403);
+    }
+
+    Artisan::call('sync:accurate-users');
+    return redirect()->back()->with('success', 'Sinkronisasi Accurate berhasil dijalankan!');
+})->name('sync.accurate')->middleware('auth');
+
+
+Route::get('/uji', function () {
+    return view('uji-coba');
+});
+
+
+Route::get('/test', [TesterController::class, 'test']);
+
+Route::get('/image/{filename}', [ItemController::class, 'getAccurateImage'])->where('filename', '.*');
+Route::get('/accurate-image/{filename}', [ItemController::class, 'getAccurateImage'])
+    ->where('filename', '.*') // ini penting agar path panjang bisa dibaca
+    ->name('get.accurate.image');
+
+
+ 
