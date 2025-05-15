@@ -31,12 +31,14 @@ class SyncAccurateUsers extends Command
 
         $token = env('ACCURATE_API_TOKEN');
         $session = env('ACCURATE_SESSION');
-        $page = 1;
+        
         $pageSize = 100;
+
         $totalUsers = 0;
         $newUsers = 0;
         $updatedUsers = 0;
-    
+
+        $page = 1;
         do {
             $this->info("🔄 Mengambil data halaman ke-$page...");
     
@@ -80,6 +82,50 @@ class SyncAccurateUsers extends Command
             }
     
             $page++; // naikkan halaman untuk next loop
+        } while (true);
+
+
+        $page = 1;
+        do {
+            $this->info("👔 Mengambil data karyawan halaman ke-$page...");
+
+            $params = [
+                'sp.page' => $page,
+                'sp.pageSize' => $pageSize,
+                'fields' => 'id,name,email'
+            ];
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'X-Session-ID' => $session
+            ])->get('https://public.accurate.id/accurate/api/employee/list.do', $params);
+
+            if ($response->failed()) {
+                $this->error('❌ Gagal menghubungi Accurate API untuk karyawan di halaman ' . $page);
+                break;
+            }
+
+            $employees = $response->json()['d'] ?? [];
+
+            if (count($employees) === 0) break;
+
+            foreach ($employees as $employee) {
+                $user = User::firstOrNew(['email' => $employee['email'] ?? null]);
+                $user->name = $employee['name'] ?? null;
+                $user->status = 'karyawan';
+
+                if (!$user->exists) {
+                    $user->password = bcrypt('twincom@karyawan123');
+                    $newUsers++;
+                } else {
+                    $updatedUsers++;
+                }
+
+                $user->save();
+                $totalUsers++;
+            }
+
+            $page++;
         } while (true);
     
         $this->info("✅ Sinkronisasi selesai.");

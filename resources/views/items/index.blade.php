@@ -65,25 +65,75 @@
         .form-check {
             margin-right: 5px !important;
         }
+        .form-label {
+        font-size: 13px;
+        }
+        .form-control, .form-select {
+            font-size: 13px;
+            padding: 6px;
+        }
+        .form-check-label {
+            font-size: 13px;
+        }
+        .btn i {
+            font-size: 14px;
+        }
+        .row.g-2 > div {
+            margin-bottom: 10px;
+        }
     }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="p-2">                        
-        <form action="{{ route('items.index') }}" method="GET" class="d-flex">                      
-            <input type="text" name="q" class="form-control me-2" placeholder="Cari..." value="{{ request('q') }}">   
-            <div class="form-check" style="margin-right: 10px">
-                <input class="form-check-input" type="checkbox" name="stok_ada" id="stok_ada" value="1" {{ request('stok_ada') ? 'checked' : '' }}>
-                <label class="form-check-label" for="stok_ada">
-                    Stok Ada
-                </label>
-            </div>  
-            <button type="submit" class="btn btn-secondary"><i class="bi bi-search" style="font-size: 15px"></i></button>                          
+   <div class="p-3">
+    <form action="{{ route('items.index') }}" method="GET">
+        <div class="row g-2">
 
-            <a href="{{ route('items.index')}}" class="btn btn-success" style="margin-left:10px; margin-right:10px;"><i class="bi bi-arrow-clockwise" style="font-size: 20px"></i></a>
+            {{-- Pilih Kategori --}}
+            <div class="col-lg-3 col-md-4 col-12">
+                <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
+                <select name="id" id="itemCategoryId" class="form-select">
+                    <option value="">-- Semua Kategori --</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category['id'] }}" {{ request('id') == $category['id'] ? 'selected' : '' }}>
+                            {{ $category['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-        </form>
-    </div>
+            {{-- Input Pencarian --}}
+            <div class="col-lg-3 col-md-4 col-12">
+                <label for="q" class="form-label">Cari Barang</label>
+                <input type="text" name="q" id="q" class="form-control" placeholder="Contoh: Bolpoin" value="{{ request('q') }}">
+            </div>
+
+            {{-- Checkbox Stok --}}
+            <div class="col-lg-2 col-md-4 col-12 d-flex align-items-center mt-md-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="stok_ada" id="stok_ada" value="1" {{ request('stok_ada') ? 'checked' : '' }}>
+                    <label class="form-check-label" for="stok_ada">Stok Ada</label>
+                </div>
+            </div>
+
+            {{-- Tombol Cari --}}
+            <div class="col-lg-1 col-md-2 col-6 mt-md-4">
+                <button type="submit" class="btn btn-secondary w-100">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+
+            {{-- Tombol Reset --}}
+            <div class="col-lg-1 col-md-2 col-6 mt-md-4">
+                <a href="{{ route('items.index') }}" class="btn btn-success w-100">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+
+        </div>
+    </form>
+</div>
+
     <div class="row">
         <div class="col-12">
             <div class="card mb-4">
@@ -128,8 +178,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     </div>
-                    @endif
-                    
+                    @endif                    
                 </div>
 
                 <div class="">
@@ -151,15 +200,15 @@
                                 <ul class="pagination justify-content-center mb-0">
                                     {{-- Previous Page Link --}}
                                     <li class="page-item {{ $pagination->current_page == 1 ? 'disabled' : '' }}">
-                                        <a class="page-link" href="{{ $pagination->prev_page_url }}&q={{ request('q') }}&stok_ada={{ request('stok_ada')}}" aria-label="Previous">
+                                        <a class="page-link" href="{{ $pagination->prev_page_url }}&q={{ request('q') }}&stok_ada={{ request('stok_ada') }}&id={{ request('id') }}" aria-label="Previous">
                                             <span aria-hidden="true">&laquo;</span>
                                         </a>
                                     </li>
-                            
+
                                     {{-- First Page Link --}}
                                     @if($start > 1)
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ route('items.index', ['page' => 1, 'q' => request('q'), 'stok_ada' => request('stok_ada')]) }}">1</a>
+                                            <a class="page-link" href="{{ route('items.index', ['page' => 1, 'q' => request('q'), 'stok_ada' => request('stok_ada'), 'id' => request('id')]) }}">1</a>
                                         </li>
                                         @if($start > 2)
                                             <li class="page-item disabled">
@@ -167,14 +216,14 @@
                                             </li>
                                         @endif
                                     @endif
-                            
+
                                     {{-- Pagination Elements --}}
                                     @for ($i = $start; $i <= $end; $i++)
                                         <li class="page-item {{ $pagination->current_page == $i ? 'active' : '' }}">
-                                            <a class="page-link" href="{{ route('items.index', ['page' => $i, 'q' => request('q'),'stok_ada' => request('stok_ada')]) }}">{{ $i }}</a>
+                                            <a class="page-link" href="{{ route('items.index', ['page' => $i, 'q' => request('q'), 'stok_ada' => request('stok_ada'), 'id' => request('id')]) }}">{{ $i }}</a>
                                         </li>
                                     @endfor
-                            
+
                                     {{-- Last Page Link --}}
                                     @if($end < $pagination->last_page)
                                         @if($end < $pagination->last_page - 1)
@@ -183,15 +232,15 @@
                                             </li>
                                         @endif
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ route('items.index', ['page' => $pagination->last_page, 'q' => request('q'), 'stok_ada' => request('stok_ada')]) }}">
+                                            <a class="page-link" href="{{ route('items.index', ['page' => $pagination->last_page, 'q' => request('q'), 'stok_ada' => request('stok_ada'), 'id' => request('id')]) }}">
                                                 {{ $pagination->last_page }}
                                             </a>
                                         </li>
                                     @endif
-                            
+
                                     {{-- Next Page Link --}}
                                     <li class="page-item {{ $pagination->current_page == $pagination->last_page ? 'disabled' : '' }}">
-                                        <a class="page-link" href="{{ $pagination->next_page_url }}&q={{ request('q') }}&stok_ada={{ request('stok_ada') }}" aria-label="Next">
+                                        <a class="page-link" href="{{ $pagination->next_page_url }}&q={{ request('q') }}&stok_ada={{ request('stok_ada') }}&id={{ request('id') }}" aria-label="Next">
                                             <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>

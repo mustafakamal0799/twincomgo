@@ -61,9 +61,8 @@
                     <p class="text-center">
                         <img src="{{asset('images/logo-hijau-tua.png')}}" alt="Logo SISB" style="width: 200px">
                     </p>
-                    <h2 class="text-center" style="font-style: italic;"><strong>SISTEM INFORMASI
+                    <h2 class="text-center"><strong>SISTEM INFORMASI
                         <br> STOK BARANG</strong></h2>
-                    <p class="text-center mb-4">Masuk Akun</p>
 
                     {{-- Alert login gagal --}}
                     @if (session('loginError'))

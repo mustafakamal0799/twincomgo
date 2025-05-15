@@ -42,8 +42,7 @@
 
         @media only screen and (max-width: 768px) {
             .navbar-brand {
-                font-size: 12px;
-                font-style: italic;                
+                font-size: 10px;            
             }
             .dropdown-menu {
                 min-width: 100px;
@@ -58,7 +57,7 @@
                 margin-right: 3px;
             }
             .person-icon {
-                font-size: 50px;
+                font-size: 15px;
             }
         }
 
@@ -66,38 +65,100 @@
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="/">SISTEM INFORMASI STOK BARANG</a>
-
-            <div class="btn-group">
-                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                    <i class="bi bi-person-circle person-icon"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start custom-dropdown">
-                    <li>
-                        <form action="{{ route('logout') }}" method="POST" class="px-3">
-                            @csrf
-                            <button type="submit" class="btn btn-danger logout-btn">
-                                <i class="bi bi-box-arrow-in-right"></i> Logout
-                            </button>
-                        </form>
+    @if (Auth::user()->status === 'admin')
+        <div class="d-flex">
+            <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 250px; min-height: 100vh;">
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-2 person-icon"></i>
+                        <strong>{{ Auth::user()->name }}</strong>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST" class="px-3">
+                                @csrf
+                                <button class="btn btn-danger w-100 mt-2">
+                                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                <hr>
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item">
+                        <a href="{{route('admin.index')}}" class="nav-link text-white">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
                     </li>
-                </ul>
+                    <li>
+                        <a href="{{route('admin.user')}}" class="nav-link text-white">
+                            <i class="bi bi-people me-2"></i> Kelola Pengguna
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{route('admin.log')}}" class="nav-link text-white">
+                            <i class="bi bi-archive me-2"></i> Log Aktivitas
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{route('items.index')}}" class="nav-link text-white">
+                            <i class="bi bi-box-seam me-2"></i> Stok Item
+                        </a>
+                    </li>
+                    <!-- Tambah menu lainnya sesuai kebutuhan -->
+                </ul>            
+            </div>
+
+            <div class="flex-grow-1 p-4">
+                @yield('content')
             </div>
         </div>
-    </nav>
+    @else
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+            <div class="container">
+                <a class="navbar-brand" href="/">SISTEM INFORMASI STOK BARANG</a>
 
-    <!-- Konten -->
-    <div class="flex-fill container">
-        @yield('content')
-    </div>
+                <div class="btn-group">
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                            <strong style="margin-right: 10px">{{ Auth::user()->name }}</strong>
+                            <i class="bi bi-person-circle person-icon me-2"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                            <li>
+                                <form action="{{ route('logout') }}" method="POST" class="px-3">
+                                    @csrf
+                                    <button class="btn btn-danger w-100 mt-2">
+                                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
 
-    <!-- Footer -->
-    <footer class="bg-light text-center py-3 mt-auto">
-        <small>© {{ date('Y') }} Sistem Informasi Stok Barang - <i>Powered by</i> Twincom</small>
-    </footer>
+        <!-- Konten -->
+        <div class="flex-fill container">
+            @yield('content')
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-light text-center py-3 mt-auto">
+            <small>© {{ date('Y') }} Sistem Informasi Stok Barang - <i>Powered by</i> Twincom</small>
+        </footer>
+    @endif
+    <!-- Navbar -->
+    
+
+
+
+
+    
+
+    
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>

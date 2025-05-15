@@ -7,8 +7,10 @@ use App\Http\Controllers\ItemController;
 use Illuminate\Support\Facades\Password;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ResetController;
-use App\Http\Controllers\AuthinticationController;
 use App\Http\Controllers\TesterController;
+use App\Http\Controllers\AccurateController;
+use App\Http\Controllers\AccurateSyncController;
+use App\Http\Controllers\AuthinticationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,7 +63,12 @@ Route::post('/reset-password', [ResetController::class, 'reset'])->name('passwor
 
 
 //Admin
-Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin-dashboard', [AdminController::class, 'index'])->name('admin.index');
+    Route::get('/admin-user', [AdminController::class, 'viewUser'])->name('admin.user');
+    Route::get('/admin-log', [AdminController::class, 'logActivity'])->name('admin.log');    
+});
 
 
 Route::post('/sync-accurate-users', function () {
@@ -85,6 +92,10 @@ Route::get('/image/{filename}', [ItemController::class, 'getAccurateImage'])->wh
 Route::get('/accurate-image/{filename}', [ItemController::class, 'getAccurateImage'])
     ->where('filename', '.*') // ini penting agar path panjang bisa dibaca
     ->name('get.accurate.image');
+
+
+Route::post('/sync/employees', [AccurateSyncController::class, 'syncEmployees'])->name('sync.employees');
+Route::post('/sync/customers', [AccurateSyncController::class, 'syncCustomers'])->name('sync.customers');
 
 
  

@@ -12,7 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('sync:accurate-users')->everyFiveMinutes();
+        $schedule->command('sync:accurate-users')->everyMinutes();
     }
 
     /**
@@ -24,4 +24,8 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
     }
+
+    protected $commands = [
+        \App\Console\Commands\SyncAccurateUsers::class,
+    ];
 }
