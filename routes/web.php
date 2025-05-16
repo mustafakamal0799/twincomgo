@@ -91,9 +91,8 @@ Route::get('/test', [TesterController::class, 'test']);
 Route::get('/image/{filename}', [ItemController::class, 'getAccurateImage'])->where('filename', '.*');
 Route::get('/accurate-image/{filename}', [ItemController::class, 'getAccurateImage'])
     ->where('filename', '.*') // ini penting agar path panjang bisa dibaca
-    ->name('get.accurate.image');
-
-
+    ->name('accurate.image');
+Route::get('/proxy-image', [ItemController::class, 'getImageFromApi'])->name('proxy.image');
 Route::post('/sync/employees', [AccurateSyncController::class, 'syncEmployees'])->name('sync.employees');
 Route::post('/sync/customers', [AccurateSyncController::class, 'syncCustomers'])->name('sync.customers');
 

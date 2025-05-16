@@ -81,6 +81,25 @@
         .row.g-2 > div {
             margin-bottom: 10px;
         }
+        .tombol-aksi {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6px !important;
+            justify-content: space-between;
+        }
+
+        .tombol-aksi .btn {
+            flex: 1 1 48%; /* Biar mereka punya lebar hampir separuh */
+            padding: 4px 0;
+        }
+        .kategori-stok-group .form-label {
+            font-size: 13px;
+        }
+
+        .kategori-stok-group .form-select {
+            font-size: 13px;
+            padding: 6px;
+        }
     }
 </style>
 
@@ -90,7 +109,7 @@
         <div class="row g-2">
 
             {{-- Pilih Kategori --}}
-            <div class="col-lg-3 col-md-4 col-12">
+            {{-- <div class="col-lg-3 col-md-4 col-12">
                 <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
                 <select name="id" id="itemCategoryId" class="form-select">
                     <option value="">-- Semua Kategori --</option>
@@ -100,31 +119,74 @@
                         </option>
                     @endforeach
                 </select>
+            </div> --}}
+
+            {{-- Checkbox Stok --}}
+
+            {{-- <div class="col-lg-3 col-md-4 col-12">
+                <div class="form-group w-100">
+                    <label for="stok_ready" class="form-label">Stok Ready</label>
+                    <select class="form-select" name="stok_ada" id="stok_ada">
+                        <option value="">TIDAK</option>
+                        <option value="1" {{ request('stok_ada') ? 'selected' : '' }}>YA</option>
+                    </select>
+                </div>
+            </div> --}}
+
+            {{-- Group Kategori + Stok Ready --}}
+            <div class="col-lg-6 col-md-8 col-12 kategori-stok-group">
+                <div class="row g-2">
+                    {{-- Pilih Kategori --}}
+                    <div class="col-md-6 col-6">
+                        <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
+                        <select name="id" id="itemCategoryId" class="form-select">
+                            <option value="">-- Semua Kategori --</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category['id'] }}" {{ request('id') == $category['id'] ? 'selected' : '' }}>
+                                    {{ $category['name'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Pilih Stok Ready --}}
+                    <div class="col-md-6 col-6">
+                        <label for="stok_ada" class="form-label">Stok Ready</label>
+                        <select class="form-select" name="stok_ada" id="stok_ada">
+                            <option value="">TIDAK</option>
+                            <option value="1" {{ request('stok_ada') ? 'selected' : '' }}>YA</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             {{-- Input Pencarian --}}
             <div class="col-lg-3 col-md-4 col-12">
                 <label for="q" class="form-label">Cari Barang</label>
-                <input type="text" name="q" id="q" class="form-control" placeholder="Contoh: Bolpoin" value="{{ request('q') }}">
+                <input type="text" name="q" id="q" class="form-control" placeholder="Contoh: Laptop" value="{{ request('q') }}">
             </div>
 
-            {{-- Checkbox Stok --}}
-            <div class="col-lg-2 col-md-4 col-12 d-flex align-items-center mt-md-4">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="stok_ada" id="stok_ada" value="1" {{ request('stok_ada') ? 'checked' : '' }}>
-                    <label class="form-check-label" for="stok_ada">Stok Ada</label>
-                </div>
-            </div>
 
             {{-- Tombol Cari --}}
-            <div class="col-lg-1 col-md-2 col-6 mt-md-4">
+            {{-- <div class="col-lg-1 col-md-2 col-12 mt-3">
+                <label for="reset" class="form-label"></label>
                 <button type="submit" class="btn btn-secondary w-100">
                     <i class="bi bi-search"></i>
                 </button>
-            </div>
+            </div> --}}
 
             {{-- Tombol Reset --}}
-            <div class="col-lg-1 col-md-2 col-6 mt-md-4">
+            {{-- <div class="col-lg-1 col-md-2 col-12 mt-3">
+                <label for="reset" class="form-label"></label>
+                <a href="{{ route('items.index') }}" class="btn btn-success w-100">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div> --}}
+
+            <div class="col-lg-2 col-md-4 col-12 d-flex align-items-end gap-2 tombol-aksi">
+                <button type="submit" class="btn btn-secondary w-100">
+                    <i class="bi bi-search"></i>
+                </button>
                 <a href="{{ route('items.index') }}" class="btn btn-success w-100">
                     <i class="bi bi-arrow-clockwise"></i>
                 </a>

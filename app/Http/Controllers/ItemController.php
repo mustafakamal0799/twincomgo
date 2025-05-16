@@ -29,7 +29,7 @@ class ItemController extends Controller
         $params = [
             'sp.page' => $page,
             'sp.pageSize' => $pageSize,
-            'fields' => 'id,name,no,availableToSell,itemCategoryId',
+            'fields' => 'id,name,no,availableToSell,itemCategoryId,detailSellingPrice',
             'filter.suspended' => 'false',
             'filter.keywords.op' => 'CONTAIN',
             'filter.keywords.val[0]' => $search,
@@ -50,7 +50,7 @@ class ItemController extends Controller
                 return back()->withErrors('Data tidak ditemukan atau format API tidak sesuai.');
             }            
 
-            $items = $data['d'];
+            $items = $data['d'];           
             $apiPagination = $data['sp'];
 
             if ($stokAda) {
@@ -105,8 +105,6 @@ class ItemController extends Controller
                 $page++;
 
             } while ($page <= $totalPages);
-
-            // dd($allCategories);  
 
             return view('items.index', [
                 'items' => $items,
@@ -259,19 +257,28 @@ class ItemController extends Controller
 
     public function getAccurateImage($filename)
     {
-        Log::info('Request tanpa header ke: ' . $filename);
+        $session = env('ACCURATE_SESSION');
+        $token = env('ACCURATE_TOKEN');
 
-        $url = "https://public.accurate.id/{$filename}";
+        Log::info("Request gambar Accurate ke: {$filename} dengan session param & header");
 
-        $response = Http::get($url); // Tanpa headers
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID'  => $session,
+        ];
+
+        // Tetap menyertakan session di URL sesuai permintaan Accurate
+        $url = "https://public.accurate.id/{$filename}?session={$session}";
+
+        $response = Http::withHeaders($headers)->get($url);
 
         if ($response->successful()) {
             return Response::make($response->body(), 200, [
-                'Content-Type' => $response->header('Content-Type'),
+                'Content-Type' => $response->header('Content-Type', 'image/jpeg'),
             ]);
         }
 
-        Log::warning("Gagal mengambil gambar TANPA header dari Accurate: $url");
+        Log::warning("Gagal mengambil gambar dari Accurate: {$url}. Status: " . $response->status());
         return abort(404, 'Image not found.');
     }
 
@@ -303,26 +310,27 @@ class ItemController extends Controller
             return back()->withErrors('Gagal Mengambil Data Item');
         } 
 
-         $item = $responses['item']->json()['d'];
-         $salesOrderList = $responses['salesOrderList']->json()['d'] ?? [];
-         $salesInvoiceList = $responses['salesInvoiceList']->json()['d'] ?? [];
+        $item = $responses['item']->json()['d'];
+        $salesOrderList = $responses['salesOrderList']->json()['d'] ?? [];
+        $salesInvoiceList = $responses['salesInvoiceList']->json()['d'] ?? [];
 
 
 
          // Detail Gudang dan Garansi Reseller
-         $detailWarehouse = $item['detailWarehouseData'];
-         $garansiReseller = $item['charField7'];
-         $image = $item['detailItemImage'][0] ?? null;
+        $detailWarehouse = $item['detailWarehouseData'];
+        $garansiUser = $item['charField6'];
+        $garansiReseller = $item['charField7'];
+        $image = $item['detailItemImage'][0] ?? null;
         $fileName = $image['fileName'] ?? null;
-
-        if ($fileName) {
-            $imageUrl = "https://public.accurate.id" . $fileName;
-        } else {
-            $imageUrl = null; // Jika tidak ada gambar
-        }
 
         $konsinyasiWarehouses = collect($detailWarehouse)->filter(function ($w) {
             return Str::contains(Str::lower($w['description'] ?? ''), 'konsinyasi');
+        });
+
+        $tscWarehouses = collect($detailWarehouse)->filter(function ($w) {
+            return Str::contains(Str::lower($w['name'] ?? ''), [
+                'tsc', 'panda sc banjarbaru'
+            ]);
         });
 
         $nonKonsinyasiWarehouses = collect($detailWarehouse)->filter(function ($w) {
@@ -335,9 +343,12 @@ class ItemController extends Controller
         });
 
         if ($user->status === 'karyawan' || $user->status === 'admin') {
-            $filteredWarehouses = $konsinyasiWarehouses->merge($nonKonsinyasiWarehouses);
+            $filteredWarehouses = $konsinyasiWarehouses
+                ->merge($tscWarehouses)
+                ->merge($nonKonsinyasiWarehouses);
         } elseif ($user->status === 'reseller') {
-            $filteredWarehouses = $nonKonsinyasiWarehouses;
+             $filteredWarehouses = $konsinyasiWarehouses
+                ->merge($nonKonsinyasiWarehouses);
         } else {
             $filteredWarehouses = collect(); // Default jika status tidak dikenal
         }
@@ -365,7 +376,7 @@ class ItemController extends Controller
 
         $salesOrderIds = collect($salesOrderList)->pluck('id');
 
-        $batches = $salesOrderIds->chunk(30);
+        $batches = $salesOrderIds->chunk(20);
 
         foreach ($batches as $batch) {
     // 4. Kirim semua request dalam batch secara paralel
@@ -398,7 +409,7 @@ class ItemController extends Controller
         $matchingInvoices = [];
 
         $salesInvoiceIds = collect($salesInvoiceList)->pluck('id');
-        $batches = $salesInvoiceIds->chunk(30);
+        $batches = $salesInvoiceIds->chunk(20);
 
         foreach ($batches as $batch) {
             $responses = Http::pool(fn ($pool) =>
@@ -442,16 +453,49 @@ class ItemController extends Controller
                 $stokNew[$warehouseId]['balance'] -= $quantity;
             }
         }
-        // 6. Return view ke Blade
+
+        // Return ke view utama
         return view('items.detail', [
             'item' => $item,
             'stokNew' => $stokNew,
             'garansiReseller' => $garansiReseller,
+            'garansiUser' => $garansiUser,
             'fileName' => $fileName,
-            'imageUrl' => $imageUrl,
             'konsinyasiWarehouses' => $konsinyasiWarehouses,
             'nonKonsinyasiWarehouses' => $nonKonsinyasiWarehouses,
+            'tscWarehouses' => $tscWarehouses,
+            'session' => $session,
         ]);
 
+    }
+
+    public function getImageFromApi(Request $request)
+    {
+        // Contoh fileName & session, bisa dari param request atau fixed
+        $fileName = $request->query('fileName'); // misal "/accurate/files/..."
+        $session = $request->query('session');   // misal "58830302-7dd6-4b9c-..."
+
+        $baseUrl = 'https://public.accurate.id';
+        $url = $baseUrl . $fileName . '?session=' . $session;
+
+        // Header yang dibutuhkan, contoh Authorization, Accept dll
+        $headers = [
+            'Authorization' => 'Bearer 0046780a-89b4-4897-b64c-6240b413dc89',
+            'X-Session-ID' => '58830302-7dd6-4b9c-818b-45ea7a98734a',
+        ];
+
+        // Request gambar ke API external
+        $response = Http::withHeaders($headers)->get($url);
+
+        if ($response->successful()) {
+            // Kirim langsung gambar ke browser
+            return Response::make($response->body(), 200, [
+                'Content-Type' => $response->header('Content-Type', 'image/jpeg'),
+                'Cache-Control' => 'max-age=3600, public',
+            ]);
+        }
+
+        // Kalau gagal, bisa kasih placeholder text atau image
+        return response('Gambar tidak ditemukan', 404);
     }
 }

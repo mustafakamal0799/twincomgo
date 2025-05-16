@@ -145,12 +145,13 @@
             @yield('content')
         </div>
 
-        <!-- Footer -->
-        <footer class="bg-light text-center py-3 mt-auto">
-            <small>© {{ date('Y') }} Sistem Informasi Stok Barang - <i>Powered by</i> Twincom</small>
-        </footer>
+       
+        
     @endif
-    <!-- Navbar -->
+         <!-- Footer -->
+        {{-- <footer class="bg-light text-center py-3 mt-auto">
+                <small>© {{ date('Y') }} Sistem Informasi Stok Barang - <i>Powered by</i> Twincom</small>
+        </footer> --}}
     
 
 

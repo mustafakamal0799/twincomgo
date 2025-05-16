@@ -63,6 +63,17 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                {{-- Info Jumlah Data --}}
+                <div class="text-muted small">
+                    Menampilkan {{ $activities->firstItem() }} sampai {{ $activities->lastItem() }} dari total {{ $activities->total() }} data
+                </div>
+
+                {{-- Pagination --}}
+                <div>
+                    {{ $activities->withQueryString()->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
