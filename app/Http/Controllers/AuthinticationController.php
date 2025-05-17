@@ -25,20 +25,20 @@ class AuthinticationController extends Controller
             if ($user->status === 'admin') {
                 activity()
                 ->causedBy(Auth::user())
-                ->inLog(auth()->user()->email)
-                ->log('Admin ' . auth()->user()->name . ' sedang melakukan login');
+                ->inLog(auth()->user()->name)
+                ->log('Admin dengan email ' . auth()->user()->email . ' sedang melakukan login');
                 return redirect()->route('admin.index');
             }elseif($user->status === 'reseller') {
                 activity()
                 ->causedBy(Auth::user())
-                ->inLog(auth()->user()->email)
-                ->log('Reseller ' . auth()->user()->name . ' sedang melakukan login');
+                ->inLog(auth()->user()->name)
+                ->log('Reseller dengan email ' . auth()->user()->email . ' sedang melakukan login');
                 return redirect()->route('items.index');
             }elseif($user->status === 'karyawan') {
                 activity()
                 ->causedBy(Auth::user())
-                ->inLog(auth()->user()->email)
-                ->log('Reseller ' . auth()->user()->name . ' sedang melakukan login');
+                ->inLog(auth()->user()->name)
+                ->log('Reseller dengan email ' . auth()->user()->email . ' sedang melakukan login');
                 return redirect()->route('items.index');
             }else {
                 return redirect()->route('auth.login');

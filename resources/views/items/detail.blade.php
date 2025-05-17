@@ -24,6 +24,11 @@
     $totalNonKonsinyasiStok = collect($nonKonsinyasiWarehouses)->sum(function($w) use ($stokNew) {
         return $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0;
     });
+
+    $totalTscStok = collect($tscWarehouses)->sum(function($w) use ($stokNew) {
+        return $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0;
+    });
+    
 @endphp
 
 <style>
@@ -58,69 +63,89 @@
                     </div>
                 </div>
                 <div class="card-body p-4">
-                    <div class="row align-items-end mb-4">
-                        <div class="col-md-4">
-                            <label for="filterHargaGaransi" class="form-label fw-semibold">Harga</label>
-                            <select id="filterHargaGaransi" class="form-select">
-                                <option value="semua">Semua Harga</option>
-                                <option value="reseller">Reseller</option>
-                                <option value="user">User</option>
+                    @if ($status === 'karyawan' || $status === 'admin')
+                        <div class="row align-items-end mb-4">
+                            <div class="col-md-4">
+                                <label for="filterHargaGaransi" class="form-label fw-semibold">Harga</label>
+                                <select id="filterHargaGaransi" class="form-select">
+                                    <option value="semua">Semua Harga</option>
+                                    <option value="reseller">Reseller</option>
+                                    <option value="user">User</option>
+                                    </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterGudang" class="form-label fw-semibold">Lokasi Stok</label>
+                                <select id="filterGudang" class="form-select">
+                                    <option value="semua">Semua Lokasi</option>
+                                    <option value="non">Store</option>
+                                    <option value="tsc">TSC</option>
+                                    <option value="konsinyasi">Konsinyasi</option>
                                 </select>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label for="filterGudang" class="form-label fw-semibold">Lokasi Stok</label>
-                            <select id="filterGudang" class="form-select">
-                                <option value="semua">Semua Lokasi</option>
-                                <option value="non">Store</option>
-                                <option value="tsc">TSC</option>
-                                <option value="konsinyasi">Konsinyasi</option>
-                            </select>
-                        </div>
-                    </div>
+                    @endif                    
                     <div class="row mb-3">
                         <div class="col-md-4 text-center">
-                            <img 
-                                src="{{ route('proxy.image', ['fileName' => $fileName, 'session' => $session]) }}" 
-                                alt="Gambar Item {{ $item['name'] }}" 
-                                class="img-fluid rounded shadow-sm"
-                                style="max-width: 100%; height: auto; max-height: 300px; object-fit: contain; display: inline-block;"
-                                loading="lazy"
-                                decoding="async"
-                                onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<div class=\'text-danger\'>Gambar Kosong</div>')"
-                            />
+                            <div id="itemImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                                <div class="carousel-inner">
+                                    @foreach ($fileName as $index => $file)
+                                        <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                                            <img 
+                                                src="{{ route('proxy.image', ['fileName' => $file, 'session' => $session]) }}" 
+                                                alt="Gambar {{ $index + 1 }}" 
+                                                class="d-block w-100 img-fluid rounded shadow-sm"
+                                                style="max-height: 300px; object-fit: contain;"
+                                                onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<div class=\'text-danger\'>Gambar Kosong</div>')"
+                                            >
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#itemImageCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Sebelumnya</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#itemImageCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Selanjutnya</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-8">
                             <h5>{{ $item['name'] }}</h5>
-
-                            {{-- KODE PRODUK --}}
-                            <div class="row mb-2">
-                                <div class="col-sm-4 fw-bold">Kode:</div>
-                                <div class="col-sm-8">
-                                    <span id="kodeProduk">{{ $item['no'] }}</span>
-                                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyKodeProduk()">Copy</button>
-                                </div>
-                            </div>
 
                             {{-- GARANSI & HARGA--}}
                             @if ($status === 'karyawan' || $status === 'admin')
                                 <table class="table table-borderless table-sm">
                                     <tbody>
+                                        <tr>
+                                            <th class="text-start">Kode</th>
+                                            <td class="">
+                                                : {{ $item['no'] }}
+                                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyKodeProduk()">Copy</button>
+                                            </td>
+                                        </tr>
                                         <tr id="hargaResellerWrapper">
                                             <th class="text-start">Harga Reseller</th>
-                                            <td class="text-end">Rp {{ number_format($resellerPrice, 0, ',', '.') }}</td>
+                                            <td class="">: Rp {{ number_format($resellerPrice, 0, ',', '.') }}</td>
                                         </tr>
                                         <tr id="garansiResellerWrapper">
                                             <th class="text-start">Garansi Reseller</th>
-                                            <td class="text-end">{{ $garansiReseller }}</td>
+                                            <td class="">: {{ $garansiReseller }}</td>
                                         </tr>
                                         <tr id="hargaUserWrapper">
                                             <th class="text-start">Harga User</th>
-                                            <td class="text-end">Rp {{ number_format($userPrice, 0, ',', '.') }}</td>
+                                            <td class="">: Rp {{ number_format($userPrice, 0, ',', '.') }}</td>
                                         </tr>
                                         <tr id="garansiUserWrapper">
                                             <th class="text-start">Garansi User</th>
-                                            <td class="text-end">{{ $garansiUser }}</td>
+                                            <td class="">: {{ $garansiUser }}</td>
                                         </tr>
+                                        @if ($status === 'admin')
+                                        <tr>
+                                            <th>Stok Real</th>
+                                            <td>: {{ $item['availableToSell'] }}</td>
+                                        </tr>
+                                        @endif
                                     </tbody>
                                 </table>
                             @else
@@ -129,9 +154,9 @@
                                     <div class="col-sm-8">: Rp {{ number_format($resellerPrice, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="row mb-2" id="hargaUserWrapper">
-                                    <div class="col-sm-4 fw-bold">Harga User:</div>
+                                    <div class="col-sm-4 fw-bold">Harga User</div>
                                     <div class="col-sm-8 text-muted text-decoration-line-through">
-                                        Rp {{ number_format($userPrice, 0, ',', '.') }}
+                                        : Rp {{ number_format($userPrice, 0, ',', '.') }}
                                     </div>
                                 </div>
                                 <div class="row mb-2" id="garansiResellerWrapper">
@@ -139,28 +164,8 @@
                                     <div class="col-sm-8">: {{ $garansiReseller }}</div>
                                 </div>
                             @endif
-
-                            {{-- STOK --}}
-                            @if ($status === 'karyawan' || $status === 'admin')
-                                <div class="row mb-2">
-                                    <div class="col-sm-4 fw-bold">Stok Custom:</div>
-                                    <div class="col-sm-8"><span class="badge bg-success">{{ $totalNonKonsinyasiStok }}</span></div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-sm-4 fw-bold">Stok Real:</div>
-                                    <div class="col-sm-8"><span class="badge bg-info">{{ $item['availableToSell'] }}</span></div>
-                                </div>
-                            @else
-                                <div class="row mb-2">
-                                    <div class="col-sm-4 fw-bold">Stok Dijual:</div>
-                                    <div class="col-sm-8"><span class="badge bg-success">{{ $totalNonKonsinyasiStok }}</span></div>
-                                </div>
-                            @endif
                         </div>
                     </div>
-@php
-    $status = Auth::user()->status;
-@endphp
 
 @if ($status === 'karyawan' || $status === 'admin')
     {{-- TABEL GUDANG NON-KONSINYASI --}}
@@ -175,10 +180,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($nonKonsinyasiWarehouses as $data)
+                    @foreach ($nonKonsinyasiWarehouses as $index => $data)
                         <tr>
                             <td>{{ $data['name'] }}</td>
                             <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                            
+                            @if ($loop->first)
+                                <td class="text-center" rowspan="{{ count($nonKonsinyasiWarehouses) }}">
+                                    {{ number_format($totalNonKonsinyasiStok) }}
+                                </td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
@@ -201,6 +212,11 @@
                         <tr>
                             <td>{{ $data['name'] }}</td>
                             <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                            @if ($loop->first)
+                                <td class="text-center" rowspan="{{ count($tscWarehouses) }}">
+                                    {{ number_format($totalTscStok) }}
+                                </td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
@@ -223,6 +239,11 @@
                         <tr>
                             <td>{{ $data['name'] }}</td>
                             <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                            @if ($loop->first)
+                                <td class="text-center" rowspan="{{ count($konsinyasiWarehouses) }}">
+                                    {{ number_format($totalKonsinyasiStok) }}
+                                </td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
@@ -236,7 +257,7 @@
         <table class="table table-bordered">
             <thead class="table-dark text-center">
                 <tr>
-                    <th>Gudang</th>
+                    <th>Lokasi Store</th>
                     <th>Stok</th>
                     <th>Total</th>
                 </tr>
@@ -246,6 +267,12 @@
                     <tr>
                         <td>{{ $data['name'] }}</td>
                         <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+
+                        @if ($loop->first)
+                            <td class="text-center" rowspan="{{ count($nonKonsinyasiWarehouses) }}">
+                                {{ number_format($totalNonKonsinyasiStok) }}
+                            </td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>
@@ -253,12 +280,11 @@
     </div>
     @if ($totalKonsinyasiStok > 0)
         <div class="mb-4" id="konsinyasiTable">
-            <h6 class="text-warning">Gudang Konsinyasi</h6>
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead class="table-dark text-center">
                         <tr>
-                            <th>Gudang</th>
+                            <th>Konsinyasi</th>
                             <th>Stok</th>
                             <th>Total</th>
                         </tr>
@@ -268,6 +294,11 @@
                             <tr>
                                 <td>{{ $data['name'] }}</td>
                                 <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                 @if ($loop->first)
+                                <td class="text-center" rowspan="{{ count($konsinyasiWarehouses) }}">
+                                    {{ number_format($totalKonsinyasiStok) }}
+                                </td>
+                            @endif
                             </tr>
                         @endforeach
                     </tbody>
@@ -281,7 +312,7 @@
                 <table class="table table-bordered">
                     <thead class="table-dark text-center">
                         <tr>
-                            <th>Gudang</th>
+                            <th>Konsinyasi</th>
                             <th>Stok</th>
                         </tr>
                     </thead>
@@ -345,6 +376,7 @@
         }
     });
 
+    //FILTER HARGA DAN GARANSI
     document.getElementById('filterHargaGaransi').addEventListener('change', function () {
         const value = this.value;
 
@@ -354,22 +386,23 @@
         const garansiUser = document.getElementById('garansiUserWrapper');
 
         if (value === 'semua') {
-            if (hargaReseller) hargaReseller.style.display = 'block';
-            if (hargaUser) hargaUser.style.display = 'block';
-            if (garansiReseller) garansiReseller.style.display = 'block';
-            if (garansiUser) garansiUser.style.display = 'block';
+            if (hargaReseller) hargaReseller.style.display = 'table-row';
+            if (hargaUser) hargaUser.style.display = 'table-row';
+            if (garansiReseller) garansiReseller.style.display = 'table-row';
+            if (garansiUser) garansiUser.style.display = 'table-row';
         } else if (value === 'reseller') {
-            if (hargaReseller) hargaReseller.style.display = 'block';
+            if (hargaReseller) hargaReseller.style.display = 'table-row';
             if (hargaUser) hargaUser.style.display = 'none';
-            if (garansiReseller) garansiReseller.style.display = 'block';
+            if (garansiReseller) garansiReseller.style.display = 'table-row';
             if (garansiUser) garansiUser.style.display = 'none';
         } else if (value === 'user') {
             if (hargaReseller) hargaReseller.style.display = 'none';
-            if (hargaUser) hargaUser.style.display = 'block';
+            if (hargaUser) hargaUser.style.display = 'table-row';
             if (garansiReseller) garansiReseller.style.display = 'none';
-            if (garansiUser) garansiUser.style.display = 'block';
+            if (garansiUser) garansiUser.style.display = 'table-row';
         }
     });
+
 </script>
 
 @endsection

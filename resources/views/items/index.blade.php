@@ -153,8 +153,8 @@
                     <div class="col-md-6 col-6">
                         <label for="stok_ada" class="form-label">Stok Ready</label>
                         <select class="form-select" name="stok_ada" id="stok_ada">
-                            <option value="">TIDAK</option>
-                            <option value="1" {{ request('stok_ada') ? 'selected' : '' }}>YA</option>
+                            <option value="" {{ request('stok_ada') === '' ? 'selected' : '' }}>TIDAK</option>
+                            <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>YA</option>
                         </select>
                     </div>
                 </div>

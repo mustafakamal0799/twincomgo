@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Models\Activity;
 
 class AdminController extends Controller
 {
@@ -13,9 +14,9 @@ class AdminController extends Controller
 
         $totalUsers = User::count();
         // $totalItems = Item::count();
-        $logToday = ActivityLog::whereDate('created_at', Carbon::today())->count();
+        $logToday = Activity::whereDate('created_at', Carbon::today())->count();
 
-        $recentLogs = ActivityLog::latest()->take(5)->get();
+        $recentLogs = Activity::latest()->take(5)->get();
         // $recentItems = Item::latest()->take(5)->get();
 
         return view('admin.dashboard', compact(
@@ -28,6 +29,7 @@ class AdminController extends Controller
     }
 
     public function viewUser(Request $request) {
+
         $query = User::query();
 
         if ($request->filled('search')) {
@@ -43,31 +45,49 @@ class AdminController extends Controller
         }
 
         $users = $query->latest()->get();
-
         return view('admin.users-index', compact('users'));
     }
 
-    public function logActivity(Request $request) {
-        $query = ActivityLog::query();
+    public function logActivity(Request $request)
+    {
+        $query = Activity::query();
 
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function ($q) use ($search) {
-            $q->where('log_name', 'like', "%{$search}%")
-              ->orWhere('description', 'like', "%{$search}%");
-        });
+        if ($request->filled('user')) {
+            $query->where('log_name', $request->user);
+        }
+
+        if ($request->filled('status')) {
+            $query->whereHas('causer', function ($q) use ($request) {
+                $q->where('status', $request->status);
+            });
+        }
+
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('log_name', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $activities = $query->latest()->paginate(10);
+        return view('admin.log-activity', compact('activities'));
     }
 
-    // Optional: filter berdasarkan tanggal (kalau kamu aktifkan input date di view)
-    /*
-    if ($request->filled('date')) {
-        $query->whereDate('created_at', $request->date);
-    }
-    */
 
-    $activities = $query->latest()->paginate(10);
+    public function searchUser(Request $request)
+    {
+        $search = $request->input('q');
 
-    return view('admin.log-activity', compact('activities'));
+        $results = Activity::select('log_name')
+            ->where('log_name', 'like', "%{$search}%")
+            ->distinct()
+            ->limit(10)
+            ->get();
+
+        return response()->json($results->pluck('log_name'));
     }
+
 
 }

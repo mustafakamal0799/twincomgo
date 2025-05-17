@@ -15,6 +15,10 @@ class ItemController extends Controller
 {
     public function index(Request $request)
     {
+        if (!$request->has('stok_ada')) {
+            return redirect()->route('items.index', array_merge($request->all(), ['stok_ada' => 1]));
+        }
+
         $token = env('ACCURATE_API_TOKEN');
         $session = env('ACCURATE_SESSION');
 
@@ -255,33 +259,6 @@ class ItemController extends Controller
     //     }
     // }
 
-    public function getAccurateImage($filename)
-    {
-        $session = env('ACCURATE_SESSION');
-        $token = env('ACCURATE_TOKEN');
-
-        Log::info("Request gambar Accurate ke: {$filename} dengan session param & header");
-
-        $headers = [
-            'Authorization' => 'Bearer ' . $token,
-            'X-Session-ID'  => $session,
-        ];
-
-        // Tetap menyertakan session di URL sesuai permintaan Accurate
-        $url = "https://public.accurate.id/{$filename}?session={$session}";
-
-        $response = Http::withHeaders($headers)->get($url);
-
-        if ($response->successful()) {
-            return Response::make($response->body(), 200, [
-                'Content-Type' => $response->header('Content-Type', 'image/jpeg'),
-            ]);
-        }
-
-        Log::warning("Gagal mengambil gambar dari Accurate: {$url}. Status: " . $response->status());
-        return abort(404, 'Image not found.');
-    }
-
 
     public function getItemDetails ($id) {
 
@@ -320,8 +297,12 @@ class ItemController extends Controller
         $detailWarehouse = $item['detailWarehouseData'];
         $garansiUser = $item['charField6'];
         $garansiReseller = $item['charField7'];
-        $image = $item['detailItemImage'][0] ?? null;
-        $fileName = $image['fileName'] ?? null;
+        // $image = $item['detailItemImage'][0] ?? null;
+        // $fileName = $image['fileName'] ?? null;
+
+        $fileName = collect($item['detailItemImage'] ?? [])->pluck('fileName')->filter()->values()->toArray();
+
+        // dd($fileName);
 
         $konsinyasiWarehouses = collect($detailWarehouse)->filter(function ($w) {
             return Str::contains(Str::lower($w['description'] ?? ''), 'konsinyasi');
@@ -352,18 +333,6 @@ class ItemController extends Controller
         } else {
             $filteredWarehouses = collect(); // Default jika status tidak dikenal
         }
-
-        // Filter Gudang dengan Nama
-        // $filteredWarehouses = collect($detailWarehouse)
-        //     ->filter(function ($w) {
-        //     return 
-        //         (is_null($w['description']) ?? true) &&
-        //         (!Str::contains(Str::lower($w['name']), [
-        //             'reseller','tsc','twintos','twinmart',
-        //                 'marketing','asp','bazar','bina',
-        //                 'dkv','af','barang rusak', 'sc landasan ulin', 'panda store landasan ulin', 'sc banjarbaru'
-        //         ]));
-        // });
 
         $stokNew = [];
 
@@ -471,14 +440,14 @@ class ItemController extends Controller
 
     public function getImageFromApi(Request $request)
     {
-        // Contoh fileName & session, bisa dari param request atau fixed
-        $fileName = $request->query('fileName'); // misal "/accurate/files/..."
-        $session = $request->query('session');   // misal "58830302-7dd6-4b9c-..."
+        // fileName & session, bisa dari param request atau fixed
+        $fileName = $request->query('fileName'); 
+        $session = $request->query('session');   
 
         $baseUrl = 'https://public.accurate.id';
         $url = $baseUrl . $fileName . '?session=' . $session;
 
-        // Header yang dibutuhkan, contoh Authorization, Accept dll
+        // Headers
         $headers = [
             'Authorization' => 'Bearer 0046780a-89b4-4897-b64c-6240b413dc89',
             'X-Session-ID' => '58830302-7dd6-4b9c-818b-45ea7a98734a',
