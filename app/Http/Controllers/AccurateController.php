@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 class AccurateController extends Controller
@@ -37,140 +38,150 @@ class AccurateController extends Controller
         }
     }
 
-    public function detailItems($id)
+    public function getItemDetailsApi($id)
     {
-        set_time_limit(7200);
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User belum login.'], 401);
+        }
+
+        // lanjutkan kalau user tidak null
+        $status = $user->status;
+
         $token = env('ACCURATE_API_TOKEN');
         $session = env('ACCURATE_SESSION');
 
-        $detailUrl = 'https://public.accurate.id/accurate/api/item/detail.do?id=' . $id;
-
-        $respon = Http::timeout(3600)->retry(3, 2000)->withHeaders([
+        $headers = [
             'Authorization' => 'Bearer ' . $token,
             'X-Session-ID' => $session
-        ])->get($detailUrl);
+        ];
 
-        if ($respon->successful()) {
-            $item = $respon->json()['d'];
-            $detailGudang = $item['detailWarehouseData'];
-            $garansiReseller = $item['charField7'];
+        $poolResponses = Http::pool(fn ($pool) => [
+            $pool->withHeaders($headers)->get("https://public.accurate.id/accurate/api/item/detail.do?id=$id"),
+            $pool->withHeaders($headers)->get("https://public.accurate.id/accurate/api/sales-order/list.do?id="),
+            $pool->withHeaders($headers)->get("https://public.accurate.id/accurate/api/sales-invoice/list.do?id="),
+        ]);
 
-            $filteredWarehouses = collect($detailGudang)
-                ->filter(function ($w) {
-                    return 
-                        (is_null($w['description']) ?? true) &&
-                        (!Str::contains(Str::lower($w['name']), [
-                            'reseller','tsc','twintos','twinmart',
-                            'marketing','asp','bazar','bina',
-                            'dkv','af','barang rusak', 'sc landasan ulin', 'panda store landasan ulin', 'sc banjarbaru'
-                        ]));
-                });
+        $itemResponse = $poolResponses[0];
+        $salesOrderList = $poolResponses[1]->json()['d'] ?? [];
+        $salesInvoiceList = $poolResponses[2]->json()['d'] ?? [];
 
-            $warehouseMap = [];
-            foreach ($filteredWarehouses as $gudang) {
-                $warehouseMap[$gudang['id']] = [
-                    'name' => $gudang['name'],
-                    'balance' => (float) $gudang['balance']
-                ];
-            }
-
-            // Sales Order
-            $salesOrderUrl = 'https://public.accurate.id/accurate/api/sales-order/list.do?id=';
-            $salesOrderResponse = Http::timeout(3600)->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'X-Session-ID' => $session
-            ])->get($salesOrderUrl);
-
-            $stokBaru = $warehouseMap;
-
-            if ($salesOrderResponse->successful()) {
-                $salesOrderList = $salesOrderResponse->json()['d'];
-            
-                foreach ($salesOrderList as $order) {
-                    $detailUrl = 'https://public.accurate.id/accurate/api/sales-order/detail.do?id=' . $order['id'];
-            
-                    $detailResponse = Http::timeout(3600)->withHeaders([
-                        'Authorization' => 'Bearer ' . $token,
-                        'X-Session-ID' => $session
-                    ])->get($detailUrl);
-            
-                    if ($detailResponse->successful()) {
-                        $detail = $detailResponse->json()['d'];
-
-                        if ($detail['statusName'] === 'Menunggu diproses' || $detail['statusName'] === 'Sebagian diproses') {
-                            foreach ($detail['detailItem'] as $items) {
-                                if ($items['itemId'] == $id) {
-                                    $warehouseId = $items['warehouseId'];
-                                    $quantity = (float) $items['availableQuantity'];
-                                        
-                                    if (isset($stokBaru[$warehouseId])) {
-                                        $stokBaru[$warehouseId]['balance'] -= $quantity;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Sales Invoice
-            $salesInvoiceUrl = 'https://public.accurate.id/accurate/api/sales-invoice/list.do?id=';
-            $salesInvoiceResponse = Http::timeout(3600)->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'X-Session-ID' => $session
-            ])->get($salesInvoiceUrl);
-
-            $matchingInvoices = [];
-
-            if ($salesInvoiceResponse->successful()) {
-                $salesInvoiceList = $salesInvoiceResponse->json()['d'];
-
-                foreach ($salesInvoiceList as $invoice) {
-                    $invoiceDetailUrl = 'https://public.accurate.id/accurate/api/sales-invoice/detail.do?id=' . $invoice['id'];
-
-                    $invoiceDetailResponse = Http::timeout(3600)->withHeaders([
-                        'Authorization' => 'Bearer ' . $token,
-                        'X-Session-ID' => $session
-                    ])->get($invoiceDetailUrl);
-
-                    if ($invoiceDetailResponse->successful()) {
-                        $invoiceDetail = $invoiceDetailResponse->json()['d'];
-
-                        if (isset($invoiceDetail['reverseInvoice']) && $invoiceDetail['reverseInvoice'] === true) {
-                            foreach ($invoiceDetail['detailItem'] as $itemInvoice) {
-                                if (isset($itemInvoice['item']['id']) && $itemInvoice['item']['id'] == $id) {
-                                    $matchingInvoices[] = [
-                                        'invoice_id' => $invoice['id'],
-                                        'quantity' => (float) $itemInvoice['quantity'],
-                                        'warehouse' => $itemInvoice['warehouse']['id'] ?? null
-                                    ];
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                foreach ($matchingInvoices as $invoiceMatch) {
-                    $warehouseId = $invoiceMatch['warehouse'];
-                    $quantity = $invoiceMatch['quantity'];
-
-                    if (isset($stokBaru[$warehouseId])) {
-                        $stokBaru[$warehouseId]['balance'] -= $quantity;
-                    }
-                }
-            }
-
-            return response()->json([
-                'item' => $item,
-                'stokBaru' => $stokBaru,
-                'garansiReseller' => $garansiReseller
-            ], 200);
-        } else {
-            return response()->json([
-                'error' => 'Gagal Mengambil Data Item'
-            ], 400);
+        if (!$itemResponse->successful()) {
+            return response()->json(['error' => 'Gagal Mengambil Data Item'], 500);
         }
+
+        $item = $itemResponse->json()['d'];
+        $detailWarehouse = $item['detailWarehouseData'];
+        $garansiUser = $item['charField6'];
+        $garansiReseller = $item['charField7'];
+        $fileName = collect($item['detailItemImage'] ?? [])->pluck('fileName')->filter()->values()->toArray();
+
+        $konsinyasiWarehouses = collect($detailWarehouse)->filter(fn($w) =>
+            Str::contains(Str::lower($w['description'] ?? ''), 'konsinyasi'));
+
+        $tscWarehouses = collect($detailWarehouse)->filter(fn($w) =>
+            Str::contains(Str::lower($w['name'] ?? ''), ['tsc', 'panda sc banjarbaru']));
+
+        $nonKonsinyasiWarehouses = collect($detailWarehouse)->filter(fn($w) =>
+            is_null($w['description']) &&
+            !Str::contains(Str::lower($w['name']), [
+                'reseller','tsc','twintos','twinmart',
+                'marketing','asp','bazar','bina',
+                'dkv','af','barang rusak', 'sc landasan ulin', 'panda store landasan ulin', 'sc banjarbaru'
+            ]));
+
+        $filteredWarehouses = match ($user->status) {
+            'karyawan', 'admin' => $konsinyasiWarehouses->merge($tscWarehouses)->merge($nonKonsinyasiWarehouses),
+            'reseller' => $konsinyasiWarehouses->merge($nonKonsinyasiWarehouses),
+            default => collect()
+        };
+
+        $stokNew = [];
+        foreach ($filteredWarehouses as $warehouseDetail) {
+            $stokNew[$warehouseDetail['id']] = [
+                'name' => $warehouseDetail['name'],
+                'balance' => $warehouseDetail['balance']
+            ];
+        }
+
+        // Sales Order
+        $salesOrderIds = collect($salesOrderList)->pluck('id');
+        foreach ($salesOrderIds->chunk(20) as $batch) {
+            $responses = Http::pool(fn ($pool) =>
+                $batch->map(fn ($id) =>
+                    $pool->withHeaders($headers)->get("https://public.accurate.id/accurate/api/sales-order/detail.do?id=$id")
+                )->all()
+            );
+
+            foreach ($responses as $detailResponse) {
+                if ($detailResponse->successful()) {
+                    $detail = $detailResponse->json()['d'];
+                    if (in_array($detail['statusName'], ['Menunggu diproses', 'Sebagian diproses'])) {
+                        foreach ($detail['detailItem'] as $items) {
+                            if ($items['itemId'] == $id) {
+                                $warehouseId = $items['warehouseId'];
+                                $quantity = (float) $items['availableQuantity'];
+
+                                if (isset($stokNew[$warehouseId])) {
+                                    $stokNew[$warehouseId]['balance'] -= $quantity;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            usleep(500000);
+        }
+
+        // Invoice
+        $matchingInvoices = [];
+        foreach (collect($salesInvoiceList)->pluck('id')->chunk(20) as $batch) {
+            $responses = Http::pool(fn ($pool) =>
+                $batch->map(fn ($id) =>
+                    $pool->withHeaders($headers)->timeout(60)->retry(3, 1000)
+                        ->get("https://public.accurate.id/accurate/api/sales-invoice/detail.do?id=$id")
+                )->all()
+            );
+
+            foreach ($responses as $index => $response) {
+                if ($response->successful()) {
+                    $invoiceDetail = $response->json()['d'];
+                    $invoiceId = $batch->values()[$index];
+
+                    if ($invoiceDetail['reverseInvoice'] ?? false) {
+                        foreach ($invoiceDetail['detailItem'] as $itemInvoice) {
+                            if (($itemInvoice['item']['id'] ?? null) == $id) {
+                                $matchingInvoices[] = [
+                                    'invoice_id' => $invoiceId,
+                                    'quantity' => (float) $itemInvoice['quantity'],
+                                    'warehouse' => $itemInvoice['warehouse']['id'] ?? null
+                                ];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            usleep(500000);
+        }
+
+        foreach ($matchingInvoices as $invoiceMatch) {
+            $warehouseId = $invoiceMatch['warehouse'];
+            $quantity = $invoiceMatch['quantity'];
+            if (isset($stokNew[$warehouseId])) {
+                $stokNew[$warehouseId]['balance'] -= $quantity;
+            }
+        }
+
+        return response()->json([
+            'item' => $item,
+            'stokNew' => array_values($stokNew),
+            'garansiReseller' => $garansiReseller,
+            'garansiUser' => $garansiUser,
+            'fileName' => $fileName,
+            'session' => $session,
+        ]);
     }
 
 
@@ -246,6 +257,9 @@ class AccurateController extends Controller
             ], 400);
         }
     }
+
+
+    
 
 
 }

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccurateController;
+use App\Http\Controllers\ApiLoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,5 +22,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/accurate/customers', [AccurateController::class, 'getCustomers']);
 Route::get('/accurate/items', [AccurateController::class, 'getItems']);
-Route::get('/accurate/customers/detail/{id}', [AccurateController::class, 'detailCustomers']);
-Route::get('/accurate/items/detail/{id}', [AccurateController::class, 'detailItems']);          
+
+Route::middleware('auth:sanctum')->get('/accurate/items/detail/{id}', [AccurateController::class, 'getItemDetailsApi']);
+
+
+Route::post('/login', [ApiLoginController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [ApiLoginController::class, 'logout']);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+});
+// Route::get('/accurate/items/detail/{id}', [AccurateController::class, 'detailItems']);          

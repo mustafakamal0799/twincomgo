@@ -107,32 +107,6 @@
    <div class="p-3">
     <form action="{{ route('items.index') }}" method="GET">
         <div class="row g-2">
-
-            {{-- Pilih Kategori --}}
-            {{-- <div class="col-lg-3 col-md-4 col-12">
-                <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
-                <select name="id" id="itemCategoryId" class="form-select">
-                    <option value="">-- Semua Kategori --</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category['id'] }}" {{ request('id') == $category['id'] ? 'selected' : '' }}>
-                            {{ $category['name'] }}
-                        </option>
-                    @endforeach
-                </select>
-            </div> --}}
-
-            {{-- Checkbox Stok --}}
-
-            {{-- <div class="col-lg-3 col-md-4 col-12">
-                <div class="form-group w-100">
-                    <label for="stok_ready" class="form-label">Stok Ready</label>
-                    <select class="form-select" name="stok_ada" id="stok_ada">
-                        <option value="">TIDAK</option>
-                        <option value="1" {{ request('stok_ada') ? 'selected' : '' }}>YA</option>
-                    </select>
-                </div>
-            </div> --}}
-
             {{-- Group Kategori + Stok Ready --}}
             <div class="col-lg-6 col-md-8 col-12 kategori-stok-group">
                 <div class="row g-2">
@@ -140,7 +114,7 @@
                     <div class="col-md-6 col-6">
                         <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
                         <select name="id" id="itemCategoryId" class="form-select">
-                            <option value="">-- Semua Kategori --</option>
+                            <option value="">Semua Kategori</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category['id'] }}" {{ request('id') == $category['id'] ? 'selected' : '' }}>
                                     {{ $category['name'] }}
@@ -163,25 +137,8 @@
             {{-- Input Pencarian --}}
             <div class="col-lg-3 col-md-4 col-12">
                 <label for="q" class="form-label">Cari Barang</label>
-                <input type="text" name="q" id="q" class="form-control" placeholder="Contoh: Laptop" value="{{ request('q') }}">
+                <input type="text" name="q" id="q" class="form-control" placeholder="Contoh: Ketik Laptop, Gunakan % untuk kombinasi kata pencarian" value="{{ request('q') }}">
             </div>
-
-
-            {{-- Tombol Cari --}}
-            {{-- <div class="col-lg-1 col-md-2 col-12 mt-3">
-                <label for="reset" class="form-label"></label>
-                <button type="submit" class="btn btn-secondary w-100">
-                    <i class="bi bi-search"></i>
-                </button>
-            </div> --}}
-
-            {{-- Tombol Reset --}}
-            {{-- <div class="col-lg-1 col-md-2 col-12 mt-3">
-                <label for="reset" class="form-label"></label>
-                <a href="{{ route('items.index') }}" class="btn btn-success w-100">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </a>
-            </div> --}}
 
             <div class="col-lg-2 col-md-4 col-12 d-flex align-items-end gap-2 tombol-aksi">
                 <button type="submit" class="btn btn-secondary w-100">
@@ -207,24 +164,24 @@
                         <div class="table-responsive p-4 table-scroll-container">
                             <table class="table align-items-center mb-0 table-striped">
                                 <thead class="table-dark">
-                                    <tr>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-4">Kode</th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nama Item</th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Stok</th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Action</th>
+                                    <tr class="text-center">
+                                        <th class="text-uppercase text-xxs font-weight-bolder opacity-7 ps-4">Kode</th>
+                                        <th class="text-uppercase text-xxs font-weight-bolder opacity-7">Nama Item</th>
+                                        <th class="text-uppercase text-xxs font-weight-bolder opacity-7">Stok</th>
+                                        <th class="text-uppercase text-xxs font-weight-bolder opacity-7">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($items as $item)
                                     <tr>
                                         <!-- Nama item yang akan mengarah ke halaman detail -->
-                                        <td class="ps-4">
+                                        <td class="ps-4 text-center">
                                             <p class="text-xs font-weight-bold mb-0">{{ $item['no'] ?? '-' }}</p>
                                         </td>
                                         <td>
                                             <p class="text-xs font-weight-bold mb-0">{{ Str::limit($item['name'], 50) ?? '-' }}</p>
                                         </td>
-                                        <td>
+                                        <td class="text-center">
                                             <p class="text-xs font-weight-bold mb-0">{{ $item['availableToSell'] ?? '-' }}</p>
                                         </td>
                                         <td class="align-middle text-center"><a href="{{ route('items.detail', ['id' => $item['id']]) }}" class="btn btn-warning">Detail</a></td>

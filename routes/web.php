@@ -32,7 +32,7 @@ Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logou
 //item
 Route::middleware(['auth'])->group(function () {
     Route::get('/item', [ItemController::class, 'index'])->name('items.index');
-    Route::get('/item/detail/{id}', [ItemController::class, 'getItemDetails'])->name('items.detail');
+    Route::get('/item-detail/{id}', [ItemController::class, 'getItemDetails'])->name('items.detail');
 });
 
 //Reset Password
@@ -97,6 +97,8 @@ Route::get('/accurate-image/{filename}', [ItemController::class, 'getAccurateIma
 Route::get('/proxy-image', [ItemController::class, 'getImageFromApi'])->name('proxy.image');
 Route::post('/sync/employees', [AccurateSyncController::class, 'syncEmployees'])->name('sync.employees');
 Route::post('/sync/customers', [AccurateSyncController::class, 'syncCustomers'])->name('sync.customers');
+
+Route::get('/selling-price', [ItemController::class, 'getSellingPrice']);
 
 
  

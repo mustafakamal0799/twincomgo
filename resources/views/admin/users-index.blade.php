@@ -82,9 +82,9 @@
         <div class="card-body px-0 pt-0 pb-2">
             @if (count($users) > 0)
                 <div class="table-responsive p-4 table-scroll-container">
-                    <table class="table table-bordered table-striped align-middle text-center">
+                    <table class="table table-bordered table-striped align-middle">
                         <thead class="table-dark">
-                            <tr>
+                            <tr class="text-center">
                                 <th>No</th>
                                 <th>Nama</th>
                                 <th>Email</th>
@@ -94,10 +94,10 @@
                         <tbody>
                             @foreach ($users as $user)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
+                                    <td class="text-center">{{ $loop->iteration }}</td>
                                     <td>{{ $user->name }}</td>
                                     <td>{{ $user->email }}</td>
-                                    <td>
+                                    <td class="text-center">
                                         @if ($user->status === 'karyawan')
                                             <span class="badge bg-success">Karyawan</span>
                                         @elseif ($user->status === 'reseller')

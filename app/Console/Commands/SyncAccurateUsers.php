@@ -49,7 +49,7 @@ class SyncAccurateUsers extends Command
             $params = [
                 'sp.page' => $page,
                 'sp.pageSize' => $pageSize,
-                'fields' => 'id,name,email,suspended',
+                'fields' => 'id,name,email,suspended,',
                 'filter.customerCategoryId' => 2650,
             ];
 
@@ -66,23 +66,50 @@ class SyncAccurateUsers extends Command
             $customers = $response->json()['d'] ?? [];
             if (empty($customers)) break;
 
+            $ids = collect($customers)->pluck('id');
+
+            $batches = $ids->chunk(50);
+
+            $withProvince = [];
+
+            foreach ($batches as $batch) {
+                $detailResponses = Http::pool(fn($pool) =>
+                    $batch->map(fn($id) =>
+                        $pool->withHeaders([
+                            'Authorization' => 'Bearer ' . $token,
+                            'X-Session-ID' => $session])
+                            ->get("https://public.accurate.id/accurate/api/customer/detail.do?id={$id}")
+                    )->all()
+                );
+
+                foreach ($detailResponses as $resp) {
+                    if ($resp->successful()) {
+                        $d = $resp->json()['d'] ?? [];
+                        $withProvince[$d['id']] = $d['shipProvince'] ?? null;
+                    }
+                }
+                // opsi: jeda kecil kalau perlu throttle
+                usleep(200_000);
+            }
+
             foreach ($customers as $cust) {
-                $accurateId = $cust['id'] ?? null;
-                $email = $cust['email'] ?? null;
+                $accurateId = $cust['id'];
+                $email      = $cust['email'] ?? null;
+                // ambil province dari mapping
+                $province   = $withProvince[$accurateId] ?? null;
+
                 if (!$accurateId || !$email) continue;
 
                 if (!empty($cust['suspended']) && $cust['suspended'] === true) {
                     User::where('accurate_id', $accurateId)
-                        ->orWhere(function ($q) use ($email) {
-                            $q->whereNull('accurate_id')->where('email', $email);
-                        })->delete();
+                        ->orWhere(fn($q) => $q->whereNull('accurate_id')->where('email', $email))
+                        ->delete();
                     continue;
                 }
 
                 $user = User::where('accurate_id', $accurateId)
-                    ->orWhere(function ($q) use ($email) {
-                        $q->whereNull('accurate_id')->where('email', $email);
-                    })->first();
+                    ->orWhere(fn($q) => $q->whereNull('accurate_id')->where('email', $email))
+                    ->first();
 
                 if (!$user) {
                     $user = new User();
@@ -93,10 +120,12 @@ class SyncAccurateUsers extends Command
                 }
 
                 $user->accurate_id = $accurateId;
-                $user->name = $cust['name'] ?? null;
-                $user->email = $email;
-                $user->status = 'reseller';
+                $user->name        = $cust['name'];
+                $user->email       = $email;
+                $user->province    = $province;      // <— set shipProvince di sini
+                $user->status      = 'reseller';
                 $user->save();
+
                 $totalUsers++;
             }
 
@@ -179,7 +208,7 @@ class SyncAccurateUsers extends Command
                 'name' => 'Administator',
                 'email' => 'admin@gmail.com',
                 'password' => bcrypt('twincom@admin123'),
-                'status' => 'admin',
+                'status' => 'admin'
             ]);
             $newUsers++;
             $totalUsers++;

@@ -81,7 +81,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center">Belum ada aktivitas.</td>
+                            <td colspan="5" class="text-center">Belum ada aktivitas.</td>
                         </tr>
                     @endforelse
                 </tbody>
