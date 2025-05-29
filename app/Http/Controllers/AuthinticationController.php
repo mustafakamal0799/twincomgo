@@ -38,7 +38,7 @@ class AuthinticationController extends Controller
                 activity()
                 ->causedBy(Auth::user())
                 ->inLog(auth()->user()->name)
-                ->log('Reseller dengan email ' . auth()->user()->email . ' sedang melakukan login');
+                ->log('Karyawan dengan email ' . auth()->user()->email . ' sedang melakukan login');
                 return redirect()->route('items.index');
             }else {
                 return redirect()->route('auth.login');

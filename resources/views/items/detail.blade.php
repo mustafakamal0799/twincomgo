@@ -28,10 +28,17 @@
     $totalTscStok = collect($tscWarehouses)->sum(function($w) use ($stokNew) {
         return $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0;
     });
+    
+    $totalResellerStok = collect($resellerWarehouses)->sum(function($w) use ($stokNew) {
+        return $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0;
+    });
+
+    $totalTransitStok = collect($transitWarehouses)->sum(function($w) use ($stokNew) {
+        return $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0;
+    });
 
     $filteredNonKonsinyasi = collect($nonKonsinyasiWarehouses)->filter(function ($data) use ($stokNew) {
-        $stok = $stokNew[$data['id']]['balance'] ?? $data['balance'];
-        return $stok > 0;
+        return ($stokNew[$data['id']]['balance'] ?? 0) > 0;
     })->values();
 
     // Tetapkan harga default dan harga final (hasil penyesuaian atau default)
@@ -95,17 +102,20 @@
                     @if ($status === 'karyawan' || $status === 'admin')
                     <div class="row align-items-end mb-4">
                             <div class="col-md-4">                                
-                                <form method="GET">
-                                    <label for="branch_id" class="form-label fw-semibold">Pilih Harga Cabang</label>
-                                    <select name="branch_id" id="branch_id" onchange="this.form.submit()" class="form-select">
+                                <label for="branch_id" class="form-label fw-semibold">Pilih Harga Cabang</label>
+                                <div class="d-flex align-items-center">
+                                    <select name="branch_id" id="branch_id" class="form-select me-2">
                                         <option value="">Semua Cabang</option>
                                         @foreach($allBranches as $branch)
-                                            <option value="{{ $branch['id'] }}" {{ $selectedBranchId == $branch['id'] ? 'selected' : '' }}>
+                                            <option value="{{ $branch['name'] }}" {{ $selectedBranchId == $branch['name'] ? 'selected' : '' }}>
                                                 {{ $branch['name'] }}
                                             </option>
                                         @endforeach
                                     </select>
-                                </form>
+                                    <div id="priceSpinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status" style="display: none;">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="filterHargaGaransi" class="form-label fw-semibold">Tampilkan Harga</label>
@@ -182,17 +192,13 @@
                                         <tr id="hargaResellerWrapper">
                                             <th class="text-start" style="width: 150px;">Harga Reseller</th>
                                             <td style="width: 5px">:</td>
-                                             @if ($discItem)
-                                                    <p>Diskon: {{ $discItem }}%</p>
-                                                @endif
                                             <td>
-                                                @if ($isResellerPriceAdjusted)
-                                                    <span>
-                                                        Rp {{ number_format($finalResellerPrice, 0, ',', '.') }} 
-                                                    </span>
-                                                @else
-                                                    Rp {{ number_format($resellerPrice, 0, ',', '.') }}
+                                                <span id="hargaResellerValue">
+                                                Rp {{ number_format($resellerPrice, 0, ',', '.') }}
+                                                @if ($discItem !== null)
+                                                    <p style="margin:0; color: red;">Diskon: {{ $discItem }}%</p>
                                                 @endif
+                                                </span>
                                             </td>
                                         </tr>
                                         <tr id="garansiResellerWrapper">
@@ -204,13 +210,12 @@
                                             <th class="text-start" style="width: 150px;">Harga User</th>
                                             <td style="width: 5px">:</td>
                                             <td>
-                                                @if ($isUserPriceAdjusted)
-                                                    <span>
-                                                        Rp {{ number_format($finalUserPrice, 0, ',', '.') }}  {{$discItem}}
-                                                    </span>
-                                                @else
-                                                    Rp {{ number_format($userPrice, 0, ',', '.') }}
+                                                <span id="hargaUserValue">
+                                                Rp {{ number_format($userPrice, 0, ',', '.') }}
+                                                @if ($discItem !== null && $discItem > 0)
+                                                    <p style="margin:0; color: red;">Diskon: {{ $discItem }}%</p>
                                                 @endif
+                                                </span>
                                             </td>
                                         </tr>
                                         <tr id="garansiUserWrapper">
@@ -240,7 +245,7 @@
                                             <button type="button" class="btn btn-sm btn-outline-secondary"
                                                 onclick="copyToClipboard('{{ $item['id'] }}')">Copy</button>
                                         </li>
-                                        <li class="d-flex align-items-center mb-2" id="hargaResellerWrapper">
+                                        <li class="d-flex mb-2" id="hargaResellerWrapper">
                                             <strong class="me-3" style="width: 120px;">Harga</strong>
                                             <span>:</span>
                                             <span class="ms-1 text-decoration-line-through text-muted">Rp {{ number_format($finalUserPrice, 0, ',', '.') }}</span>
@@ -289,11 +294,11 @@
                         @foreach ($filteredNonKonsinyasi as $data)
                             <tr>
                                 <td>{{ $data['name'] }}</td>
-                                <td class="text-center">
+                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
                                     {{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}
                                 </td>
                                 @if ($loop->first)
-                                    <td class="text-center" rowspan="{{ count($nonKonsinyasiWarehouses) }}">
+                                    <td class="text-center" rowspan="{{ count($nonKonsinyasiWarehouses) }}" id="totalNonKonsinyasiStok">
                                         {{ number_format($totalNonKonsinyasiStok) }}
                                     </td>
                                 @endif
@@ -334,7 +339,7 @@
                                 <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
                                 
                                 @if ($loop->first)
-                                    <td class="text-center" rowspan="{{ $filteredTsc->count() }}">
+                                    <td class="text-center" rowspan="{{ $filteredTsc->count() }}" id="tscwarehouseTable">
                                         {{ number_format($totalTscStok) }}
                                     </td>
                                 @endif
@@ -372,8 +377,82 @@
                                 <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
                                 
                                 @if ($loop->first)
-                                    <td class="text-center" rowspan="{{ $filteredKonsinyasi->count() }}">
+                                    <td class="text-center" rowspan="{{ $filteredKonsinyasi->count() }}" id="totalKonsinyasiTable">
                                         {{ number_format($totalKonsinyasiStok) }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    {{-- GUDANG RESELLER --}}
+    @php
+        $filteredReseller = collect($resellerWarehouses)->filter(function ($data) use ($stokNew) {
+            $stok = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+            return $stok > 0;
+        })->values();
+    @endphp
+    @if ($filteredReseller->count())
+        <div class="mb-4" id="tscwarehouseTable">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th>Reseller</th>
+                            <th>Stok</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($filteredReseller as $data)
+                            <tr>
+                                <td>{{ $data['name'] }}</td>
+                                <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                
+                                @if ($loop->first)
+                                    <td class="text-center" rowspan="{{ $filteredReseller->count() }}" id="resellerwarehouseTable">
+                                        {{ number_format($totalResellerStok) }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @php
+        $filteredTransit = collect($transitWarehouses)->filter(function ($data) use ($stokNew) {
+            $stok = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+            return $stok > 0;
+        })->values();
+    @endphp
+
+    @if ($filteredTransit->count())
+        <div class="mb-4" id="transitwarehouseTable">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th>Transit</th>
+                            <th>Stok</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($filteredTransit as $data)
+                            <tr>
+                                <td>{{ $data['name'] }}</td>
+                                <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                
+                                @if ($loop->first)
+                                    <td class="text-center" rowspan="{{ $filteredTransit->count() }}" id="transitwarehouseTable">
+                                        {{ number_format($totalTransitStok) }}
                                     </td>
                                 @endif
                             </tr>
@@ -401,11 +480,11 @@
                         @foreach ($filteredNonKonsinyasi as $data)
                             <tr>
                                 <td>{{ $data['name'] }}</td>
-                                <td class="text-center">
+                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
                                     {{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}
                                 </td>
                                 @if ($loop->first)
-                                    <td class="text-center" rowspan="{{ count($nonKonsinyasiWarehouses) }}">
+                                    <td class="text-center" rowspan="{{ count($nonKonsinyasiWarehouses) }}" id="totalNonKonsinyasiStok">
                                         {{ number_format($totalNonKonsinyasiStok) }}
                                     </td>
                                 @endif
@@ -415,7 +494,7 @@
                 </table>
             @else
                 <div class="text-center p-3 border rounded bg-light text-muted">
-                    Tidak ada data stok
+                    Stok tidak ada!
                 </div>
             @endif
         </div>
@@ -445,7 +524,7 @@
                                 <td class="text-center">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
                                 
                                 @if ($loop->first)
-                                    <td class="text-center" rowspan="{{ $filteredKonsinyasi->count() }}">
+                                    <td class="text-center" rowspan="{{ $filteredKonsinyasi->count() }}" id="totalKonsinyasiTable">
                                         {{ number_format($totalKonsinyasiStok) }}
                                     </td>
                                 @endif
@@ -466,6 +545,81 @@
         if (!sessionStorage.getItem('lastPage')) {
             sessionStorage.setItem('lastPage', document.referrer);
         }
+
+        // Event listener untuk select branch_id
+        const branchSelect = document.getElementById('branch_id');
+        branchSelect.addEventListener('change', function () {
+            const branchId = this.value;
+            const itemId = {{ $item['id'] }};
+            const hargaResellerValue = document.getElementById('hargaResellerValue');
+            const hargaUserValue = document.getElementById('hargaUserValue');
+            const spinner = document.getElementById('priceSpinner');
+
+if (!branchId) {
+    // Jika pilih "Semua Cabang", reset harga ke default tanpa request AJAX
+    hargaResellerValue.textContent = `Rp ${Number({{ $resellerPrice }}).toLocaleString('id-ID')}`;
+    hargaUserValue.innerHTML = `Rp ${Number({{ $userPrice }}).toLocaleString('id-ID')}`;
+    @if ($discItem !== null && $discItem > 0)
+        hargaUserValue.innerHTML += `<p style="margin:0; color: red;">Diskon: {{ $discItem }}%</p>`;
+    @endif
+    return;
+}
+
+            spinner.style.display = 'inline-block';
+            branchSelect.disabled = true;
+
+            fetch(`{{ url('/items/adjusted-price-ajax') }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    branch_name: branchId,
+                    item_id: itemId
+                })
+            })
+            .then(response => response.json())
+.then(data => {
+    console.log('Response AJAX adjusted-price-ajax:', data);
+    if (data.success) {
+        if (data.adjustedPrice !== null && data.adjustedPrice > 0) {
+            hargaUserValue.textContent = `Rp ${Number(data.adjustedPrice).toLocaleString('id-ID')}`;
+            // Tampilkan diskon jika ada
+            if (data.discItem !== null && data.discItem > 0) {
+                if (!hargaUserValue.querySelector('p')) {
+                    const discP = document.createElement('p');
+                    discP.style.margin = '0';
+                    discP.style.color = 'red';
+                    discP.textContent = `Diskon: ${data.discItem}%`;
+                    hargaUserValue.appendChild(discP);
+                } else {
+                    hargaUserValue.querySelector('p').textContent = `Diskon: ${data.discItem}%`;
+                }
+            } else {
+                const discP = hargaUserValue.querySelector('p');
+                if (discP) {
+                    discP.remove();
+                }
+            }
+        } else {
+            console.log('Adjusted price is null or zero, fallback to default user price');
+            hargaUserValue.textContent = `Rp ${Number({{ $userPrice }}).toLocaleString('id-ID')}`;
+        }
+    } else {
+        console.log('Data success false, fallback to default user price');
+        hargaUserValue.textContent = `Rp ${Number({{ $userPrice }}).toLocaleString('id-ID')}`;
+    }
+})
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat mengambil harga penyesuaian.');
+            })
+            .finally(() => {
+                spinner.style.display = 'none';
+                branchSelect.disabled = false;
+            });
+        });
     });
 
     function saveReferrerAndReload() {
@@ -498,6 +652,7 @@
 
         const nonKonsinyasiTable = document.getElementById('nonKonsinyasiTable');
         const konsinyasiTable = document.getElementById('konsinyasiTable');
+        const tscwarehouseTable = document.getElementById('tscwarehouseTable');
 
         if (value === 'semua') {
             if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'block';
@@ -545,6 +700,171 @@
         }
     });
 
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const itemId = {{ $item['id'] }};
+        const stokNewElements = {};
+
+        // Cache stokNew elements by warehouse id for quick update
+        @foreach ($konsinyasiWarehouses as $w)
+            stokNewElements[{{ $w['id'] }}] = document.querySelector(`#konsinyasiTable td[data-warehouse-id="{{ $w['id'] }}"]`);
+        @endforeach
+        @foreach ($nonKonsinyasiWarehouses as $w)
+            stokNewElements[{{ $w['id'] }}] = document.querySelector(`#nonKonsinyasiTable td[data-warehouse-id="{{ $w['id'] }}"]`);
+        @endforeach
+        @foreach ($tscWarehouses as $w)
+            stokNewElements[{{ $w['id'] }}] = document.querySelector(`#tscwarehouseTable td[data-warehouse-id="{{ $w['id'] }}"]`);
+        @endforeach
+
+function updateStokTable(stokNew) {
+    console.log('updateStokTable called with:', stokNew);
+    
+    for (const [warehouseId, data] of Object.entries(stokNew)) {
+        console.log(`Updating warehouse ${warehouseId} with balance ${data.balance}`);
+        const td = stokNewElements[warehouseId];
+        if (td) {
+            console.log(`Updating element for warehouse ${warehouseId} with balance ${data.balance}`);
+            // Pastikan nilai 0 juga diupdate
+            td.textContent = data.balance !== null && data.balance !== undefined ? new Intl.NumberFormat('id-ID').format(data.balance) : '0';
+            // Sembunyikan baris jika stok 0, tampilkan jika > 0
+            const tr = td.closest('tr');
+            if (tr) {
+                if (data.balance > 0) {
+                    tr.style.display = '';
+                } else {
+                    tr.style.display = 'none';
+                }
+            }
+        } else {
+            console.warn(`No table cell found for warehouse ${warehouseId}`);
+        }
+    }
+    updateTotalStok();
+}
+
+        function updateTotalStok() {
+            let totalNonKonsinyasi = 0;
+            let totalTsc = 0;
+            let totalKonsinyasi = 0;
+            let totalReseller = 0;
+            let totalTransit = 0;  
+
+
+            @foreach ($nonKonsinyasiWarehouses as $w)
+            {
+                let nonKonsinyasiTd = stokNewElements[{{ $w['id'] }}];
+                if (nonKonsinyasiTd) {
+                    let val = nonKonsinyasiTd.textContent.replace(/\./g, '');
+                    let parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                        totalNonKonsinyasi += parsed;
+                    }
+                }
+            }
+            @endforeach
+
+            @foreach ($tscWarehouses as $w)
+            {
+                let tscTd = stokNewElements[{{ $w['id'] }}];
+                if (tscTd) {
+                    let val = tscTd.textContent.replace(/\./g, '');
+                    let parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                        totalTsc += parsed;
+                    }
+                }
+            }
+            @endforeach
+
+            @foreach ($konsinyasiWarehouses as $w)
+            {
+                let konsinyasiTd = stokNewElements[{{ $w['id'] }}];
+                if (konsinyasiTd) {
+                    let val = konsinyasiTd.textContent.replace(/\./g, '');
+                    let parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                        totalKonsinyasi += parsed;
+                    }
+                }
+            }
+            @endforeach
+
+            @foreach ($resellerWarehouses as $w)
+            {
+                let resellerTd = stokNewElements[{{ $w['id'] }}];
+                if (resellerTd) {
+                    let val = resellerTd.textContent.replace(/\./g, '');
+                    let parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                        totalReseller += parsed;
+                    }
+                }
+            }
+            @endforeach
+
+            @foreach ($transitWarehouses as $w)
+            {
+                let transitTd = stokNewElements[{{ $w['id'] }}];
+                if (transitTd) {
+                    let val = transitTd.textContent.replace(/\./g, '');
+                    let parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                        totalTransit += parsed;
+                    }
+                }
+            }
+            @endforeach
+
+            const totalNonKonsinyasiEl = document.getElementById('totalNonKonsinyasiStok');
+            if (totalNonKonsinyasiEl) {
+                totalNonKonsinyasiEl.textContent = new Intl.NumberFormat('id-ID').format(totalNonKonsinyasi);
+            }
+
+            const totalTscEl = document.getElementById('#tscwarehouseTable');
+            if (totalTscEl) {
+                totalTscEl.textContent = new Intl.NumberFormat('id-ID').format(totalTsc);
+            }
+
+            const totalKonsinyasiEl = document.getElementById('#konsinyasiTable');
+            if (totalKonsinyasiEl) {
+                totalKonsinyasiEl.textContent = new Intl.NumberFormat('id-ID').format(totalKonsinyasi);
+            }
+
+            const totalResellerEl = document.getElementById('#resellerwarehouseTable');
+            if (totalResellerEl) {
+                totalResellerEl.textContent = new Intl.NumberFormat('id-ID').format(totalReseller);
+            }
+
+            const totalTransitEl = document.getElementById('#transitwarehouseTable');
+            if (totalTransitEl) {
+                totalTransitEl.textContent = new Intl.NumberFormat('id-ID').format(totalTransit);
+            }
+        }
+
+        // Fetch sales order stock via AJAX and update stokNew
+        fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ item_id: itemId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('AJAX response from salesorder-stock-ajax:', data);
+            if (data.success) {
+                updateStokTable(data.stokNew);
+            } else {
+                console.error('Gagal mengambil data stok sales order:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saat mengambil data stok sales order:', error);
+        });
+    });
 </script>
 
 @endsection

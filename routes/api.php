@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/accurate/customers', [AccurateController::class, 'getCustomers']);
 Route::get('/accurate/items', [AccurateController::class, 'getItems']);
 
-Route::middleware('auth:sanctum')->get('/accurate/items/detail/{id}', [AccurateController::class, 'getItemDetailsApi']);
+Route::middleware('auth:sanctum')->get('/accurate/items/detail/{id}', [AccurateController::class, 'getItemDetails']);
 
 
 Route::post('/login', [ApiLoginController::class, 'login']);

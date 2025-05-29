@@ -100,5 +100,9 @@ Route::post('/sync/customers', [AccurateSyncController::class, 'syncCustomers'])
 
 Route::get('/selling-price', [ItemController::class, 'getSellingPrice']);
 
+Route::post('/items/adjusted-price-ajax', [ItemController::class, 'getAdjustedPriceAjax'])->name('items.adjusted-price-ajax');
+Route::post('/items/salesorder-stock-ajax', [ItemController::class, 'getSalesOrderStockAjax'])->name('items.salesorder-stock-ajax');
+Route::get('/items/search-items-ajax', [ItemController::class, 'searchItemsAjax'])->name('items.search-items-ajax');
+
 
  
