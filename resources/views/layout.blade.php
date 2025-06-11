@@ -22,6 +22,13 @@
             min-height: 100vh; /* Full screen */
         }
 
+        .btn-secondary.active, 
+        .btn-secondary:active {
+            background-color: #6c757d !important; /* warna asli btn-secondary */
+            border-color: #6c757d !important;
+            color: #fff !important;
+        }
+
         .logout-btn {
             font-size: 14px;
             padding: 6px 10px;
@@ -72,7 +79,7 @@
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-2 person-icon"></i>
-                        <strong>{{ Auth::user()->name }}</strong>
+                        <strong style="margin-right: 10px; margin-left: 10px">{{ Auth::user()->name }}</strong>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
                         <li>
@@ -88,22 +95,26 @@
                 <hr>
                 <ul class="nav nav-pills flex-column mb-auto">
                     <li class="nav-item">
-                        <a href="{{route('admin.index')}}" class="nav-link text-white">
+                        <a href="{{route('admin.index')}}"  class="nav-link text-white mb-2 text-start btn btn-secondary
+                            {{ Request::routeIs('admin.index') ? 'active' : '' }}">
                             <i class="bi bi-speedometer2 me-2"></i> Dashboard
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('admin.user')}}" class="nav-link text-white">
+                        <a href="{{route('admin.user')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
+                            {{ Request::routeIs('admin.user') ? 'active' : '' }}">
                             <i class="bi bi-people me-2"></i> Kelola Pengguna
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('admin.log')}}" class="nav-link text-white">
+                        <a href="{{route('admin.log')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
+                            {{ Request::routeIs('admin.log') ? 'active' : '' }}">
                             <i class="bi bi-archive me-2"></i> Log Aktivitas
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('items.index')}}" class="nav-link text-white">
+                        <a href="{{route('items.index')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
+                            {{ Request::routeIs('items.index') ? 'active' : '' }}">
                             <i class="bi bi-box-seam me-2"></i> Stok Item
                         </a>
                     </li>

@@ -94,7 +94,7 @@
 
                 {{-- Pagination --}}
                 <div>
-                    {{ $activities->withQueryString()->links('pagination::bootstrap-5') }}
+                    {{ $activities->withQueryString()->links('vendor.pagination.simple-bootstrap-5') }}
                 </div>
             </div>
         </div>

@@ -28,13 +28,13 @@ class AuthinticationController extends Controller
                 ->inLog(auth()->user()->name)
                 ->log('Admin dengan email ' . auth()->user()->email . ' sedang melakukan login');
                 return redirect()->route('admin.index');
-            }elseif($user->status === 'reseller') {
+            }elseif($user->status === 'RESELLER') {
                 activity()
                 ->causedBy(Auth::user())
                 ->inLog(auth()->user()->name)
                 ->log('Reseller dengan email ' . auth()->user()->email . ' sedang melakukan login');
                 return redirect()->route('items.index');
-            }elseif($user->status === 'karyawan') {
+            }elseif($user->status === 'KARYAWAN') {
                 activity()
                 ->causedBy(Auth::user())
                 ->inLog(auth()->user()->name)

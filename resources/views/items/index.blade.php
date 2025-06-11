@@ -108,10 +108,9 @@
     <form action="{{ route('items.index') }}" method="GET">
         <div class="row g-2">
             {{-- Group Kategori + Stok Ready --}}
-            <div class="col-lg-4 col-md-5 col-12 kategori-stok-group">
-                <div class="row g-2">
+            
                     {{-- Pilih Kategori --}}
-                    <div class="col-6">
+                    <div class="col">
                         <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
                         <select name="id" id="itemCategoryId" class="form-select">
                             <option value="">Semua Kategori</option>
@@ -124,30 +123,32 @@
                     </div>
 
                     {{-- Pilih Stok Ready --}}
-                    <div class="col-6">
+                    <div class="col">
                         <label for="stok_ada" class="form-label">Stok Ready</label>
                         <select class="form-select" name="stok_ada" id="stok_ada">
                             <option value="" {{ request('stok_ada') === '' ? 'selected' : '' }}>Tidak</option>
                             <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>Ya</option>
                         </select>
                     </div>
+                 <div class="col">
+                    <label for="q" class="form-label">
+                            Gunakan <code>%</code> untuk kombinasi kata pencarian.
+                    </label>
+                    <input type="text" name="q" id="q" class="form-control" placeholder="Kode / Nama Barang" value="{{ request('q') }}">
+                    
                 </div>
-            </div>
+
+                <div class="col-lg-1 col-md-2 col-12 d-flex align-items-end gap-2 tombol-aksi">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="{{ route('items.index') }}" class="btn btn-success w-100">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
 
             {{-- Input Pencarian --}}
-            <div class="col-lg-4 col-md-5 col-12">
-                <label for="q" class="form-label">Cari Barang</label>
-                <input type="text" name="q" id="q" class="form-control" placeholder="Contoh: Laptop%advan, Gunakan % untuk kombinasi kata pencarian" value="{{ request('q') }}">
-            </div>
-
-            <div class="col-lg-1 col-md-2 col-12 d-flex align-items-end gap-2 tombol-aksi">
-                <button type="submit" class="btn btn-secondary w-100">
-                    <i class="bi bi-search"></i>
-                </button>
-                <a href="{{ route('items.index') }}" class="btn btn-success w-100">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </a>
-            </div>
+           
         </div>
     </form>
 </div>

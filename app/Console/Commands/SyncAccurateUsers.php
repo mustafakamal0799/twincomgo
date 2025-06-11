@@ -123,7 +123,7 @@ class SyncAccurateUsers extends Command
                 $user->name        = $cust['name'];
                 $user->email       = $email;
                 $user->province    = $province;      // <— set shipProvince di sini
-                $user->status      = 'reseller';
+                $user->status      = 'RESELLER';
                 $user->save();
 
                 $totalUsers++;
@@ -190,7 +190,7 @@ class SyncAccurateUsers extends Command
                 $user->accurate_id = $accurateId;
                 $user->name = $employee['name'] ?? null;
                 $user->email = $email;
-                $user->status = 'karyawan';
+                $user->status = 'KARYAWAN';
                 $user->save();
                 $totalUsers++;
             }
@@ -204,12 +204,12 @@ class SyncAccurateUsers extends Command
         // ================================
         if (!User::where('email', 'admin@gmail.com')->exists()) {
             $this->info('🔧 Menambahkan akun admin default...');
-            User::create([
-                'name' => 'Administator',
-                'email' => 'admin@gmail.com',
-                'password' => bcrypt('twincom@admin123'),
-                'status' => 'admin'
-            ]);
+            $user->accurate_id = $accurateId;
+            $user->name = 'Administrator';
+            $user->email = 'admin@gmail.com';
+            $user->password = bcrypt('twincom@123');
+            $user->status = 'admin';
+            $user->save();
             $newUsers++;
             $totalUsers++;
         }

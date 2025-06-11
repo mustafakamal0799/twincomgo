@@ -33,6 +33,8 @@ Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logou
 Route::middleware(['auth'])->group(function () {
     Route::get('/item', [ItemController::class, 'index'])->name('items.index');
     Route::get('/item-detail/{id}', [ItemController::class, 'getItemDetails'])->name('items.detail');
+    Route::get('/item-detail/{id}/export-pdf', [ItemController::class, 'exportPdf'])->name('items.export-pdf');
+    Route::post('/item-detail/{id}/export-pdf', [ItemController::class, 'exportPdf'])->name('items.export-pdf.post');
 });
 
 //Reset Password
@@ -103,6 +105,10 @@ Route::get('/selling-price', [ItemController::class, 'getSellingPrice']);
 Route::post('/items/adjusted-price-ajax', [ItemController::class, 'getAdjustedPriceAjax'])->name('items.adjusted-price-ajax');
 Route::post('/items/salesorder-stock-ajax', [ItemController::class, 'getSalesOrderStockAjax'])->name('items.salesorder-stock-ajax');
 Route::get('/items/search-items-ajax', [ItemController::class, 'searchItemsAjax'])->name('items.search-items-ajax');
+Route::post('/items/matching-invoices-ajax', [ItemController::class, 'getMatchingInvoicesAjax'])->name('items.matching-invoices-ajax');
+Route::post('/items/adjusted-price-reseller-ajax', [ItemController::class, 'getAdjustedPriceResellerAjax'])->name('items.adjusted-price-reseller-ajax');
+
+Route::get('/test/invoice', [TesterController::class, 'invoice']);
 
 
  

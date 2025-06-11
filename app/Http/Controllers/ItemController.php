@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ItemController extends Controller
 {
@@ -135,11 +136,28 @@ class ItemController extends Controller
 
     protected function fetchSalesInvoiceList($headers)
     {
-        $response = Http::withHeaders($headers)->get("https://public.accurate.id/accurate/api/sales-invoice/list.do?id=");
-        if (!$response->successful()) {
-            return [];
-        }
-        return $response->json()['d'] ?? [];
+        $saleInvoiceList = [];
+        $page = 1;
+
+        do {
+            $response = Http::timeout(100)->withHeaders($headers)->get("https://public.accurate.id/accurate/api/sales-invoice/list.do", [
+                'sp.page' => $page,
+                'sp.pageSize' => 100,
+                'fields' => 'id,number',
+                'filter.reverseInvoice' => 'true',
+            ]);
+
+            if (!$response->successful()) break;
+
+            $data = $response->json();
+
+            $saleInvoiceList = array_merge($saleInvoiceList, $data['d'] ?? []);
+            $hasNext = ($page * 100) < ($data['sp']['rowCount'] ?? 0);
+            $page++;
+
+        } while ($hasNext);
+
+        return $saleInvoiceList;
     }
 
     protected function fetchSalesOrderList($headers)
@@ -170,9 +188,10 @@ class ItemController extends Controller
         return $salesOrderList;
     }
 
+
     protected function fetchSalesOrderDetailsBatch($salesOrderList, $headers, $itemIdUtama, &$stokNew)
     {
-        $batchSize = 8;
+        $batchSize = 13;
         $salesOrderChunks = array_chunk($salesOrderList, $batchSize);
 
         foreach ($salesOrderChunks as $chunk) {
@@ -203,8 +222,13 @@ class ItemController extends Controller
                         continue;
                     }
 
-                    $warehouseId = $itemDetail['warehouseId'];
+                    $warehouseId = $itemDetail['warehouseId'] ?? null;
                     $quantity = (float) $itemDetail['availableQuantity'];
+
+                    if ($warehouseId === null) {
+                        Log::warning("Gudang ID tidak ditemukan untuk item di SO #{$detail['number']}");
+                        continue;
+                    }
 
                     if (isset($stokNew[$warehouseId])) {
                         $stokNew[$warehouseId]['balance'] -= $quantity;
@@ -214,51 +238,107 @@ class ItemController extends Controller
                     }
                 }
             }
-            // usleep(500000); // Delay 2 detik antara batch untuk menghindari rate limit
+            usleep(500000); // Delay 2 detik antara batch untuk menghindari rate limit
             Log::info("Batch selesai");
         }
     }
 
-    protected function fetchMatchingInvoices($salesInvoiceList, $headers, $itemIdUtama)
+    protected function fetchMatchingInvoices($salesInvoiceList, $headers, $itemIdUtama, &$stokNew)
     {
-        $matchingInvoices = [];
+        $batchSize = 10;
+        $salesInvoiceChunks = array_chunk($salesInvoiceList, $batchSize);
 
-        $salesInvoiceIds = collect($salesInvoiceList)->pluck('id');
-        $batches = $salesInvoiceIds->chunk(50);
-
-        foreach ($batches as $batch) {
+        foreach ($salesInvoiceChunks as $batch) {
             $responses = Http::pool(fn ($pool) =>
-                $batch->map(fn ($id) =>
-                    $pool->withHeaders($headers)
-                        ->timeout(60)
-                        ->retry(3, 1000)
-                        ->get("https://public.accurate.id/accurate/api/sales-invoice/detail.do?id=$id")
+                collect($batch)->map(fn ($invoice) =>
+                    $pool->timeout(100)->withHeaders($headers)
+                        ->get("https://public.accurate.id/accurate/api/sales-invoice/detail.do?id=" . $invoice['id'])
                 )->all()
             );
+            Log::info("Memproses batch invoice dengan " . count($batch) . " item");
+            if (count($responses) === 0) {
+                Log::warning("Tidak ada respons untuk batch invoice ID: " . implode(', ', array_column($batch, 'id')));
+                continue;
+            }
+            Log::info("Jumlah respons: " . count($responses));
 
             foreach ($responses as $index => $response) {
-                if ($response->successful()) {
-                    $invoiceDetail = $response->json()['d'];
-                    $invoiceId = $batch->values()[$index];
+                if (!$response->successful()) {
+                    Log::warning("Gagal ambil detail invoice ID: {$batch[$index]['id']}");
+                    continue;
+                }
 
-                    if (isset($invoiceDetail['reverseInvoice']) && $invoiceDetail['reverseInvoice'] === true) {
-                        foreach ($invoiceDetail['detailItem'] as $itemInvoice) {
-                            if (isset($itemInvoice['item']['id']) && $itemInvoice['item']['id'] == $itemIdUtama) {
-                                $matchingInvoices[] = [
-                                    'invoice_id' => $invoiceId,
-                                    'quantity' => (float) $itemInvoice['quantity'],
-                                    'warehouse' => $itemInvoice['warehouse']['id'] ?? null
-                                ];
-                                break;
+                $invoiceDetail = $response->json()['d'];
+                $invoiceId = $batch[$index]['id'];
+
+                if (isset($invoiceDetail['reverseInvoice']) && $invoiceDetail['reverseInvoice'] === true) {
+                    foreach ($invoiceDetail['detailItem'] as $itemInvoice) {
+                        if (!isset($itemInvoice['item']['id']) || $itemInvoice['item']['id'] != $itemIdUtama) {
+                            continue;
+                        }
+
+                        $warehouseId = $itemInvoice['warehouseId'] ?? null;
+                        $quantity = (float) $itemInvoice['quantity'];
+
+                        if ($warehouseId === null) {
+                            Log::warning("Gudang ID tidak ditemukan untuk item di SI #{$invoiceDetail['number']}");
+                            continue;
+                        }
+
+                        if (isset($stokNew[$warehouseId])) {
+                            if ($stokNew[$warehouseId]['balance'] <= 0) {
+                                Log::warning("Stok Gudang ID: $warehouseId tidak cukup untuk pengurangan di SI #{$invoiceDetail['number']}");
+                            } elseif ($stokNew[$warehouseId]['balance'] < $quantity) {
+                                Log::warning("Stok Gudang ID: $warehouseId kurang dari qty pengurangan di SI #{$invoiceDetail['number']}. Stok: {$stokNew[$warehouseId]['balance']}, Qty: $quantity");
+                                $stokNew[$warehouseId]['balance'] = 0;
+                            } else {
+                                $stokNew[$warehouseId]['balance'] -= $quantity;
+                                Log::info("✔️ Dikurangi dari Gudang ID: $warehouseId | Qty: $quantity | Sisa: {$stokNew[$warehouseId]['balance']} | SI#: {$invoiceDetail['number']}");
                             }
+                        } else {
+                            // Tambahkan warehouseId baru dengan balance 0 agar tidak error
+                            $stokNew[$warehouseId] = [
+                                'name' => 'Unknown Warehouse',
+                                'balance' => 0,
+                            ];
+                            Log::warning("❌ Gudang ID: $warehouseId tidak ditemukan di data stok, ditambahkan dengan balance 0 | SI#: {$invoiceDetail['number']}");
                         }
                     }
                 }
             }
-        
+            usleep(500000);
+            Log::info("Batch invoice selesai");
+        }
+    }
+
+    public function getMatchingInvoicesAjax(Request $request)
+    {
+        $itemIdUtama = $request->input('item_id');
+        if (!$itemIdUtama) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item ID harus diisi.'
+            ], 400);
         }
 
-        return $matchingInvoices;
+        $token = env('ACCURATE_API_TOKEN');
+        $session = env('ACCURATE_SESSION');
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID' => $session
+        ];
+
+        // Inisialisasi array stokNew kosong
+        $stokNew = [];
+
+        $salesInvoiceList = $this->fetchSalesInvoiceList($headers);
+        $this->fetchMatchingInvoices($salesInvoiceList, $headers, $itemIdUtama, $stokNew);
+
+        return response()->json([
+            'success' => true,
+            'stokNew' => $stokNew,
+        ]);
     }
 
     protected function fetchAllBranches($headers)
@@ -326,44 +406,48 @@ class ItemController extends Controller
         });
     }
 
-protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
-{
-    if (!$selectedBranchId) {
-        return [null, null, null];
+    protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
+    {
+        if (!$selectedBranchId) {
+            return [null, null, null];
+        }
+
+        // Ambil nomor item (no) dari itemId
+        $itemDetailsResponse = Http::withHeaders($headers)
+            ->get("https://public.accurate.id/accurate/api/item/detail.do", ['id' => $itemId]);
+
+        if (!$itemDetailsResponse->successful()) {
+            Log::warning("fetchAdjustedPrice: Gagal ambil detail item untuk itemId $itemId");
+            return [null, null, null];
+        }
+
+        $itemDetails = $itemDetailsResponse->json()['d'] ?? null;
+        if (!$itemDetails || !isset($itemDetails['no'])) {
+            Log::warning("fetchAdjustedPrice: Nomor item tidak ditemukan untuk itemId $itemId");
+            return [null, null, null];
+        }
+
+        $itemNo = $itemDetails['no'];
+
+        $params = [
+            'no' => $itemNo,
+            'branchName' => $selectedBranchId,
+        ];
+
+        $response = Http::withHeaders($headers)
+            ->get("https://public.accurate.id/accurate/api/item/get-selling-price.do", $params);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            Log::info("fetchAdjustedPrice response data: " . json_encode($data));
+            $unitPrice = $data['d']['unitPrice'] ?? null;
+            $discItem = $data['d']['itemDiscPercent'] ?? null;
+            return [$unitPrice, $discItem];
+        }
+
+        Log::warning("fetchAdjustedPrice: Gagal ambil harga dari Accurate, status: {$response->status()}");
+        return [null, null];
     }
-
-    // Ambil nomor item (no) dari itemId
-    $itemDetailsResponse = Http::withHeaders($headers)
-        ->get("https://public.accurate.id/accurate/api/item/detail.do", ['id' => $itemId]);
-
-    if (!$itemDetailsResponse->successful()) {
-        return [null, null, null];
-    }
-
-    $itemDetails = $itemDetailsResponse->json()['d'] ?? null;
-    if (!$itemDetails || !isset($itemDetails['no'])) {
-        return [null, null, null];
-    }
-
-    $itemNo = $itemDetails['no'];
-
-    $params = [
-        'no' => $itemNo,
-        'branchName' => $selectedBranchId,
-    ];
-
-    $response = Http::withHeaders($headers)
-        ->get("https://public.accurate.id/accurate/api/item/get-selling-price.do", $params);
-
-    if ($response->successful()) {
-        $data = $response->json();
-        $unitPrice = $data['unitPrice'] ?? null;
-        $discItem = $data['itemDiscPercent'] ?? null;
-        return [$unitPrice, $discItem];
-    }
-
-    return [null, null];
-}
 
     public function getItemDetails($id)
     {
@@ -380,8 +464,6 @@ protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
         if (!$item) {
             return back()->withErrors('Gagal Mengambil Data Item');
         }
-
-        $salesInvoiceList = $this->fetchSalesInvoiceList($headers);
 
         // Detail Gudang dan Garansi Reseller
         $detailWarehouse = $item['detailWarehouseData'];
@@ -421,13 +503,13 @@ protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
             ]);
         });
 
-        if ($user->status === 'karyawan' || $user->status === 'admin') {
+        if (strtolower($user->status) === 'karyawan' || strtolower($user->status) === 'admin') {
             $filteredWarehouses = $konsinyasiWarehouses
                 ->merge($tscWarehouses)
                 ->merge($nonKonsinyasiWarehouses)
                 ->merge($transitWarehouses)
                 ->merge($resellerWarehouses);
-        } elseif ($user->status === 'reseller') {
+        } elseif (strtolower($user->status) === 'reseller') {
              $filteredWarehouses = $konsinyasiWarehouses
                 ->merge($nonKonsinyasiWarehouses);
         } else {
@@ -455,8 +537,6 @@ protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
         $userPrice = $sellingPrices
             ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'user')['price'] ?? 0;
 
-
-        // dd($discItem);
         return view('items.detail', [
             'item' => $item,
             'stokNew' => $stokNew,
@@ -474,14 +554,13 @@ protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
             'adjustedPrice' => $unitPrice,
             'resellerWarehouses' => $resellerWarehouses,
             'transitWarehouses' => $transitWarehouses,
-            // 'finalUserPrice' => $finalUserPrice,
-            // 'finalResellerPrice' => $finalResellerPrice,
         ]);
     }
 
     public function getSalesOrderStockAjax(Request $request)
     {
         $itemIdUtama = $request->input('item_id');
+
         $token = env('ACCURATE_API_TOKEN');
         $session = env('ACCURATE_SESSION');
 
@@ -527,16 +606,9 @@ protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
                 ]);
         });
 
-        if ($user->status === 'karyawan' || $user->status === 'admin') {
-            $filteredWarehouses = $konsinyasiWarehouses
-                ->merge($tscWarehouses)
-                ->merge($nonKonsinyasiWarehouses);
-        } elseif ($user->status === 'reseller') {
-             $filteredWarehouses = $konsinyasiWarehouses
-                ->merge($nonKonsinyasiWarehouses);
-        } else {
-            $filteredWarehouses = collect();
-        }
+        // Ubah di sini: gunakan semua gudang tanpa filter
+        $filteredWarehouses = collect($detailWarehouse);
+
         $stokNew = [];
 
         foreach ($filteredWarehouses as $warehouseDetail) {
@@ -546,22 +618,12 @@ protected function fetchAdjustedPrice($headers, $selectedBranchId, $itemId)
             ];
         }
 
+        // Tambahkan logging untuk debugging data gudang yang difilter
         $salesOrderList = $this->fetchSalesOrderList($headers);
         $this->fetchSalesOrderDetailsBatch($salesOrderList, $headers, $itemIdUtama, $stokNew);
 
         // Fetch sales invoice list and matching invoices for further stock reduction
-        $salesInvoiceList = $this->fetchSalesInvoiceList($headers);
-        $matchingInvoices = $this->fetchMatchingInvoices($salesInvoiceList, $headers, $itemIdUtama);
-
-        foreach ($matchingInvoices as $invoiceMatch) {
-            $warehouseId = $invoiceMatch['warehouse'];
-            $quantity = $invoiceMatch['quantity'];
-
-            if (isset($stokNew[$warehouseId])) {
-                $stokNew[$warehouseId]['balance'] -= $quantity;
-            }
-        }
-
+        Log::info('Semua data sudah selesai');
         return response()->json([
             'success' => true,
             'stokNew' => $stokNew,
@@ -738,5 +800,287 @@ public function getAdjustedPriceAjax(Request $request)
             ], 500);
         }
     }
+
+    protected function applyStockReductions(&$stokNew, $itemIdUtama, $headers)
+    {
+        $salesOrderList = $this->fetchSalesOrderList($headers);
+        $this->fetchSalesOrderDetailsBatch($salesOrderList, $headers, $itemIdUtama, $stokNew);
+
+        
+    }
+
+    // Jika ingin menghindari proses pengurangan stok ulang saat export PDF, Anda bisa menyimpan hasil stok yang sudah dikurangi (misal di session, cache, atau dikirim dari frontend) saat user membuka halaman detail item.
+    // Kemudian, pada exportPdf, gunakan data stok yang sudah dikurangi tersebut jika tersedia, tanpa memanggil applyStockReductions lagi.
+
+    // Contoh sederhana: ambil stok dari request jika dikirim dari frontend (misal via AJAX sebelum export PDF)
+    public function exportPdf(Request $request, $id)
+    {
+        $user = Auth::user();
+        $token = env('ACCURATE_API_TOKEN');
+        $session = env('ACCURATE_SESSION');
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID' => $session
+        ];
+
+        // Ambil data item detail
+        $item = $this->fetchItemDetails($id, $headers);
+        if (!$item) {
+            return back()->withErrors('Gagal Mengambil Data Item');
+        }
+
+        // Ambil filter dari request
+        $selectedBranchId = $request->input('branch_id');
+        $filterGudang = $request->input('filterGudang', 'semua');
+        $filterHargaGaransi = $request->input('filterHargaGaransi', 'semua');
+
+        // Ambil stok hasil pengurangan dari frontend (hasil AJAX di blade)
+        $stokNew = $request->input('stokNew');
+        if (is_string($stokNew)) {
+            // Jika dikirim sebagai JSON string, decode dulu
+            $stokNew = json_decode($stokNew, true);
+        }
+
+        // Jika stokNew tidak valid, fallback ke stok awal tanpa pengurangan
+        if (!is_array($stokNew) || count($stokNew) === 0) {
+            $detailWarehouse = $item['detailWarehouseData'];
+
+            $stokNew = [];
+            foreach ($detailWarehouse as $warehouseDetail) {
+                $stokNew[$warehouseDetail['id']] = [
+                    'name' => $warehouseDetail['name'],
+                    'balance' => $warehouseDetail['balance'] ?? 0
+                ];
+            }
+            $stokNew = array_filter($stokNew, fn($w) => ($w['balance'] ?? 0) > 0);
+        }
+
+        // Apply filterGudang to stokNew
+        if ($filterGudang && $filterGudang !== 'semua') {
+            $stokNew = array_filter($stokNew, function ($stock) use ($filterGudang) {
+                $nameLower = strtolower($stock['name']);
+                $descLower = strtolower($stock['description'] ?? '');
+
+                if ($filterGudang === 'non') {
+                    return is_null($stock['description'] ?? null) &&
+                        !str_contains($nameLower, 'reseller') &&
+                        !str_contains($nameLower, 'tsc') &&
+                        !str_contains($nameLower, 'twintos') &&
+                        !str_contains($nameLower, 'twinmart') &&
+                        !str_contains($nameLower, 'marketing') &&
+                        !str_contains($nameLower, 'asp') &&
+                        !str_contains($nameLower, 'bazar') &&
+                        !str_contains($nameLower, 'bina') &&
+                        !str_contains($nameLower, 'dkv') &&
+                        !str_contains($nameLower, 'af') &&
+                        !str_contains($nameLower, 'barang rusak') &&
+                        !str_contains($nameLower, 'sc landasan ulin') &&
+                        !str_contains($nameLower, 'panda store landasan ulin') &&
+                        !str_contains($nameLower, 'sc banjarbaru');
+                } elseif ($filterGudang === 'konsinyasi') {
+                    return str_contains($descLower, 'konsinyasi');
+                } elseif ($filterGudang === 'tsc') {
+                    return str_contains($nameLower, 'tsc') || str_contains($nameLower, 'panda sc banjarbaru');
+                } elseif ($filterGudang === 'resel') {
+                    return str_contains($nameLower, 'reseller');
+                } elseif ($filterGudang === 'trans') {
+                    return str_contains($nameLower, 'transit');
+                }
+                return true;
+            });
+        }
+
+        // Filter out stocks with zero or less balance
+        $stokNew = array_filter($stokNew, fn($stock) => ($stock['balance'] ?? 0) > 0);
+
+        // Kategorikan stokNew ke dalam grup berdasarkan nama/deskripsi gudang
+        $tscStock = [];
+        $nonKonsinyasiStock = [];
+        $resellerStock = [];
+        $konsinyasiStock = [];
+
+        foreach ($stokNew as $warehouseId => $stock) {
+            $nameLower = strtolower($stock['name']);
+            $descLower = '';
+            // Try to get description from item detail warehouses if available
+            $desc = collect($item['detailWarehouseData'])->firstWhere('id', $warehouseId)['description'] ?? '';
+            $descLower = strtolower($desc);
+
+            if (str_contains($nameLower, 'tsc') || str_contains($nameLower, 'panda sc banjarbaru')) {
+                $tscStock[$warehouseId] = $stock;
+            } elseif (is_null($desc) || $desc === '') {
+                // Non Konsinyasi: description null and name not containing reseller, tsc, etc.
+                if (!str_contains($nameLower, 'reseller') &&
+                    !str_contains($nameLower, 'tsc') &&
+                    !str_contains($nameLower, 'twintos') &&
+                    !str_contains($nameLower, 'twinmart') &&
+                    !str_contains($nameLower, 'marketing') &&
+                    !str_contains($nameLower, 'asp') &&
+                    !str_contains($nameLower, 'bazar') &&
+                    !str_contains($nameLower, 'bina') &&
+                    !str_contains($nameLower, 'dkv') &&
+                    !str_contains($nameLower, 'af') &&
+                    !str_contains($nameLower, 'barang rusak') &&
+                    !str_contains($nameLower, 'sc landasan ulin') &&
+                    !str_contains($nameLower, 'panda store landasan ulin') &&
+                    !str_contains($nameLower, 'sc banjarbaru')) {
+                    $nonKonsinyasiStock[$warehouseId] = $stock;
+                }
+            } elseif (str_contains($descLower, 'konsinyasi')) {
+                $konsinyasiStock[$warehouseId] = $stock;
+            } elseif (str_contains($nameLower, 'reseller')) {
+                $resellerStock[$warehouseId] = $stock;
+            }
+        }
+
+        // Filter out zero or less balance stocks in each group
+        $tscStock = array_filter($tscStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
+        $nonKonsinyasiStock = array_filter($nonKonsinyasiStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
+        $resellerStock = array_filter($resellerStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
+        $konsinyasiStock = array_filter($konsinyasiStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
+
+        // Sort each group by warehouse name ascending
+        $sortByName = function(&$array) {
+            uasort($array, function($a, $b) {
+                return strcmp(strtolower($a['name']), strtolower($b['name']));
+            });
+        };
+
+        $sortByName($tscStock);
+        $sortByName($nonKonsinyasiStock);
+        $sortByName($resellerStock);
+        $sortByName($konsinyasiStock);
+
+        // Ambil harga disesuaikan jika ada
+        list($unitPrice, $discItem) = $this->fetchAdjustedPrice($headers, $selectedBranchId, $id);
+
+        Log::info("Export PDF - selectedBranchId: $selectedBranchId, unitPrice: $unitPrice, discItem: $discItem");
+
+        $sellingPrices = collect($item['detailSellingPrice']);
+        $resellerPrice = $sellingPrices
+            ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'reseller')['price'] ?? 0;
+        $userPrice = $sellingPrices
+            ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'user')['price'] ?? 0;
+
+        $finalUserPrice = $userPrice;
+        $finalResellerPrice = $resellerPrice;
+
+        if ($selectedBranchId) {
+            if ($filterHargaGaransi === 'user' && $unitPrice !== null) {
+                $discPercent = floatval($discItem ?? 0);
+                $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+                $finalResellerPrice = 0;
+            } elseif ($filterHargaGaransi === 'reseller' && $unitPrice !== null) {
+                $discPercent = floatval($discItem ?? 0);
+                $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+                $finalUserPrice = 0;
+            } elseif ($filterHargaGaransi === 'semua' && $unitPrice !== null) {
+                $discPercent = floatval($discItem ?? 0);
+                $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+                $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+            }
+        }
+
+        Log::info("Export PDF - finalUserPrice: $finalUserPrice, finalResellerPrice: $finalResellerPrice");
+
+        $pdf = Pdf::loadView('items.detail-pdf', [
+            'item' => $item,
+            'stokNew' => $stokNew,
+            'tscStock' => $tscStock,
+            'nonKonsinyasiStock' => $nonKonsinyasiStock,
+            'resellerStock' => $resellerStock,
+            'konsinyasiStock' => $konsinyasiStock,
+            'finalUserPrice' => $finalUserPrice,
+            'finalResellerPrice' => $finalResellerPrice,
+            'filterGudang' => $filterGudang,
+            'filterHargaGaransi' => $filterHargaGaransi,
+            'selectedBranchId' => $selectedBranchId,
+            'discItem' => $discItem,
+        ]);
+
+        return $pdf->stream('laporan-item-' . Str::slug($item['name']) . '.pdf');
+    }
+
+
+    public function getAdjustedPriceResellerAjax(Request $request)
+    {
+        $no = $request->input('no');
+        $priceCategoryName = $request->input('priceCategoryName');
+        $discountCategoryName = $request->input('discountCategoryName');
+        $branchName = $request->input('branchName');
+
+        if (!$no || !$priceCategoryName || !$discountCategoryName) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter no, priceCategoryName, dan discountCategoryName harus diisi.'
+            ], 400);
+        }
+
+        $token = env('ACCURATE_API_TOKEN');
+        $session = env('ACCURATE_SESSION');
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID' => $session
+        ];
+
+        $params = [
+            'no' => $no,
+            'priceCategoryName' => $priceCategoryName,
+            'discountCategoryName' => $discountCategoryName,
+        ];
+
+        if ($branchName) {
+            $params['branchName'] = $branchName;
+        }
+
+        Log::info('Memanggil Accurate get-selling-price dengan parameter:', $params);
+
+        try {
+            $response = Http::withHeaders($headers)
+                ->get("https://public.accurate.id/accurate/api/item/get-selling-price.do", $params);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $d = $data['d'] ?? null;
+
+                $adjustedPrice = null;
+                if ($d && isset($d['unitPrice'])) {
+                    $unitPrice = $d['unitPrice'];
+                    $discPercent = isset($d['itemDiscPercent']) ? floatval($d['itemDiscPercent']) : 0;
+                    if ($discPercent > 0) {
+                        $adjustedPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+                    } else {
+                        $adjustedPrice = $unitPrice;
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'adjustedPrice' => $adjustedPrice,
+                    'discItem' => $d['itemDiscPercent'] ?? null,
+                ]);
+            } else {
+                Log::warning('Gagal ambil harga dari Accurate', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengambil data dari Accurate.'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception saat mengambil harga dari Accurate', ['message' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghubungi Accurate.'
+            ], 500);
+        }
+    }
+
 
 }

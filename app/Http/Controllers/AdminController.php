@@ -21,16 +21,14 @@ class AdminController extends Controller
 
         return view('admin.dashboard', compact(
             'totalUsers',
-            // 'totalItems',
             'logToday',
             'recentLogs',
-            // 'recentItems'
         ));
     }
 
     public function viewUser(Request $request) {
 
-        $query = User::query();
+        $query = User::query()->orderBy('name', 'asc');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -44,8 +42,13 @@ class AdminController extends Controller
             $query->where('status', $request->status); // pastikan ada field 'status' di tabel user
         }
 
-        $users = $query->latest()->get();
-        return view('admin.users-index', compact('users'));
+        $users = $query->get();
+        $totalReseller = User::where('status', 'reseller')->count();
+        $totalKaryawan = User::where('status', 'karyawan')->count();
+        $totalAdmin    = User::where('status', 'admin')->count();
+        $totalUsers = User::count();
+
+        return view('admin.users-index', compact('users', 'totalReseller', 'totalKaryawan', 'totalAdmin', 'totalUsers'));
     }
 
     public function logActivity(Request $request)
@@ -71,7 +74,7 @@ class AdminController extends Controller
             });
         }
 
-        $activities = $query->latest()->paginate(10);
+        $activities = $query->latest()->paginate(15);
         return view('admin.log-activity', compact('activities'));
     }
 
