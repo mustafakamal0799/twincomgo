@@ -49,6 +49,20 @@ class AuthinticationController extends Controller
 
     public function logout(Request $request)
     {
+        $user = Auth::user();
+
+        // Update logout_time in activity log
+        $loginActivity = \Spatie\Activitylog\Models\Activity::where('log_name', $user->name)
+            ->where('description', 'like', '%sedang melakukan login%')
+            ->whereNull('logout_time')
+            ->latest('created_at')
+            ->first();
+
+        if ($loginActivity) {
+            $loginActivity->logout_time = now();
+            $loginActivity->save();
+        }
+        
         Auth::logout(); // Logout user
 
         $request->session()->invalidate(); // Invalidate session

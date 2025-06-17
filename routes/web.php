@@ -71,7 +71,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin-user', [AdminController::class, 'viewUser'])->name('admin.user');
     Route::get('/admin-log', [AdminController::class, 'logActivity'])->name('admin.log');    
     Route::get('/admin/log/user-search', [AdminController::class, 'searchUser'])->name('admin.log.user-search');
-
+    Route::post('/auto-logout', [AdminController::class, 'autoLogout'])->name('auto.logout');
 });
 
 

@@ -47,6 +47,31 @@
             font-size: 35px;
         }
 
+        .toggle-btn {
+            position: fixed;
+            top: -5px;
+            left: 245px;
+            /* z-index: 100; */
+            transition: left 0.1s ease;
+        }
+
+        .toggle-btn.toggled {
+            left: -5px !important;
+        }
+
+        #sidebar {
+            transition: all 0.3s ease;
+            z-index: 99;
+        }
+
+        #toggleSidebar {
+            transition: left 0.3s ease;
+        }
+
+        #toggleSidebar.toggled {
+            left: 10px; /* Move right when toggled */
+        }
+
         @media only screen and (max-width: 768px) {
             .navbar-brand {
                 font-size: 10px;            
@@ -67,19 +92,21 @@
                 font-size: 15px;
             }
         }
-
         
     </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
     @if (Auth::user()->status === 'admin')
-        <div class="d-flex">
-            <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 250px; min-height: 100vh;">
+        <button class="btn btn-dark toggle-btn" id="toggleSidebar">
+            <i class="bi bi-caret-right"></i>
+        </button>
+        <div class="d-flex">            
+            <div id="sidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 250px; min-height: 100vh;">
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-2 person-icon"></i>
-                        <strong style="margin-right: 10px; margin-left: 10px">{{ Auth::user()->name }}</strong>
+                        <strong style="margin-right: 10px; margin-left: 10px;">{{ Auth::user()->name }}</strong>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
                         <li>
@@ -121,6 +148,9 @@
                     <!-- Tambah menu lainnya sesuai kebutuhan -->
                 </ul>            
             </div>
+            
+            
+            
 
             <div class="flex-grow-1 p-4">
                 @yield('content')
@@ -175,6 +205,41 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
     @stack('scripts')
+        <script>
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const sidebar = document.getElementById('sidebar');
+
+            // Fungsi untuk menyimpan status sidebar ke localStorage
+            function saveSidebarState(isClosed) {
+                localStorage.setItem('sidebarClosed', isClosed ? 'true' : 'false');
+            }
+
+            // Fungsi untuk membaca status sidebar dari localStorage dan mengatur tampilan
+            function loadSidebarState() {
+                const isClosed = localStorage.getItem('sidebarClosed') === 'true';
+                if (isClosed) {
+                    sidebar.classList.add('d-none');
+                    toggleBtn.classList.add('toggled');
+                } else {
+                    sidebar.classList.remove('d-none');
+                    toggleBtn.classList.remove('toggled');
+                }
+            }
+
+            // Muat status sidebar saat halaman dimuat
+            loadSidebarState();
+
+            toggleBtn.addEventListener('click', function() {
+                // Toggle kelas 'd-none' untuk menyembunyikan/memperlihatkan sidebar
+                sidebar.classList.toggle('d-none');
+                // Toggle class untuk pindahkan posisi tombol
+                toggleBtn.classList.toggle('toggled');
+
+                // Simpan status sidebar setelah toggle
+                const isClosed = sidebar.classList.contains('d-none');
+                saveSidebarState(isClosed);
+            });
+        </script>
 
 </body>
 </html>

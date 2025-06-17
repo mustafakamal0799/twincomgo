@@ -62,7 +62,7 @@
 
                 {{-- Tombol Cari --}}
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-success w-100">🔍 Cari</button>
+                    <button type="submit" class="btn btn-success w-100">Cari</button>
                 </div>
 
                 {{-- Tombol Reset --}}
@@ -89,7 +89,7 @@
             @if (count($users) > 0)
                 <div class="table-responsive p-4 table-scroll-container">
                     <table class="table table-bordered table-striped align-middle">
-                        <thead class="table-dark">
+                        <thead class="table-secondary">
                             <tr class="text-center">
                                 <th>No</th>
                                 <th>Nama</th>

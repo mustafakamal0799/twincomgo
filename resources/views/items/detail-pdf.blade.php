@@ -5,7 +5,7 @@
     <title>LIST STOK - {{ $item['name'] }}</title>
     <style>
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'Times New Roman', Times, serif, sans-serif;
             font-size: 12px;
             color: #333;
             margin: 20px;
@@ -119,7 +119,7 @@
         </table>
     </div>
 
-    <div class="harga">
+    <div class="harga" style="margin-top: 10px; margin-bottom: 20px; border-bottom: 1px solid #8dbf9b; padding-bottom: 10px;">
         <table class="harga-table" style="width: 100%;">
             <tbody>
                 @if ($status === "admin" || $status === "KARYAWAN")
@@ -139,12 +139,22 @@
                         <td style="width: 2px">:</td>
                         <td>Rp {{ number_format($finalUserPrice, 0, ',', '.') }}</td>
                     </tr>
+                    <tr>
+                        <th>Garansi User</th>
+                        <td style="width: 2px">:</td>
+                        <td>{{ $garansiUser ?? '-' }}</td>
+                    </tr>
                     @endif
                     @if ($filterHargaGaransi === 'reseller' || $filterHargaGaransi === 'semua')
                     <tr>
                         <th>Harga Reseller</th>
                         <td style="width: 2px">:</td>
                         <td>Rp {{ number_format($finalResellerPrice, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Garansi Reseller</th>
+                        <td style="width: 2px">:</td>
+                        <td>{{ $garansiReseller ?? '-' }}</td>
                     </tr>
                     @endif
                 @elseif ($status === "RESELLER")
@@ -163,6 +173,11 @@
                         <th>Harga</th>
                         <td style="width: 2px">:</td>
                         <td>Rp {{ number_format($finalUserPrice, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Garansi</th>
+                        <td style="width: 2px">:</td>
+                        <td>{{ $garansiUser ?? '-' }}</td>
                     </tr>
                     @endif                    
                 @endif
@@ -241,6 +256,26 @@
         </thead>
         <tbody>
             @foreach ($konsinyasiStock as $stok)
+            <tr>
+                <td>{{ $stok['name'] }}</td>
+                <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    @endif
+
+    @if(count($transitStock) > 0)
+    <div class="section-title">Stok Transit</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="text-align: center;">Lokasi</th>
+                <th style="text-align: center;">Stok</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($transitStock as $stok)
             <tr>
                 <td>{{ $stok['name'] }}</td>
                 <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>

@@ -66,7 +66,13 @@
             margin-right: 5px !important;
         }
         .form-label {
-        font-size: 13px;
+            font-size: 13px;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            vertical-align: middle;
         }
         .form-control, .form-select {
             font-size: 13px;
@@ -104,40 +110,33 @@
 </style>
 
 <div class="container-fluid py-4">
-   <div class="p-3">
-    <form action="{{ route('items.index') }}" method="GET">
-        <div class="row g-2">
-            {{-- Group Kategori + Stok Ready --}}
-            
-                    {{-- Pilih Kategori --}}
-                    <div class="col">
-                        <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
-                        <select name="id" id="itemCategoryId" class="form-select">
-                            <option value="">Semua Kategori</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category['id'] }}" {{ request('id') == $category['id'] ? 'selected' : '' }}>
-                                    {{ $category['name'] }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Pilih Stok Ready --}}
-                    <div class="col">
-                        <label for="stok_ada" class="form-label">Stok Ready</label>
-                        <select class="form-select" name="stok_ada" id="stok_ada">
-                            <option value="" {{ request('stok_ada') === '' ? 'selected' : '' }}>Tidak</option>
-                            <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>Ya</option>
-                        </select>
-                    </div>
-                 <div class="col">
-                    <label for="q" class="form-label">
-                            Gunakan <code>%</code> untuk kombinasi kata pencarian.
-                    </label>
-                    <input type="text" name="q" id="q" class="form-control" placeholder="Kode / Nama Barang" value="{{ request('q') }}">
-                    
+    <div class="p-3">
+        <form action="{{ route('items.index') }}" method="GET">
+            <div class="row g-2">
+                <div class="col">
+                    <label for="itemCategoryId" class="form-label">Pilih Kategori</label>
+                    <select name="id" id="itemCategoryId" class="form-select">
+                        <option value="">Semua Kategori</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category['id'] }}" {{ request('id') == $category['id'] ? 'selected' : '' }}>
+                                {{ $category['name'] }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
-
+                <div class="col">
+                    <label for="stok_ada" class="form-label">Stok Ready</label>
+                    <select class="form-select" name="stok_ada" id="stok_ada">
+                        <option value="" {{ request('stok_ada') === '' ? 'selected' : '' }}>Tidak</option>
+                        <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>Ya</option>
+                    </select>
+                </div>
+                <div class="col" style="position:static;">
+                    <label for="q" class="form-label">
+                        <small>Gunakan <code>%</code> untuk kombinasi kata pencarian.</small>
+                    </label>
+                    <input type="text" name="q" id="q" class="form-control" placeholder="Kode / Nama Barang" value="{{ request('q') }}">                
+                </div>
                 <div class="col-lg-1 col-md-2 col-12 d-flex align-items-end gap-2 tombol-aksi">
                     <button type="submit" class="btn btn-secondary w-100">
                         <i class="bi bi-search"></i>
@@ -146,12 +145,9 @@
                         <i class="bi bi-arrow-clockwise"></i>
                     </a>
                 </div>
-
-            {{-- Input Pencarian --}}
-           
-        </div>
-    </form>
-</div>
+            </div>
+        </form>
+    </div>
 
     <div class="row">
         <div class="col-12">
