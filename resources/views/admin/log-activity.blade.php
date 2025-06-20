@@ -3,23 +3,55 @@
 @section('content')
 
 <style>
-    .card {
+     .card {
         box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
     }
-    .form-control {
-        width: 15rem;
-    }
+
+    .form-control,
     .form-select {
         width: 15rem;
     }
 
     @media (max-width: 768px) {
-        table th, table td {
+        .form-control,
+        .form-select {
+            width: 100% !important;
+        }
+
+        .form-label,
+        .btn {
             font-size: 12px;
         }
 
-        .form-label, .form-control, .btn {
-            font-size: 12px;
+        .d-flex.flex-wrap.gap-2.align-items-end.mb-2 {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        table th,
+        table td {
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .row.g-2.align-items-end {
+            flex-direction: column;
+        }
+
+        .col-md-3, .col-md-2 {
+            width: 100%;
+        }
+
+        .card-header h5 {
+            font-size: 16px;
+        }
+
+        .btn i {
+            margin-right: 4px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
         }
     }
 </style>
@@ -27,63 +59,60 @@
 <div class="container-fluid py-4">
     <div class="card">
         <div class="card-header p-3">
-    <h5 class="mb-3">Log Aktivitas</h5>
+            <h5 class="mb-3">Log Aktivitas</h5>
 
-    {{-- Form Pencarian Singkat + Filter Lanjutan --}}
-    <form action="{{ route('admin.log') }}" method="GET">
-        <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
-            <input type="text" name="search" class="form-control" placeholder="Cari log user..." value="{{ request('search') }}" style="max-width: 250px;">
-            <button type="submit" class="btn btn-success">
-                <i class="bi bi-search"></i>
-            </button>
-            <a href="{{ route('admin.log') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-clockwise"></i>
-            </a>
-            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-filter" aria-expanded="false" aria-controls="advanced-filter">
-                <i class="bi bi-funnel"></i> Filter
-            </button>
+            {{-- Form Pencarian Singkat + Filter Lanjutan --}}
+            <form action="{{ route('admin.log') }}" method="GET">
+                <div class="d-flex flex-wrap gap-2 align-items-end mb-2 w-100">
+                    <input type="text" name="search" class="form-control" placeholder="Cari log user..." value="{{ request('search') }}" style="max-width: 250px;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="{{ route('admin.log') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-filter" aria-expanded="false" aria-controls="advanced-filter">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </div>
+
+                {{-- Filter Lanjutan --}}
+                <div class="collapse" id="advanced-filter">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label for="user-search" class="form-label">User</label>
+                            <select id="user-search" name="user" class="form-select">
+                                @if(request('user'))
+                                    <option value="{{ request('user') }}" selected>{{ request('user') }}</option>
+                                @endif
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select name="status" class="form-select" id="status">
+                                <option value="">Semua Status</option>
+                                <option value="karyawan" {{ request('status') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                                <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
+                                <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="start_date" class="form-label">Dari</label>
+                            <input type="date" name="start_date" class="form-control" id="start_date" value="{{ request('start_date') }}" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="end_date" class="form-label">Sampai</label>
+                            <input type="date" name="end_date" class="form-control" id="end_date" value="{{ request('end_date') }}" />
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
-
-        {{-- Filter Lanjutan --}}
-        <div class="collapse" id="advanced-filter">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <label for="user-search" class="form-label">User</label>
-                    <select id="user-search" name="user" class="form-select">
-                        @if(request('user'))
-                            <option value="{{ request('user') }}" selected>{{ request('user') }}</option>
-                        @endif
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label for="status" class="form-label">Status</label>
-                    <select name="status" class="form-select" id="status">
-                        <option value="">Semua Status</option>
-                        <option value="karyawan" {{ request('status') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
-                        <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
-                        <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label for="start_date" class="form-label">Dari</label>
-                    <input type="date" name="start_date" class="form-control" id="start_date" value="{{ request('start_date') }}" />
-                </div>
-
-                <div class="col-md-2">
-                    <label for="end_date" class="form-label">Sampai</label>
-                    <input type="date" name="end_date" class="form-control" id="end_date" value="{{ request('end_date') }}" />
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
-
-
-
         <div class="card-body">
-            <div style="max-height: 700px; overflow-y: auto;">
+            <div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
                 <table class="table table-bordered table-striped align-middle text-center mb-0">
                     <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
                         <tr>

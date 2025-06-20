@@ -16,7 +16,7 @@ class ItemController extends Controller
 {
     public function index(Request $request)
     {
-        if (!$request->has('stok_ada')) {
+        if (!$request->exists('stok_ada')) {
             return redirect()->route('items.index', array_merge($request->all(), ['stok_ada' => 1]));
         }
 
@@ -26,6 +26,8 @@ class ItemController extends Controller
 
         $search = $request->input('q');
         $categoryId = $request->input('id');
+        $minPrice = $request->input('min_price');
+        $maxPrice = $request->input('max_price');
 
         $page = $request->get('page', 1);
         $stokAda = $request->input('stok_ada');
@@ -34,7 +36,7 @@ class ItemController extends Controller
         $params = [
             'sp.page' => $page,
             'sp.pageSize' => $pageSize,
-            'fields' => 'id,name,no,availableToSell,itemCategoryId,detailSellingPrice',
+            'fields' => 'id,name,no,availableToSell,itemCategoryId,detailSellingPrice,branchPrice',
             'filter.suspended' => 'false',
             'filter.keywords.op' => 'CONTAIN',
             'filter.keywords.val[0]' => $search,
@@ -61,6 +63,23 @@ class ItemController extends Controller
             if ($stokAda) {
                 $items = array_filter($items, function ($item) {
                     return isset($item['availableToSell']) && $item['availableToSell'] > 0;
+                });
+            }
+
+            // Filter by price range if minPrice or maxPrice is set
+            if ($minPrice !== null || $maxPrice !== null) {
+                $items = array_filter($items, function ($item) use ($minPrice, $maxPrice) {
+                    $price = $item['branchPrice'] ?? null;
+                    if ($price === null) {
+                        return false;
+                    }
+                    if ($minPrice !== null && $price < floatval($minPrice)) {
+                        return false;
+                    }
+                    if ($maxPrice !== null && $price > floatval($maxPrice)) {
+                        return false;
+                    }
+                    return true;
                 });
             }
 
@@ -116,6 +135,8 @@ class ItemController extends Controller
                 'pagination' => (object)$pagination,
                 'search' => $search,
                 'categories' => $allCategories,
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
             ]);
         } else {
             $data = $respon->json();
@@ -238,7 +259,8 @@ class ItemController extends Controller
                     }
                 }
             }
-            usleep(500000);
+            usleep(
+                00000);
             Log::info("Batch selesai");
         }
     }
@@ -305,7 +327,7 @@ class ItemController extends Controller
                     }
                 }
             }
-            usleep(500000);
+            usleep(500000); //delay 0,5 detik
             Log::info("Batch invoice selesai");
         }
     }
@@ -477,6 +499,12 @@ class ItemController extends Controller
         $detailWarehouse = $item['detailWarehouseData'];
         $garansiUser = $item['charField6'];
         $garansiReseller = $item['charField7'];
+
+        $detailWarehouse = collect($detailWarehouse)->map(function ($item) {
+            $unitParts = explode(' ', $item['balanceUnit']);
+            $item['unit'] = $unitParts[1] ?? null;
+            return $item;
+        })->toArray();
 
         $fileName = collect($item['detailItemImage'] ?? [])->pluck('fileName')->filter()->values()->toArray();
 
@@ -831,6 +859,31 @@ class ItemController extends Controller
             return back()->withErrors('Gagal Mengambil Data Item');
         }
 
+        // Ambil nama file gambar pertama dari detailItemImage jika ada
+        $fileName = null;
+        if (!empty($item['detailItemImage']) && is_array($item['detailItemImage'])) {
+            $images = array_filter($item['detailItemImage'], fn($img) => !empty($img['fileName']));
+            if (count($images) > 0) {
+                $fileName = array_values($images)[0]['fileName'];
+            }
+        }
+
+        $imageBase64 = null;
+        if ($fileName) {
+            $baseUrl = 'https://public.accurate.id';
+            $imageUrl = $baseUrl . $fileName . '?session=' . $session;
+
+            try {
+                $response = Http::withHeaders($headers)->get($imageUrl);
+                if ($response->successful()) {
+                    $imageBase64 = base64_encode($response->body());
+                }
+            } catch (\Exception $e) {
+                // Log error but continue
+                Log::error("Gagal mengambil gambar untuk PDF: " . $e->getMessage());
+            }
+        }
+
         // Ambil filter dari request
         $selectedBranchId = $request->input('branch_id');
         $filterGudang = $request->input('filterGudang', 'semua');
@@ -1056,6 +1109,7 @@ class ItemController extends Controller
             'discItem' => $discItem,
             'garansiReseller' => $item['charField7'] ?? null,
             'garansiUser' => $item['charField6'] ?? null,
+            'imageBase64' => $imageBase64,
         ]);
 
         return $pdf->stream('laporan-item-' . Str::slug($item['name']) . '.pdf');
