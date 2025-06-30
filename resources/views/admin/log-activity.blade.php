@@ -7,9 +7,9 @@
         box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
     }
 
-    .form-control,
-    .form-select {
-        width: 15rem;
+    .table-scroll-container {
+        max-height: 500px;
+        overflow-y: auto;
     }
 
     @media (max-width: 768px) {
@@ -62,33 +62,17 @@
             <h5 class="mb-3">Log Aktivitas</h5>
 
             {{-- Form Pencarian Singkat + Filter Lanjutan --}}
-            <form action="{{ route('admin.log') }}" method="GET">
-                <div class="d-flex flex-wrap gap-2 align-items-end mb-2 w-100">
-                    <input type="text" name="search" class="form-control" placeholder="Cari log user..." value="{{ request('search') }}" style="max-width: 250px;">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-search"></i>
-                    </button>
-                    <a href="{{ route('admin.log') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </a>
-                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-filter" aria-expanded="false" aria-controls="advanced-filter">
-                        <i class="bi bi-funnel"></i> Filter
-                    </button>
-                </div>
-
-                {{-- Filter Lanjutan --}}
-                <div class="collapse" id="advanced-filter">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-3">
+            <form action="{{ route('admin.log') }}" method="GET">                
+                <div class="row g-3">
+                        <div class="col-6 col-md-3">
                             <label for="user-search" class="form-label">User</label>
                             <select id="user-search" name="user" class="form-select">
                                 @if(request('user'))
                                     <option value="{{ request('user') }}" selected>{{ request('user') }}</option>
-                                @endif
+                                    @endif
                             </select>
                         </div>
-
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-3">
                             <label for="status" class="form-label">Status</label>
                             <select name="status" class="form-select" id="status">
                                 <option value="">Semua Status</option>
@@ -96,25 +80,51 @@
                                 <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
                                 <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
                             </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label for="start_date" class="form-label">Dari</label>
-                            <input type="date" name="start_date" class="form-control" id="start_date" value="{{ request('start_date') }}" />
-                        </div>
-
-                        <div class="col-md-2">
-                            <label for="end_date" class="form-label">Sampai</label>
-                            <input type="date" name="end_date" class="form-control" id="end_date" value="{{ request('end_date') }}" />
+                        </div>                        
+                        <div class="col-6 col-md-3">
+                            <label for="end_date" class="form-label">Tanggal</label>
+                            <div class="dropdown w-100">
+                                <button class="btn border dropdown-toggle w-100" style="background-color: white; text-align: left;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Filter Tanggal
+                                </button>
+                                <div class="dropdown-menu p-3 w-100">
+                                    <div class="mb-3">
+                                        <label for="start_date" class="form-label">Dari</label>
+                                        <input type="date" name="start_date" class="form-control" id="start_date" value="{{ request('start_date') }}" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="end_date" class="form-label">Sampai</label>
+                                        <input type="date" name="end_date" class="form-control" id="end_date" value="{{ request('end_date') }}" />
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100 mt-2">Terapkan</button>
+                                </div>
+                            </div>
+                        </div>                        
+                        <div class="col-6 col-md-3">
+                            <div class="d-flex flex-wrap align-items-end gap-2">
+                                <div style="min-width: 250px; flex-grow: 1;">
+                                    <label for="search" class="form-label">Cari</label>
+                                    <div class="input-group">
+                                        <input type="text" name="search" class="form-control" placeholder="Cari log user..." value="{{ request('search') }}">
+                                        <button class="btn btn-outline-secondary" type="submit">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ route('admin.log') }}" class="btn btn-success d-flex align-items-center gap-1 btn-reset">
+                                        <i class="bi bi-arrow-clockwise"></i> Reset
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </form>
+                </form>
         </div>
-        <div class="card-body">
-            <div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
-                <table class="table table-bordered table-striped align-middle text-center mb-0">
-                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
+        <div class="card-body px-0 pt-0 pb-2">
+            <div class="table-responsive table-scroll-container" id="table-container">
+                <table class="table table-bordered table-striped align-middle mb-0">
+                    <thead class="table-secondary text-center">
                         <tr>
                             <th>#</th>
                             <th>User</th>
@@ -128,13 +138,13 @@
                     <tbody>
                         @forelse($activities as $index => $activity)
                             <tr class="{{ now()->diffInMinutes($activity->created_at) <= 60 ? 'table-warning' : '' }}">
-                                <td>{{ $activities->firstItem() + $index }}</td>
+                                <td class="text-center">{{ $activities->firstItem() + $index }}</td>
                                 <td>{{ $activity->log_name ?? '-' }}</td>
                                 <td>{{ $activity->description }}</td>
                                 <td>{{ optional($activity->causer)->status ?? '-' }}</td>
-                                <td>{{ $activity->created_at->format('d-m-Y') }}</td>
-                                <td>{{ $activity->created_at->format('H:i:s') }}</td>
-                                <td>{{ $activity->logout_time ? $activity->logout_time->format('H:i:s') : '-' }}</td>
+                                <td class="text-center">{{ $activity->created_at->format('d-m-Y') }}</td>
+                                <td class="text-center">{{ $activity->created_at->format('H:i:s') }}</td>
+                                <td class="text-center">{{ $activity->logout_time ? $activity->logout_time->format('H:i:s') : '-' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -144,10 +154,10 @@
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 p-3">
                 {{-- Info Jumlah Data --}}
                 <div class="text-muted small">
-                    Menampilkan {{ $activities->firstItem() }} sampai {{ $activities->lastItem() }} dari total {{ $activities->total() }} data
+                    {{ $activities->firstItem() }} dari {{ $activities->lastItem() }} / {{ $activities->total() }} 
                 </div>
 
                 {{-- Pagination --}}

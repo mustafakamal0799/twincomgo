@@ -46,7 +46,7 @@
 </head>
 <body>
     <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
-        <div class="card login-card">
+        <div class="card p-3 login-card">
             <div class="row g-0 card-body-wrapper" style="min-height: 450px;">
                 <!-- KIRI: Gambar -->
                 <div class="col d-none d-md-block login-image">

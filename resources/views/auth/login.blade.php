@@ -46,7 +46,7 @@
 </head>
 <body>
     <div class="container-fluid d-flex align-items-center justify-content-center vh-100">        
-        <div class="card login-card">
+        <div class="card login-card p-2">
             <div class="row g-0" style="min-height: 450px;">
                 @if (session('loginGagal'))
                     <div class="alert alert-warning">
@@ -61,8 +61,8 @@
                     <p class="text-center">
                         <img src="{{asset('images/logo-hijau-tua.png')}}" alt="Logo SISB" style="width: 200px">
                     </p>
-                    <h2 class="text-center"><strong>SISTEM INFORMASI
-                        <br> STOK BARANG</strong></h2>
+                    <h4 class="text-center mb-6"><strong>SISTEM INFORMASI
+                        <br> STOK BARANG</strong></h4>
 
                     {{-- Alert login gagal --}}
                     @if (session('loginError'))

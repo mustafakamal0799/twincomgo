@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use PhpParser\Node\Stmt\Foreach_;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Vinkla\Hashids\Facades\Hashids;
 
 class ItemController extends Controller
 {
@@ -19,129 +21,123 @@ class ItemController extends Controller
         if (!$request->exists('stok_ada')) {
             return redirect()->route('items.index', array_merge($request->all(), ['stok_ada' => 1]));
         }
-
-        $token = env('ACCURATE_API_TOKEN');
-        $session = env('ACCURATE_SESSION');
-
-
-        $search = $request->input('q');
-        $categoryId = $request->input('id');
-        $minPrice = $request->input('min_price');
-        $maxPrice = $request->input('max_price');
-
-        $page = $request->get('page', 1);
-        $stokAda = $request->input('stok_ada');
-        $pageSize = 100;
         
+        $page = $request->input('page', 1);
+        $categoryId = $request->input('category_id');
+
+        $stokAda = $request->input('stok_ada');
+        $minPrice = $request->input('min_price') !== null ? floatval(str_replace(['.', ','], ['', '.'], $request->input('min_price'))) : null;
+        $maxPrice = $request->input('max_price') !== null ? floatval(str_replace(['.', ','], ['', '.'], $request->input('max_price'))) : null;
+        $status = Auth::user()->status;
+        
+
         $params = [
             'sp.page' => $page,
-            'sp.pageSize' => $pageSize,
-            'fields' => 'id,name,no,availableToSell,itemCategoryId,detailSellingPrice,branchPrice',
+            'sp.pageSize' => 100,
+            'fields' => 'id,name,no,availableToSell,branchPrice,itemUnit,availableToSellInAllUnit',
             'filter.suspended' => 'false',
-            'filter.keywords.op' => 'CONTAIN',
-            'filter.keywords.val[0]' => $search,
-            'filter.itemCategoryId' => $categoryId,
         ];
 
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $params['filter.keywords.op'] = 'CONTAIN';
+            $params['filter.keywords.val[0]'] = $search;
+        }
 
-        $respon = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Session-ID' => $session
+        if ($categoryId) {
+            $params['filter.itemCategoryId'] = $categoryId;
+        }
+        
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . env('ACCURATE_API_TOKEN'),
+            'X-Session-ID' => env('ACCURATE_SESSION'),
         ])->get('https://public.accurate.id/accurate/api/item/list.do', $params);
 
-        if ($respon->successful()) {
-            $data = $respon->json();
+        $data = $response->json();
+        $items = $data['d'] ?? [];
 
-           
-            if (!isset($data['sp']) || !isset($data['d'])) {
-                return back()->withErrors('Data tidak ditemukan atau format API tidak sesuai.');
-            }            
+        if ($minPrice !== null || $maxPrice !== null) {
+            $items = array_filter($items, function ($item) use ($minPrice, $maxPrice) {
+                $price = $item['branchPrice'] ?? null;
+                if ($price === null) {
+                    return false;
+                }
+                if ($minPrice !== null && $price < floatval($minPrice)) {
+                    return false;
+                }
+                if ($maxPrice !== null && $price > floatval($maxPrice)) {
+                    return false;
+                }
+                return true;
+            });
+        }
 
-            $items = $data['d'];           
-            $apiPagination = $data['sp'];
+        if ($stokAda == '1') {
+            $items = array_filter($items, function ($item) {
+                return isset($item['availableToSell']) && $item['availableToSell'] > 0;
+            });
+        }
 
-            if ($stokAda) {
-                $items = array_filter($items, function ($item) {
-                    return isset($item['availableToSell']) && $item['availableToSell'] > 0;
-                });
-            }
+        $allCategories = collect();
+        $page = 1;
 
-            // Filter by price range if minPrice or maxPrice is set
-            if ($minPrice !== null || $maxPrice !== null) {
-                $items = array_filter($items, function ($item) use ($minPrice, $maxPrice) {
-                    $price = $item['branchPrice'] ?? null;
-                    if ($price === null) {
-                        return false;
-                    }
-                    if ($minPrice !== null && $price < floatval($minPrice)) {
-                        return false;
-                    }
-                    if ($maxPrice !== null && $price > floatval($maxPrice)) {
-                        return false;
-                    }
-                    return true;
-                });
-            }
-
-            // Laravel-style pagination array
-            $pagination = [
-                'current_page' => $apiPagination['page'],
-                'data' => $items,
-                'first_page_url' => route('items.index', ['page' => 1, 'search' => $search]),
-                'from' => ($apiPagination['page'] - 1) * $apiPagination['pageSize'] + 1,
-                'last_page' => ceil($apiPagination['rowCount'] / $apiPagination['pageSize']),
-                'last_page_url' => route('items.index', ['page' => ceil($apiPagination['rowCount'] / $apiPagination['pageSize']), 'search' => $search]),
-                'next_page_url' => $apiPagination['page'] < ceil($apiPagination['rowCount'] / $apiPagination['pageSize']) 
-                    ? route('items.index', ['page' => $apiPagination['page'] + 1, 'search' => $search]) 
-                    : null,
-                'path' => route('items.index'),
-                'per_page' => $apiPagination['pageSize'],
-                'prev_page_url' => $apiPagination['page'] > 1 
-                    ? route('items.index', ['page' => $apiPagination['page'] - 1, 'search' => $search]) 
-                    : null,
-                'to' => min($apiPagination['page'] * $apiPagination['pageSize'], $apiPagination['rowCount']),
-                'total' => $apiPagination['rowCount']
+        do {
+            $paramses = [
+                'sp.page' => $page,
+                'fields' => 'id,name,parent',
+                'sp.pageSize' => 100
             ];
 
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('ACCURATE_API_TOKEN'),
+                'X-Session-ID' => env('ACCURATE_SESSION'),
+            ])->get('https://public.accurate.id/accurate/api/item-category/list.do', $paramses);
 
-            $allCategories = collect(); // Kumpulan semua kategori
-            $page = 1;
+            $data = $response->json();
 
-            do {
-                $paramses = [
-                    'sp.page' => $page,
-                    'fields' => 'id,name',
-                    'sp.pageSize' => 100 // atau nilai maksimum
-                ];
+            $categories = collect($data['d'] ?? []);
+            $allCategories = $allCategories->merge($categories);
 
-                $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
-                    'X-Session-ID' => $session
-                ])->get('https://public.accurate.id/accurate/api/item-category/list.do', $paramses);
+            $totalPages = $data['sp']['pageCount'] ?? 1;
+            $page++;
+        } while ($page <= $totalPages);
 
-                $data = $response->json();
+        $categories = $allCategories->toArray();
+        $categoryOptions = $this->buildCategoryOptions($categories);
 
-                // Simpan data kategori yang ada
-                $categories = collect($data['d'] ?? []);
-                $allCategories = $allCategories->merge($categories);
+        $currentPage = $data['sp']['page'] ?? 1;
+        $totalPages = $data['sp']['pageSize'] ?? 1;
 
-                $totalPages = $data['sp']['pageCount'] ?? 1;
-                $page++;
-
-            } while ($page <= $totalPages);
-
-            return view('items.index', [
-                'items' => $items,
-                'pagination' => (object)$pagination,
-                'search' => $search,
-                'categories' => $allCategories,
-                'min_price' => $minPrice,
-                'max_price' => $maxPrice,
-            ]);
-        } else {
-            $data = $respon->json();
-            return back()->withErrors('Gagal Mengambil Data Item: ' . json_encode($data));
+        if ($request->ajax()) {
+            return view('partials.item-rows', compact('items', 'status'))->render();
         }
+
+        return view('items.index', compact(
+            'items',
+            'allCategories',
+            'status',
+            'categoryOptions',
+            'currentPage',
+            'totalPages'
+        ));
+    }
+
+    private function buildCategoryOptions(array $categories, $parentId = null, $prefix = '')
+    {
+        $html = '';
+
+        foreach ($categories as $category) {
+            $catParentId = $category['parent']['id'] ?? null;
+
+            if ($catParentId == $parentId) {
+                $selected = request('category_id') == $category['id'] ? 'selected' : '';
+                $html .= '<option value="' . $category['id'] . '" ' . $selected . '>' . $prefix . $category['name'] . '</option>';
+                // Rekursif untuk anaknya
+                $html .= $this->buildCategoryOptions($categories, $category['id'], $prefix . '-- ');
+            }
+        }
+
+        return $html;
     }
 
 
@@ -166,6 +162,7 @@ class ItemController extends Controller
                 'sp.pageSize' => 100,
                 'fields' => 'id,number',
                 'filter.reverseInvoice' => 'true',
+                'filter.reverseInvoiceStatus' => 'UNDELIVERED',
             ]);
 
             if (!$response->successful()) break;
@@ -212,7 +209,7 @@ class ItemController extends Controller
 
     protected function fetchSalesOrderDetailsBatch($salesOrderList, $headers, $itemIdUtama, &$stokNew)
     {
-        $batchSize = 13;
+        $batchSize = 15;
         $salesOrderChunks = array_chunk($salesOrderList, $batchSize);
 
         foreach ($salesOrderChunks as $chunk) {
@@ -259,8 +256,7 @@ class ItemController extends Controller
                     }
                 }
             }
-            usleep(
-                00000);
+            // usleep(500000);
             Log::info("Batch selesai");
         }
     }
@@ -479,8 +475,15 @@ class ItemController extends Controller
         return [null, null];
     }
 
-    public function getItemDetails($id)
+    public function getItemDetails($encrypted)
     {
+        $decoded = Hashids::decode($encrypted);
+        $id = $decoded[0] ?? null;
+
+        if (!$id) {
+            abort(404, 'ID tidak valid'); // atau handle jika ID tidak valid
+        }
+        
         $user = Auth::user();
         $token = env('ACCURATE_API_TOKEN');
         $session = env('ACCURATE_SESSION');
@@ -499,6 +502,8 @@ class ItemController extends Controller
         $detailWarehouse = $item['detailWarehouseData'];
         $garansiUser = $item['charField6'];
         $garansiReseller = $item['charField7'];
+        $pricePack = $item['unit2Price'];
+        $satuanItem = $item['balanceInUnit'];
 
         $detailWarehouse = collect($detailWarehouse)->map(function ($item) {
             $unitParts = explode(' ', $item['balanceUnit']);
@@ -566,11 +571,7 @@ class ItemController extends Controller
 
         list($unitPrice, $discItem) = $this->fetchAdjustedPrice($headers, $selectedBranchId, $id);
         
-        $sellingPrices = collect($item['detailSellingPrice']);
-        $resellerPrice = $sellingPrices
-            ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'reseller')['price'] ?? 0;
-        $userPrice = $sellingPrices
-            ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'user')['price'] ?? 0;
+        
 
         return view('items.detail', [
             'item' => $item,
@@ -589,6 +590,8 @@ class ItemController extends Controller
             'adjustedPrice' => $unitPrice,
             'resellerWarehouses' => $resellerWarehouses,
             'transitWarehouses' => $transitWarehouses,
+            'pricePack' => $pricePack,
+            'satuanItem' => $satuanItem,
         ]);
     }
 
@@ -842,8 +845,15 @@ class ItemController extends Controller
         
     }
 
-    public function exportPdf(Request $request, $id)
+    public function exportPdf(Request $request, $encrypted)
     {
+        $decoded = Hashids::decode($encrypted);
+        $id = $decoded[0] ?? null;
+
+        if (!$id) {
+            abort(404, 'ID tidak valid'); // atau handle jika ID tidak valid
+        }
+
         $user = Auth::user();
         $token = env('ACCURATE_API_TOKEN');
         $session = env('ACCURATE_SESSION');
@@ -858,6 +868,8 @@ class ItemController extends Controller
         if (!$item) {
             return back()->withErrors('Gagal Mengambil Data Item');
         }
+
+        $satuanItem = $item['balanceInUnit'] ?? null;
 
         // Ambil nama file gambar pertama dari detailItemImage jika ada
         $fileName = null;
@@ -903,7 +915,8 @@ class ItemController extends Controller
                 $stokNew[$warehouseDetail['id']] = [
                     'name' => $warehouseDetail['name'],
                     'description' => $warehouseDetail['description'] ?? null,
-                    'balance' => $warehouseDetail['balance'] ?? 0
+                    'balance' => $warehouseDetail['balance'] ?? 0,
+                    'balanceUnit' => $warehouseDetail['balanceUnit'] ?? null,
                 ];
             }
             $stokNew = array_filter($stokNew, fn($w) => ($w['balance'] ?? 0) > 0);
@@ -911,10 +924,12 @@ class ItemController extends Controller
             $detailWarehouse = collect($item['detailWarehouseData'])->keyBy('id');
             foreach ($stokNew as $warehouseId => &$stock) {
                 if (isset($detailWarehouse[$warehouseId])) {
-                    $stock['description'] = $detailWarehouse[$warehouseId]['description'] ?? null;
-                } else {
-                    $stock['description'] = null;
-                }
+                        $stock['description'] = $detailWarehouse[$warehouseId]['description'] ?? null;
+                        $stock['balanceUnit'] = $detailWarehouse[$warehouseId]['balanceUnit'] ?? null; // ✅ tambahkan ini
+                    } else {
+                        $stock['description'] = null;
+                        $stock['balanceUnit'] = null; // ✅ default null kalau tidak ketemu
+                    }
             }
             unset($stock);
         }
@@ -1049,6 +1064,11 @@ class ItemController extends Controller
         $resellerStock = array_filter($resellerStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
         $konsinyasiStock = array_filter($konsinyasiStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
 
+        $totalTsc = array_sum(array_column($tscStock, 'balance'));
+        $totalNonKonsinyasi = array_sum(array_column($nonKonsinyasiStock, 'balance'));
+        $totalReseller = array_sum(array_column($resellerStock, 'balance'));
+        $totalKonsinyasi = array_sum(array_column($konsinyasiStock, 'balance'));
+
         // Sort each group by warehouse name ascending
         $sortByName = function(&$array) {
             uasort($array, function($a, $b) {
@@ -1072,6 +1092,18 @@ class ItemController extends Controller
         $userPrice = $sellingPrices
             ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'user')['price'] ?? 0;
 
+        $pckResellerPrice = $sellingPrices->first(function ($p) {
+            return strtolower($p['priceCategory']['name']) === 'reseller'
+                && isset($p['unit']['name']) 
+                && $p['unit']['name'] === 'PACK';
+        })['price'] ?? 0;
+
+        $pckUserPrice = $sellingPrices->first(function ($p) {
+            return strtolower($p['priceCategory']['name']) === 'user'
+                && isset($p['unit']['name']) 
+                && $p['unit']['name'] === 'PACK';
+        })['price'] ?? 0;
+
         $finalUserPrice = $userPrice;
         $finalResellerPrice = $resellerPrice;
 
@@ -1090,6 +1122,13 @@ class ItemController extends Controller
                 $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
             }
         }
+
+        $totalBalance = 0;
+
+        foreach ($stokNew as $stok) {
+            $totalBalance += $stok['balance'] ?? 0;
+        }
+
 
         Log::info("Export PDF - finalUserPrice: $finalUserPrice, finalResellerPrice: $finalResellerPrice");
 
@@ -1110,6 +1149,13 @@ class ItemController extends Controller
             'garansiReseller' => $item['charField7'] ?? null,
             'garansiUser' => $item['charField6'] ?? null,
             'imageBase64' => $imageBase64,
+            'totalNonKonsinyasi' => $totalNonKonsinyasi,
+            'totalTsc' => $totalTsc,
+            'totalReseller' => $totalReseller,
+            'totalKonsinyasi' => $totalKonsinyasi,
+            'satuanItem' => $satuanItem,
+            'pckResellerPrice' => $pckResellerPrice,
+            'pckUserPrice' => $pckUserPrice,
         ]);
 
         return $pdf->stream('laporan-item-' . Str::slug($item['name']) . '.pdf');

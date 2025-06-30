@@ -21,6 +21,7 @@
             background-repeat: no-repeat;
             background-position: center;
             min-height: 100vh; /* Full screen */
+            font-size: 14px;
         }
 
         .btn-secondary.active, 
@@ -75,10 +76,20 @@
         #toggleSidebar.toggled {
             left: 10px; /* Move right when toggled */
         }
+        .navbar-brand {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+        }
+        .card {
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
+        }
 
         @media only screen and (max-width: 768px) {
             .navbar-brand {
-                font-size: 10px;            
+                font-size: 10px;
+                font-weight: bold;
+                color: white;            
             }
             .dropdown-menu {
                 min-width: 100px;
@@ -133,9 +144,12 @@
                 z-index: 1030;
                 display: none;
             }
-
+            
             #sidebar-overlay.show {
                 display: block;
+            }
+            .navbar-toggler {
+                font-size: 10px;
             }
         }
         
@@ -201,30 +215,48 @@
             </div>
         </div>
     @else
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-            <div class="container">
-                <a class="navbar-brand" href="/">SISTEM INFORMASI STOK BARANG</a>
-
-                <div class="btn-group">
-                    <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            <strong style="margin-right: 10px">{{ Auth::user()->name }}</strong>
-                            <i class="bi bi-person-circle person-icon me-2"></i>
+        <div class="container mt-4 mb-4">
+            <div class="card border-0" style="background: linear-gradient(90deg, #212529, #919191); border-radius: 50px;">
+                <nav class="navbar navbar-expand-lg navbar-dark px-4" style="border-radius: 50px;">
+                    <div class="container-fluid">
+                        <!-- Judul Navbar -->
+                        <a class="navbar-brand py-0" href="{{ route('items.index') }}">
+                            SISTEM INFORMASI STOK BARANG
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST" class="px-3">
-                                    @csrf
-                                    <button class="btn btn-danger w-100 mt-2">
-                                        <i class="bi bi-box-arrow-right me-1"></i> Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
+
+                        <!-- Tombol hamburger (hanya muncul di layar kecil) -->
+                        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserMenu" aria-controls="navbarUserMenu" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!-- Isi Navbar: nama user & dropdown -->
+                        <div class="collapse navbar-collapse justify-content-end" id="navbarUserMenu">
+                            <div class="dropdown">
+                                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                                    <strong class="me-2">
+                                        {{ Auth::user()->name }}
+                                    </strong>
+                                    <i class="bi bi-person-circle person-icon me-2" style="font-size: 1.2rem;"></i>
+                                </a>
+
+                                <ul class="dropdown-menu dropdown-menu-dark text-small shadow dropdown-menu-end">
+                                    <li>
+                                        <form action="{{ route('logout') }}" method="POST" class="px-3 py-2">
+                                            @csrf
+                                            <button class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                                                <i class="bi bi-box-arrow-right"></i>
+                                                Logout
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </nav>
             </div>
-        </nav>
+        </div>
+
 
         <!-- Konten -->
         <div class="flex-fill container">

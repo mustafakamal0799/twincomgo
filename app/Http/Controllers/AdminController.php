@@ -13,11 +13,9 @@ class AdminController extends Controller
     public function index() {
 
         $totalUsers = User::count();
-        // $totalItems = Item::count();
         $logToday = Activity::whereDate('created_at', Carbon::today())->count();
 
-        $recentLogs = Activity::latest()->take(5)->get();
-        // $recentItems = Item::latest()->take(5)->get();
+        $recentLogs = Activity::latest()->take(10)->get();
 
         return view('admin.dashboard', compact(
             'totalUsers',

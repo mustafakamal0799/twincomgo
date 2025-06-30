@@ -38,57 +38,53 @@
 <div class="container-fluid py-4">
     <div class="card">
         <div class="card-header p-3">
-            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h5 class="mb-0">Daftar User</h5>
-            </div>
-            <form method="GET" action="{{ route('admin.user') }}" class="row g-3 align-items-end">
-                {{-- Pencarian Nama atau Email --}}
-                <div class="col-md-4">
-                    <label for="search" class="form-label">Cari Nama atau Email</label>
-                    <input type="text" name="search" id="search" class="form-control" 
-                        placeholder="Contoh: Budi atau budi@email.com" value="{{ request('search') }}">
-                </div>
-
-                {{-- Filter Status --}}
-                <div class="col-md-3">
-                    <label for="status" class="form-label">Filter Status</label>
-                    <select name="status" id="status" class="form-control">
-                        <option value="">Semua</option>
-                        <option value="karyawan" {{ request('status') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
-                        <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
-                        <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
-                    </select>
-                </div>
-
-                {{-- Tombol Cari --}}
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-success w-100">Cari</button>
-                </div>
-
-                {{-- Tombol Reset --}}
-                <div class="col-md-2">
-                    <a href="{{ route('admin.user') }}" class="btn btn-secondary w-100">Reset</a>
-                </div>
-
-                {{-- Total User --}}
-                <div class="col-md-1">
-                    @php
-                        $total = 0;
-                        if (request('status') === 'karyawan') $total = $totalKaryawan;
-                        elseif (request('status') === 'reseller') $total = $totalReseller;
-                        elseif (request('status') === 'admin') $total = $totalAdmin;
-                        else $total = $totalUsers;
-                    @endphp
-
-                    <input type="text" class="form-control fw-bold text-center" value="{{ $total }}" disabled>
+            <h4 class="mb-4">Daftar User</h4>
+            <form method="GET" action="{{ route('admin.user') }}">
+                <div class="row g-3 align-items-end justify-content-end">
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Filter Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">Semua</option>
+                            <option value="karyawan" {{ request('status') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                            <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
+                            <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
+                        </select>
+                        
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex flex-wrap align-items-end gap-2">
+                            <div style="min-width: 100px; flex-grow: 1;">
+                                <label for="search" class="form-label">Cari</label>
+                                <div class="input-group">
+                                    <input type="text" name="search" id="search" class="form-control" placeholder="Nama / Email" value="{{ request('search') }}">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('admin.user') }}" class="btn btn-secondary w-100">Reset</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        @php
+                            $total = 0;
+                            if (request('status') === 'karyawan') $total = $totalKaryawan;
+                            elseif (request('status') === 'reseller') $total = $totalReseller;
+                            elseif (request('status') === 'admin') $total = $totalAdmin;
+                            else $total = $totalUsers;
+                        @endphp
+                        <input type="text" class="form-control fw-bold text-center" value="{{ $total }}" disabled>
+                    </div>
                 </div>
             </form>
         </div>
 
         <div class="card-body px-0 pt-0 pb-2">
             @if (count($users) > 0)
-                <div class="table-responsive p-4 table-scroll-container">
-                    <table class="table table-bordered table-striped align-middle">
+                <div class="table-responsive table-scroll-container">
+                    <table class="table table-striped align-middle">
                         <thead class="table-secondary">
                             <tr class="text-center">
                                 <th>No</th>

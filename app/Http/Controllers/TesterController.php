@@ -9,76 +9,95 @@ use Illuminate\Support\Facades\Log;
 class TesterController extends Controller
 {
 
-    public function test () {
+    public function index (Request $request) {
 
-        return view('items.test-table');
-    }
+        if (!$request->exists('stok_ada')) {
+            return redirect()->route('item-test', array_merge($request->all(), ['stok_ada' => 1]));
+        }
+        
+        $page = $request->input('page', 1);
+        $categoryId = $request->input('category_id');
 
-    public function invoice () {
-        $token = env('ACCURATE_API_TOKEN');
-        $session = env('ACCURATE_SESSION');
-        $headers = [
-            'Authorization' => 'Bearer ' . $token,
-            'X-Session-ID' => $session
+        $stokAda = $request->input('stok_ada');
+        $minPrice = $request->input('min_price');
+        $maxPrice = $request->input('max_price');
+        
+
+        $params = [
+            'sp.page' => $page,
+            'sp.pageSize' => 100,
+            'fields' => 'id,name,no,availableToSell,branchPrice',
+            'filter.suspended' => 'false',
         ];
 
-        $saleInvoiceList = [];
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $params['filter.keywords.op'] = 'CONTAIN';
+            $params['filter.keywords.val[0]'] = $search;
+        }
+
+        if ($categoryId) {
+            $params['filter.itemCategoryId'] = $categoryId;
+        }
+        
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . env('ACCURATE_API_TOKEN'),
+            'X-Session-ID' => env('ACCURATE_SESSION'),
+        ])->get('https://public.accurate.id/accurate/api/item/list.do', $params);
+
+        $data = $response->json();
+        $items = $data['d'] ?? [];
+
+        if ($minPrice !== null || $maxPrice !== null) {
+            $items = array_filter($items, function ($item) use ($minPrice, $maxPrice) {
+                $price = $item['branchPrice'] ?? null;
+                if ($price === null) {
+                    return false;
+                }
+                if ($minPrice !== null && $price < floatval($minPrice)) {
+                    return false;
+                }
+                if ($maxPrice !== null && $price > floatval($maxPrice)) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        if ($stokAda == '1') {
+            $items = array_filter($items, function ($item) {
+                return isset($item['availableToSell']) && $item['availableToSell'] > 0;
+            });
+        }
+
+        $allCategories = collect();
         $page = 1;
 
         do {
-            Log::info("Mengambil halaman sales invoice ke-$page dengan filter reverseInvoice=true");
-            $response = Http::timeout(100)->withHeaders($headers)->get("https://public.accurate.id/accurate/api/sales-invoice/list.do", [
+            $paramses = [
                 'sp.page' => $page,
-                'sp.pageSize' => 100,
-                'fields' => 'id,number,reverseInvoice',
-                'filter.reverseInvoice' => 'true',
-            ]);
+                'fields' => 'id,name',
+                'sp.pageSize' => 100
+            ];
 
-            Log::info("Request URL: " . $response->effectiveUri());
-            Log::info("Response status: " . $response->status());
-            Log::info("Response body: " . json_encode($response->json()));
-
-            if (!$response->successful()) {
-                Log::warning("Gagal mengambil halaman sales invoice ke-$page");
-                break;
-            }
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('ACCURATE_API_TOKEN'),
+                'X-Session-ID' => env('ACCURATE_SESSION'),
+            ])->get('https://public.accurate.id/accurate/api/item-category/list.do', $paramses);
 
             $data = $response->json();
-            $saleInvoiceList = array_merge($saleInvoiceList, $data['d'] ?? []);
-            $hasNext = ($page * 100) < ($data['sp']['rowCount'] ?? 0);
+
+            $categories = collect($data['d'] ?? []);
+            $allCategories = $allCategories->merge($categories);
+
+            $totalPages = $data['sp']['pageCount'] ?? 1;
             $page++;
+        } while ($page <= $totalPages);
 
-        } while ($hasNext);
-
-        // ✅ Tambahkan pengecekan agar tidak error
-        if (empty($saleInvoiceList)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak ada data Sales Invoice ditemukan.',
-            ]);
+        if ($request->ajax()) {
+            return view('partials.item-list', compact('items', 'allCategories'))->render();
         }
 
-        $batchSize = 8;
-        $salesInvoiceChunks = array_chunk($saleInvoiceList, $batchSize);
-
-        $invoiceDetail = [];
-
-        foreach ($salesInvoiceChunks as $batch) {
-            $responses = Http::pool(fn ($pool) =>
-                collect($batch)->map(fn ($invoice) =>
-                    $pool->timeout(100)->withHeaders($headers)
-                        ->get("https://public.accurate.id/accurate/api/sales-invoice/detail.do?id=" . $invoice['id'])
-                )->all()
-            );
-
-            foreach ($responses as $response) {
-                if ($response->successful()) {
-                    $invoiceDetail[] = $response->json()['d'];
-                }
-            }
-        }
-
-        dd($invoiceDetail);
+        return view('tester.index', compact('items', 'allCategories'));
     }
-
 }

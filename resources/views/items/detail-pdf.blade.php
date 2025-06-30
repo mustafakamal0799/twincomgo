@@ -2,14 +2,13 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>LIST STOK - {{ $item['name'] }}</title>
-    <style>
-        
+    <title>LIST STOK - {{ $item['name'] }}</title>    
+    <style>   
         body {
             font-family: 'Times New Roman', Times, serif, sans-serif;
             font-size: 12px;
             color: #333;
-            margin: 0;
+            margin: 10;
         }
         .kop {
             text-align: center;
@@ -99,16 +98,38 @@
         .kop table td {
             border: none;
         }
+        .page-break {
+            page-break-after: always;
+        }
+        .footer {
+            position: fixed;
+            bottom: -60px;
+            left: 0;
+            right: 0;
+            height: 50px;
+            font-size: 12px;
+            width: 100%;
+        }
 
-        @page {
-            margin: 50px 50px 70px 50px;
-            @bottom-right {
-                content: element(footer);
-            }
+        .footer .left {
+            float: left;
+            text-align: left;
+        }
+
+        .footer .right {
+            float: right;
+            text-align: right;
+        }
+
+        .footer .center {
+            text-align: center;
+            clear: both;
         }
     </style>
+    
 </head>
 <body>
+    
     @php
         $status = Auth::user()->status;
 
@@ -156,11 +177,33 @@
                                     <td style="width: 10px; text-align: left;">:</td>
                                     <td>{{ $item['no'] }}</td>
                                 </tr>
+                                <tr>
+                                    <th style="width: 100px; text-align: left;">Satuan Barang</th>
+                                    <td style="width: 10px; text-align: left;">:</td>
+                                    <td>{{ preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $satuanItem ))) ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $satuanItem ))) : trim(str_replace(['[', ']'], '', $satuanItem ))}}</td>
+                                </tr>
                                 @if ($filterHargaGaransi === 'user' || $filterHargaGaransi === 'semua')
                                 <tr>
-                                    <th>Harga</th>
+                                    <th>
+                                        @if ($filterHargaGaransi === 'semua')
+                                            Harga User
+                                        @else 
+                                            Harga
+                                        @endif
+                                    </th>
                                     <td>:</td>
                                     <td>Rp {{ number_format($finalUserPrice, 0, ',', '.') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        @if ($filterHargaGaransi === 'semua')
+                                            Harga Pack User
+                                        @else 
+                                            Harga Pack
+                                        @endif
+                                    </th>
+                                    <td>:</td>
+                                    <td>Rp {{ number_format($pckUserPrice, 0, ',', '.') ?? '0' }}</td>
                                 </tr>
                                 <tr>
                                     <th>Garansi</th>
@@ -170,9 +213,26 @@
                                 @endif
                                 @if ($filterHargaGaransi === 'reseller' || $filterHargaGaransi === 'semua')
                                 <tr>
-                                    <th>Harga</th>
+                                    <th>
+                                        @if ($filterHargaGaransi === 'semua')
+                                            Harga Reseller
+                                        @else 
+                                            Harga
+                                        @endif
+                                    </th>
                                     <td>:</td>
                                     <td>Rp {{ number_format($finalResellerPrice, 0, ',', '.') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        @if ($filterHargaGaransi === 'semua')
+                                            Harga Pack Reseller
+                                        @else 
+                                            Harga Pack
+                                        @endif
+                                    </th>
+                                    <td>:</td>
+                                    <td>Rp {{ number_format($pckResellerPrice, 0, ',', '.') ?? '0' }}</td>
                                 </tr>
                                 <tr>
                                     <th>Garansi</th>
@@ -209,33 +269,16 @@
         </table>
     </div>
 
-    @if(count($tscStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'tsc'))
-        <div class="section-title">TSC</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="text-align: center;">Lokasi</th>
-                    <th style="text-align: center;">Stok</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($tscStock as $stok)
-                <tr>
-                    <td>{{ $stok['name'] }}</td>
-                    <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-
+    
     @if(count($nonKonsinyasiStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'non'))
-        <div class="section-title">Store</div>
-        <table>
-            <thead>
+    <div class="section-title ">Store</div>
+    <table>
+        <thead>
                 <tr>
                     <th style="text-align: center;">Lokasi</th>
                     <th style="text-align: center;">Stok</th>
+                    <th style="text-align: center;">Satuan</th>
+                    <th style="text-align: center;">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -243,99 +286,149 @@
                 <tr>
                     <td>{{ $stok['name'] }}</td>
                     <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+                    <td style="text-align: center;">
+                        {{ 
+                            preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                            ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                            : trim(str_replace(['[', ']'], '', $stok['balanceUnit'] ))
+                        }}
+                    </td>
+                    @if ($loop->first)
+                    <td rowspan="{{ count($nonKonsinyasiStock) }}" style="text-align: center; vertical-align: middle;">
+                        {{ number_format($totalNonKonsinyasi, 0, ',', '.') }}
+                    </td>
+                    @endif
                 </tr>
                 @endforeach
             </tbody>
         </table>
-    @endif
+        @endif
+        <div class="footer">
+            <div class="left">SISB TWINCOMGO</div>
+            <div class="right">{{ \Carbon\Carbon::now('Asia/Makassar')->translatedFormat('d F Y H:i') }}</div>
+        </div>
+        <div class="page-break"></div>
+        @if(count($tscStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'tsc'))
+            <div class="section-title">TSC</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Lokasi</th>
+                        <th style="text-align: center;">Stok</th>
+                        <th style="text-align: center;">Satuan</th>
+                        <th style="text-align: center;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($tscStock as $stok)
+                    <tr>
+                        <td>{{ $stok['name'] }}</td>
+                        <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+                        <td style="text-align: center;">
+                            {{ 
+                                preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                : trim(str_replace(['[', ']'], '', $stok['balanceUnit'] ))
+                            }}
+                        </td>
+                        @if ($loop->first)
+                        <td rowspan="{{ count($tscStock) }}" style="text-align: center; vertical-align: middle;">
+                            {{ number_format($totalTsc, 0, ',', '.') }}
+                        </td>
+                        @endif
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+            
+        @if(count($resellerStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'resel'))
+            <div class="section-title">Marketing Reseller</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Lokasi</th>
+                        <th style="text-align: center;">Stok</th>
+                        <th style="text-align: center;">Satuan</th>
+                        <th style="text-align: center;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($resellerStock as $stok)
+                    <tr>
+                        <td>{{ $stok['name'] }}</td>
+                        <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+                        <td style="text-align: center;">
+                            {{ 
+                                preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                : trim(str_replace(['[', ']'], '', $stok['balanceUnit'] ))
+                            }}
+                        </td>
+                        @if ($loop->first)
+                        <td rowspan="{{ count($resellerStock) }}" style="text-align: center; vertical-align: middle;">
+                            {{ number_format($totalReseller, 0, ',', '.') }}
+                        </td>
+                        @endif
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            
+        @endif
 
-    <div style="position: fixed; bottom: 20px; left: 20px; font-size: 10px; color: #666;">
-        SISB TWINCOMGO, {{ \Carbon\Carbon::now('Asia/Makassar')->translatedFormat('d F Y H:i') }}
-    </div>
+        @if(count($konsinyasiStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'konsinyasi'))
+            <div class="section-title">Konsinyasi</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Lokasi</th>
+                        <th style="text-align: center;">Stok</th>
+                        <th style="text-align: center;">Satuan</th>
+                        <th style="text-align: center;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($konsinyasiStock as $stok)
+                    <tr>
+                        <td>{{ $stok['name'] }}</td>
+                        <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+                        <td style="text-align: center;">
+                            {{ 
+                                preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                : trim(str_replace(['[', ']'], '', $stok['balanceUnit'] ))
+                            }}
+                        </td>
+                        @if ($loop->first)
+                        <td rowspan="{{ count($konsinyasiStok) }}" style="text-align: center; vertical-align: middle;">
+                            {{ number_format($totalKonsinyasi, 0, ',', '.') }}
+                        </td>
+                        @endif
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
 
-    @if($filterGudang === 'semua' && $sectionCount > 1)
-        <div style="page-break-after: always;"></div>
-    @endif
-
-    @if(count($resellerStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'resel'))
-        <div class="section-title">Marketing Reseller</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="text-align: center;">Lokasi</th>
-                    <th style="text-align: center;">Stok</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($resellerStock as $stok)
-                <tr>
-                    <td>{{ $stok['name'] }}</td>
-                    <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-        
-    @endif
-
-    @if(count($konsinyasiStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'konsinyasi'))
-        <div class="section-title">Konsinyasi</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="text-align: center;">Lokasi</th>
-                    <th style="text-align: center;">Stok</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($konsinyasiStock as $stok)
-                <tr>
-                    <td>{{ $stok['name'] }}</td>
-                    <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-
-    @if(count($transitStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'trans'))
-        <div class="section-title">Transit</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="text-align: center;">Lokasi</th>
-                    <th style="text-align: center;">Stok</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($transitStock as $stok)
-                <tr>
-                    <td>{{ $stok['name'] }}</td>
-                    <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-
-    
-    
-    <div style="position: fixed; bottom: 20px; left: 20px; font-size: 10px; color: #666;">
-        SISB TWINCOMGO, {{ \Carbon\Carbon::now('Asia/Makassar')->translatedFormat('d F Y H:i') }}
-    </div>
-
-    {{-- SCRIPT UNTUK NOMOR HALAMAN --}}
-    <script type="text/php">
-        if (isset($pdf)) {
-            $pdf->page_script('
-                $font = $fontMetrics->get_font("Helvetica", "normal");
-                $size = 10;
-                $pageText = "Halaman " . $PAGE_NUM . " dari " . $PAGE_COUNT;
-                $x = 520;
-                $y = 820;
-                $pdf->text($x, $y, $pageText, $font, $size);
-            ');
-        }
-    </script>
+        @if(count($transitStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'trans'))
+            <div class="section-title">Transit</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Lokasi</th>
+                        <th style="text-align: center;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($transitStock as $stok)
+                    <tr>
+                        <td>{{ $stok['name'] }}</td>
+                        <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
 </body>
 </html>

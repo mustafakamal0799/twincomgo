@@ -55,7 +55,7 @@
                 </ul>
             </div>
         @endif
-        <div class="card login-card">
+        <div class="card p-3 login-card">
             <div class="row g-0" style="min-height: 450px;">
                 
                 <!-- Kolom kiri: Gambar -->

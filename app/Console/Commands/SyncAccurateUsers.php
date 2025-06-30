@@ -49,7 +49,7 @@ class SyncAccurateUsers extends Command
             $params = [
                 'sp.page' => $page,
                 'sp.pageSize' => $pageSize,
-                'fields' => 'id,name,email,suspended,',
+                'fields' => 'id,name,email,suspended,customerBranchName',
                 'filter.customerCategoryId' => 2650,
             ];
 
@@ -124,6 +124,7 @@ class SyncAccurateUsers extends Command
                 $user->email       = $email;
                 $user->province    = $province;      // <— set shipProvince di sini
                 $user->status      = 'RESELLER';
+                $user->customer_branch = $cust['customerBranchName'] ?? null; // tambahkan customerBranch
                 $user->save();
 
                 $totalUsers++;

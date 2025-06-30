@@ -25,22 +25,15 @@ use App\Http\Controllers\AuthinticationController;
 
 
 //Authintication
-Route::get('/', [AuthinticationController::class, 'index'])->name('auth.login');
+Route::get('/', [AuthinticationController::class, 'index'])->middleware('guest')->name('auth.login');
 Route::post('/login-post', [AuthinticationController::class, 'login'])->name('auth.login-post');
 Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logout');
 
-//item
-Route::middleware(['auth'])->group(function () {
-    Route::get('/item', [ItemController::class, 'index'])->name('items.index');
-    Route::get('/item-detail/{id}', [ItemController::class, 'getItemDetails'])->name('items.detail');
-    Route::get('/item-detail/{id}/export-pdf', [ItemController::class, 'exportPdf'])->name('items.export-pdf');
-    Route::post('/item-detail/{id}/export-pdf', [ItemController::class, 'exportPdf'])->name('items.export-pdf.post');
-});
 
 //Reset Password
 Route::get('/forgot-password', function () {
     return view('auth.forgot-password');
-})->middleware('guest')->name('password.request');
+})->name('password.request');
 
 Route::post('/forgot-password', function (Request $request) {
     $request->validate(['email' => 'required|email']); 
@@ -59,10 +52,17 @@ Route::get('/reset-password/{token}', function (string $token) {
         'token' => $token,
         'email' => $email,
 ]);
-})->middleware('guest')->name('password.reset');
+})->name('password.reset');
 
 Route::post('/reset-password', [ResetController::class, 'reset'])->name('password.update');
 
+//item
+Route::middleware(['auth'])->group(function () {
+    Route::get('/item', [ItemController::class, 'index'])->name('items.index');
+    Route::get('/item-detail/{encrypted}', [ItemController::class, 'getItemDetails'])->name('items.detail');
+    Route::get('/item-detail/{encrypted}/export-pdf', [ItemController::class, 'exportPdf'])->name('items.export-pdf');
+    Route::post('/item-detail/{encrypted}/export-pdf', [ItemController::class, 'exportPdf'])->name('items.export-pdf.post');
+});
 
 //Admin
 
@@ -108,7 +108,7 @@ Route::get('/items/search-items-ajax', [ItemController::class, 'searchItemsAjax'
 Route::post('/items/matching-invoices-ajax', [ItemController::class, 'getMatchingInvoicesAjax'])->name('items.matching-invoices-ajax');
 Route::post('/items/adjusted-price-reseller-ajax', [ItemController::class, 'getAdjustedPriceResellerAjax'])->name('items.adjusted-price-reseller-ajax');
 
-Route::get('/test/invoice', [TesterController::class, 'invoice']);
+// Route::get('/item-test', [TesterController::class, 'index'])->name('item-test');
 
 
  
