@@ -1,0 +1,155 @@
+body {
+    margin: 0;
+    padding: 0;
+    /* ✅ Ini bagian yang menambahkan background image */
+    background-image: url("../images/bg1.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-height: 100vh; /* Full screen */
+    font-size: 14px;
+}
+
+.btn-secondary.active,
+.btn-secondary:active {
+    background-color: #6c757d !important; /* warna asli btn-secondary */
+    border-color: #6c757d !important;
+    color: #fff !important;
+}
+
+.logout-btn {
+    font-size: 14px;
+    padding: 6px 10px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout-btn i {
+    font-size: 16px;
+    margin-right: 5px;
+}
+.person-icon {
+    color: white;
+    font-size: 35px;
+}
+
+.toggle-btn {
+    position: fixed;
+    top: -5px;
+    left: 245px;
+    /* z-index: 100; */
+    transition: left 0.1s ease;
+    z-index: 1050; /* above sidebar */
+}
+
+.toggle-btn.toggled {
+    left: -5px !important;
+}
+
+#sidebar {
+    transition: all 0.3s ease;
+    z-index: 1040;
+    background-color: #212529; /* Bootstrap dark bg */
+    min-height: 100vh;
+}
+
+#toggleSidebar {
+    transition: left 0.3s ease;
+}
+
+#toggleSidebar.toggled {
+    left: 10px; /* Move right when toggled */
+}
+.navbar-brand {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+.card {
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
+}
+
+.tooltip .tooltip-inner {
+    background-color: #ffe695;
+    color: #000;
+}
+.bs-tooltip-top .tooltip-arrow::before,
+.bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
+    border-top-color: #ffe695 !important;
+}
+
+@media only screen and (max-width: 768px) {
+    body {
+        font-size: 12px;
+    }
+
+    .navbar-brand {
+        font-size: 10px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .dropdown-menu {
+        min-width: 100px;
+    }
+
+    .logout-btn {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    .logout-btn i {
+        font-size: 12px;
+        margin-right: 3px;
+    }
+    .person-icon {
+        font-size: 15px;
+    }
+
+    .dropdown a strong {
+        font-size: 10px;
+    }
+
+    /* Sidebar hidden by default on mobile */
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 250px;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    }
+
+    #sidebar.show {
+        transform: translateX(0);
+    }
+
+    /* Toggle button position on mobile */
+    .toggle-btn {
+        top: 10px;
+        left: 10px;
+    }
+
+    /* Overlay to cover content when sidebar is open */
+    #sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1030;
+        display: none;
+    }
+
+    #sidebar-overlay.show {
+        display: block;
+    }
+    .navbar-toggler {
+        font-size: 10px;
+    }
+}

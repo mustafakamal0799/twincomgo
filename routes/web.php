@@ -6,9 +6,11 @@ use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\ItemController;
 use Illuminate\Support\Facades\Password;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ResetController;
 use App\Http\Controllers\TesterController;
 use App\Http\Controllers\AccurateController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\AccurateSyncController;
 use App\Http\Controllers\AuthinticationController;
 
@@ -28,6 +30,18 @@ use App\Http\Controllers\AuthinticationController;
 Route::get('/', [AuthinticationController::class, 'index'])->middleware('guest')->name('auth.login');
 Route::post('/login-post', [AuthinticationController::class, 'login'])->name('auth.login-post');
 Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logout');
+
+Route::get('/landing', [LandingPageController::class, 'index'])->name('landingPage.index');
+
+Route::get('/promo', [PromoController::class, 'index'])->name('promo.index');
+Route::get('/promo-upload', [PromoController::class, 'create'])->name('promo.create');
+Route::post('/promo-upload', [PromoController::class, 'store'])->name('promo.store');
+Route::get('/promo-edit/{id}', [PromoController::class, 'edit'])->name('promo.edit');
+Route::put('/promo-update/{id}', [PromoController::class, 'update'])->name('promo.update');
+Route::delete('/promo-delete/{id}', [PromoController::class, 'destroy'])->name('promo.destroy');
+
+Route::get('/categories/search', [ItemController::class, 'searchCategories'])->name('categories.search');
+
 
 
 //Reset Password
@@ -110,5 +124,9 @@ Route::post('/items/adjusted-price-reseller-ajax', [ItemController::class, 'getA
 
 // Route::get('/item-test', [TesterController::class, 'index'])->name('item-test');
 
+Route::get('/customer-users', [AdminController::class, 'getCustomerUserList'])->name('customer.users');
 
- 
+Route::get('/test-content', [TesterController::class, 'testContent']);
+
+
+

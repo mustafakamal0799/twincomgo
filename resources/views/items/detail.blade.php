@@ -11,30 +11,6 @@
 
     $userPrice = $sellingPrices->first(fn($p) => strtolower($p['priceCategory']['name']) === 'user')['price'] ?? 0;
 
-    $pcsResellerPrice = $sellingPrices->first(function ($p) {
-        return strtolower($p['priceCategory']['name']) === 'reseller'
-            && isset($p['unit']['name']) 
-            && $p['unit']['name'] === 'PCS';
-    })['price'] ?? 0;
-
-    $pckResellerPrice = $sellingPrices->first(function ($p) {
-        return strtolower($p['priceCategory']['name']) === 'reseller'
-            && isset($p['unit']['name']) 
-            && $p['unit']['name'] === 'PACK';
-    })['price'] ?? 0;
-
-    $pcsUserPrice = $sellingPrices->first(function ($p) {
-        return strtolower($p['priceCategory']['name']) === 'user'
-            && isset($p['unit']['name']) 
-            && $p['unit']['name'] === 'PCS';
-    })['price'] ?? 0;
-
-    $pckUserPrice = $sellingPrices->first(function ($p) {
-        return strtolower($p['priceCategory']['name']) === 'user'
-            && isset($p['unit']['name']) 
-            && $p['unit']['name'] === 'PACK';
-    })['price'] ?? 0;
-
     $status = Auth::user()->status;
 
     $totalKonsinyasiStok = collect($konsinyasiWarehouses)->sum(fn($w) => $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0);
@@ -63,9 +39,13 @@
 @endphp
 
 <style>
-    .card {
-        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
+    body {
+        overflow-x: hidden;
     }
+    .container-fluid {
+        padding: 0;
+    }
+
     i {
         font-size: 20px;
     }
@@ -90,20 +70,59 @@
         align-items: center;
         gap: 4px;
     }
+    .table th {  
+        font-size: 16px; 
+    }
+
+    .card-total {
+        width: 60px;
+        height: 32px;
+        background-color: #6c757d; /* abu-abu gelap elegan */
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        margin-left: auto; /* tengah secara horizontal kalau perlu */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* sedikit bayangan */
+        color: #fff;
+    }
+    
     @media only screen and (max-width: 768px) {
         .title { 
             font-size: 15px; 
         }
+
+        .title-table {
+            font-size: 15px;
+        }
+
+        .title-total {
+            font-size: 15px;
+        }
+
+        .totalNonKonsinyasiStok {
+            font-size: 12px;
+        }
+
+        .table .title-kode {
+            width: 50px !important;
+        }
+
         .table th { 
             width: 100px !important; 
             font-size: 12px; 
         }
+
         .table th, .table td { 
             font-size: 12px; 
         }
+
         li { 
             font-size: 12px; 
         }
+
         .btn { 
             font-size: 8px; 
             padding: 4px 8px; 
@@ -112,76 +131,131 @@
         .btn i {
             font-size: 10px;
         }
+
         .card { 
             height: auto !important; 
         }
+
         .label-col {
             width: 90px;
         }
+
         .title-item {
             font-size : 16px;
         }
+        .title-hargaReseller {
+            width: 50px !important;
+        }
+        .title-hargaUser {
+            width: 50px !important;
+        }
+        .title-garansiUser {
+            width: 50px !important;
+        }
+        .title-garansiReseller {
+            width: 50px !important;
+        }
+        .form-check {
+            margin-right: 5px !important;
+        }
+        .form-label {
+            font-size: 10px;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            vertical-align: middle;
+            margin-top: 10px;
+        }
+        .form-control, .form-select {
+            font-size: 10px;
+            padding: 6px;
+        }
+        .form-check-label {
+            font-size: 10px;
+        }
+        .container-fluid {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .card-total span {
+            font-size: 12px !important;
+        }
+
+        .card-total {
+            width: 50px;
+            height: 28px;
+            font-size: 12px;
+        }
+
     }
+
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="card mb-4 border-0">
-                <div class="card-header py-2 d-flex flex-column bg-secondary text-white">
+                <div class="card-header py-2 d-flex flex-column bg-secondary text-white rounded-0">
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <h4 class="title m-0">DETAIL BARANG</h4>
                         <div class="d-flex align-items-center gap-2">
                             @if ($status === 'admin' || $status === 'KARYAWAN')
-                                <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1" id="btnExportPdf">
-                                    <i class="bi bi-filetype-pdf"></i> Export
+                                <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1" id="btnExportPdf" data-bs-toggle="tooltip" data-bs-placement="top" title="Export PDF">
+                                    <i class="bi bi-filetype-pdf"></i>
                                 </button>
                             @endif
-                            <button onclick="saveReferrerAndReload()" class="btn btn-success btn-sm d-flex align-items-center gap-1"><i class="bi bi-arrow-repeat"></i> Refresh</button>
-                            <button onclick="goBack()" class="btn btn-warning btn-sm d-flex align-items-center gap-1"><i class="bi bi-box-arrow-left"></i> Kembali</button>
+                            <button onclick="saveReferrerAndReload()" class="btn btn-success btn-sm d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i class="bi bi-arrow-repeat"></i></button>
+                            <button onclick="goBack()" class="btn btn-warning btn-sm d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Kembali"><i class="bi bi-box-arrow-left"></i></button>
                         </div>
                     </div>
 
-                    <!-- Advanced Filter -->
-                        @if ($status === 'KARYAWAN' || $status === 'admin')
-                            <div class="row align-items-end mt-2">
-                                <div class="col-md-4">
-                                    <label for="branch_id" class="form-label fw-semibold">Pilih Harga Cabang</label>
-                                    <div class="d-flex align-items-center">
-                                        <select name="branch_id" id="branch_id" class="form-select me-2">
-                                            <option value="">Semua Cabang</option>
-                                            @foreach($allBranches as $branch)
-                                                <option value="{{ $branch['name'] }}" {{ $selectedBranchId == $branch['name'] ? 'selected' : '' }}>
-                                                    {{ $branch['name'] }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <div id="priceSpinner" class="spinner-border spinner-border-sm text-info ms-2" role="status" style="display: none;">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
+                    <!-- Filter Admin dan Karyawan -->
+                    @if ($status === 'KARYAWAN' || $status === 'admin')
+                        <div class="row align-items-end mt-2">
+                            <div class="col-md-4">
+                                <label for="branch_id" class="form-label fw-semibold">Pilih Harga Cabang</label>
+                                <div class="d-flex align-items-center">
+                                    <select name="branch_id" id="branch_id" class="form-select me-2">
+                                        <option value="">Semua Cabang</option>
+                                        @foreach($allBranches as $branch)
+                                            <option value="{{ $branch['name'] }}" {{ $selectedBranchId == $branch['name'] ? 'selected' : '' }}>
+                                                {{ $branch['name'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div id="priceSpinner" class="spinner-border spinner-border-sm text-info ms-2" role="status" style="display: none;">
+                                        <span class="visually-hidden">Loading...</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="filterHargaGaransi" class="form-label fw-semibold">Tampilkan Harga</label>
-                                    <select id="filterHargaGaransi" class="form-select">
-                                        <option value="semua">Semua Harga</option>
-                                        <option value="reseller">Reseller</option>
-                                        <option value="user">User</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="filterGudang" class="form-label fw-semibold">Lokasi Stok</label>
-                                    <select id="filterGudang" class="form-select">
-                                        <option value="semua">Semua Lokasi</option>
-                                        <option value="non">Store</option>
-                                        <option value="tsc">TSC</option>
-                                        <option value="konsinyasi">Konsinyasi</option>
-                                        <option value="resel">Reseller</option>
-                                        <option value="trans">Transit</option>
-                                    </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterHargaGaransi" class="form-label fw-semibold">Tampilkan Harga</label>
+                                <select id="filterHargaGaransi" class="form-select">
+                                    <option value="semua">Semua Harga</option>
+                                    <option value="reseller">Reseller</option>
+                                    <option value="user">User</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="dropdownGudang" class="form-label fw-semibold">Pilih Lokasi</label>
+                                <div class="dropdown w-100">
+                                    <button class="form-select text-start" type="button" id="dropdownGudang" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Semua Lokasi
+                                    </button>
+                                    <ul class="dropdown-menu p-3 w-100" aria-labelledby="dropdownGudang">
+                                        <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="store" id="gudangStore"><label class="form-check-label" for="gudangStore">Store</label></div></li>
+                                        <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="tsc" id="gudangTSC"><label class="form-check-label" for="gudangTSC">TSC</label></div></li>
+                                        <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="konsinyasi" id="gudangKonsinyasi"><label class="form-check-label" for="gudangKonsinyasi">Konsinyasi</label></div></li>
+                                        <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="resel" id="gudangReseller"><label class="form-check-label" for="gudangReseller">Reseller</label></div></li>
+                                        <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="trans" id="gudangTransit"><label class="form-check-label" for="gudangTransit">Transit</label></div></li>
+                                    </ul>
                                 </div>
                             </div>
-                        @endif
+
+                        </div>
+                    @endif
                 </div>
 
                 <div class="card-body p-4 bg-light">                    
@@ -225,26 +299,15 @@
                         <div class="col-md-8">
                             @if ($status === 'KARYAWAN' || $status === 'admin')                                
                                     <div class="card p-3 shadow-sm mb-3">
-                                        <h5 class="mb-3">{{ $item['name'] }}</h5>
+                                        <p class="mb-3 fw-semibold" style="font-size: 16px">{{ $item['name'] }}</p>
                                         <table class="table table-borderless table-sm mb-4">
                                             <tbody>
                                                 <tr>
-                                                    <th style="width: 150px;">Kode</th>
+                                                    <th class="title-kode" style="width: 50px;">Kode</th>
                                                     <td style="width: 5px">:</td>
                                                     <td>
                                                         <span id="kodeProduk">{{ $item['no'] }}</span>
                                                         <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyKodeProduk()">Copy</button>
-                                                    </td>
-                                                </tr>
-                                                <tr id="satuanWrapper">
-                                                    <th>Satuan</th>
-                                                    <td>:</td>
-                                                    <td>
-                                                        {{  
-                                                            preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $satuanItem)))
-                                                            ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $satuanItem )))
-                                                            : trim(str_replace(['[', ']'], '', $satuanItem ))
-                                                        }}
                                                     </td>
                                                 </tr>
                                                 @if ($status === 'admin')
@@ -260,21 +323,63 @@
                                     <div class="row">
                                         {{-- RESELLER --}}
                                         <div class="col-md-6 mb-3" id="resellerSection">
-                                            <div class="card p-3 shadow-sm h-100">
-                                                {{-- <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-hide" data-target="resellerSection"></button> --}}
+                                            <div class="card p-3 shadow-sm" style="height: 180px">
                                                 <h6 class="text-primary border-bottom pb-2 mb-3">RESELLER</h6>
+                                                @php
+                                                    $resellerUnitPrices = [];
+
+                                                    foreach ($sellingPrices as $price) {
+                                                        $unitName = strtoupper($price['unit']['name'] ?? '');
+                                                        $categoryName = strtolower($price['priceCategory']['name'] ?? '');
+                                                        $priceValue = $price['price'] ?? 0;
+
+                                                        if ($categoryName === 'reseller' && $priceValue > 0) {
+                                                            $resellerUnitPrices[$unitName] = $priceValue;
+                                                        }
+                                                    }
+
+                                                    $unitOrder = ['PACK', 'PCS'];
+                                                    $sortedPrices = [];
+
+                                                    foreach ($unitOrder as $unit) {
+                                                        if (isset($resellerUnitPrices[$unit])) {
+                                                            $sortedPrices[$unit] = $resellerUnitPrices[$unit];
+                                                        }
+                                                    }
+
+                                                    $resellerUnitPrices = $sortedPrices;
+                                                @endphp
+
+                                                @if (count($resellerUnitPrices) === 1)
+                                                    @php
+                                                        $onlyPrice = reset($resellerUnitPrices); // ambil harga pertama
+                                                    @endphp
+                                                    <div class="d-flex">
+                                                        <strong class="me-2 title-hargaReseller" style="width: 60px;">Harga</strong>
+                                                        <span>:</span>
+                                                        <span class="ms-2">
+                                                            <p id="hargaResellerValue">Rp {{ number_format($onlyPrice, 0, ',', '.') }}</p>
+                                                        </span>
+                                                    </div>
+
+                                                {{-- Jika lebih dari 1 unit, tampilkan nama unit --}}
+                                                @elseif(count($resellerUnitPrices) > 1)
+                                                    <div class="d-flex">
+                                                        <strong class="me-2 title-hargaReseller" style="width: 60px;">Harga</strong>
+                                                        <span>:</span>
+                                                        <div class="ms-2">
+                                                            @foreach($resellerUnitPrices as $unitName => $priceValue)
+                                                            <p>
+                                                                Rp <span class="hargaResellerValue" data-unit="{{ $unitName }}" id="hargaResellerValue_{{ $unitName }}">
+                                                                    {{ number_format($priceValue, 0, ',', '.') }}
+                                                                </span> / {{ $unitName }}
+                                                            </p>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endif
                                                 <div class="mb-2 d-flex">
-                                                    <strong class="me-2" style="width: 100px;">Harga</strong>
-                                                    <span>:</span>
-                                                    <span class="ms-2"  id="hargaResellerValue">Rp {{ number_format($resellerPrice, 0, ',', '.') }}</span>
-                                                </div>
-                                                <div class="mb-2 d-flex">
-                                                    <strong class="me-2" style="width: 100px;">Harga Pack</strong>
-                                                    <span>:</span>
-                                                    <span class="ms-2">Rp {{ number_format($pckResellerPrice, 0, ',', '.') ?? '0' }}</span>
-                                                </div>
-                                                <div class="mb-2 d-flex">
-                                                    <strong class="me-2" style="width: 100px;">Garansi</strong>
+                                                    <strong class="me-2 title-garansiReseller" style="width: 60px;">Garansi</strong>
                                                     <span>:</span>
                                                     <span class="ms-2">{{ $garansiReseller ?? '-' }}</span>
                                                 </div>
@@ -283,28 +388,67 @@
 
                                         {{-- USER --}}
                                         <div class="col-md-6 mb-3" id="userSection">
-                                            <div class="card p-3 shadow-sm h-100">
-                                                {{-- <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-hide" data-target="userSection"></button> --}}
+                                            <div class="card p-3 shadow-sm h-100" style="height: 180px">                                                
                                                 <h6 class="text-success border-bottom pb-2 mb-3">USER</h6>
-                                                <div class="mb-2 d-flex">
-                                                    <strong class="me-2" style="width: 100px;">Harga</strong>
+                                                @php
+                                                    $userUnitPrices = [];
+
+                                                    foreach ($sellingPrices as $price) {
+                                                        $unitName = strtoupper($price['unit']['name'] ?? '');
+                                                        $categoryName = strtolower($price['priceCategory']['name'] ?? '');
+                                                        $priceValue = $price['price'] ?? 0;
+
+                                                        if ($categoryName === 'user' && $priceValue > 0) {
+                                                            $userUnitPrices[$unitName] = $priceValue;
+                                                        }
+                                                    }
+
+                                                    $unitOrder = ['PACK', 'PCS'];
+                                                    $sortedPrices = [];
+
+                                                    foreach ($unitOrder as $unit) {
+                                                        if (isset($userUnitPrices[$unit])) {
+                                                            $sortedPrices[$unit] = $userUnitPrices[$unit];
+                                                        }
+                                                    }
+
+                                                    $userUnitPrices = $sortedPrices;
+                                                @endphp
+
+                                                @if (count($userUnitPrices) === 1)
+                                                    @php
+                                                        $onlyPrice = reset($userUnitPrices);
+                                                    @endphp
+                                                    <div class="d-flex">
+                                                        <strong class="me-2 title-hargaUser" style="width: 60px;">Harga</strong>
+                                                        <span>:</span>
+                                                        <span class="ms-2">
+                                                            <p id="hargaUserValue">Rp {{ number_format($onlyPrice, 0, ',', '.') }}</p>
+                                                        </span>
+                                                    </div>
+
+                                                @elseif(count($userUnitPrices) > 1)
+                                                <div class="d-flex">
+                                                    <strong class="me-2 title-hargaUser" style="width: 60px;">Harga</strong>
                                                     <span>:</span>
-                                                    <span class="ms-2" id="hargaUserValue">Rp {{ number_format($userPrice, 0, ',', '.') }}</span>
+                                                    <div id="hargaUserValue" class="ms-2">
+                                                        {{-- Harga awal tampil di sini --}}
+                                                        @foreach($userUnitPrices as $unitName => $priceValue)
+                                                            <p>Rp {{ number_format($priceValue, 0, ',', '.') }} / {{ $unitName }}</p>
+                                                        @endforeach
+                                                    </div>
                                                 </div>
+                                                @endif
+
                                                 <div class="mb-2 d-flex">
-                                                    <strong class="me-2" style="width: 100px;">Harga Pack</strong>
-                                                    <span>:</span>
-                                                    <span class="ms-2">Rp {{ number_format($pckUserPrice, 0, ',', '.') ?? '0' }}</span>
-                                                </div>
-                                                <div class="mb-2 d-flex">
-                                                    <strong class="me-2" style="width: 100px;">Garansi</strong>
+                                                    <strong class="me-2 title-garansiUser" style="width: 60px;">Garansi</strong>
                                                     <span>:</span>
                                                     <span class="ms-2">{{ $garansiUser ?? '-' }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>    
-                            @else
+                                @else
                                 <div class="card mb-3 shadow-sm p-3" style="height: 337px;">
                                     <h5 class="mb-2 title-item">{{ $item['name'] }}</h5>
                                     <ul class="list-unstyled mt-4">
@@ -316,44 +460,82 @@
                                                     onclick="copyToClipboard('{{ $item['id'] }}')">Copy</button>
                                             </div>
                                         </li>
-                                        <li class="d-flex flex-wrap mb-2 align-items-center">
+                                        @php
+                                            $userPrices = [];
+                                            $resellerPrices = [];
+                                            $unitNames = [];
+
+                                            foreach ($sellingPrices as $price) {
+                                                $unit = strtolower($price['unit']['name'] ?? '');
+                                                $unitFormatted = strtoupper($unit);
+                                                $category = strtolower($price['priceCategory']['name'] ?? '');
+                                                $amount = $price['price'] ?? 0;
+
+                                                if (!in_array($unitFormatted, $unitNames)) {
+                                                    $unitNames[] = $unitFormatted;
+                                                }
+
+                                                if ($category === 'user') {
+                                                    $userPrices[$unitFormatted] = $amount;
+                                                } elseif ($category === 'reseller') {
+                                                    $resellerPrices[$unitFormatted] = $amount;
+                                                }
+                                            }
+
+                                            $activePrices = $status === 'RESELLER' ? $resellerPrices : $userPrices;
+
+                                            // Hanya ambil yang nilainya lebih dari 0
+                                            $visiblePrices = array_filter($activePrices, fn($price) => $price > 0);
+                                        @endphp
+
+                                        <li class="d-flex flex-wrap mb-2 align-items-start">
                                             <div class="label-col">Harga</div>
-                                            <div class="value-col">
-                                                <span id="hargaUserStrikethrough" class="text-decoration-line-through text-muted">Rp {{ number_format($finalUserPrice, 0, ',', '.') }}</span>
-                                                <span id="hargaReseller" class="ms-3 text-dark">Rp {{ number_format($finalResellerPrice, 0, ',', '.') }}</span>
-                                                @if ($status === 'RESELLER' && isset($discItem) && $discItem > 0)
-                                                    <span id="discItemReseller" class="text-danger ms-2">Diskon: {{ $discItem }}%</span>
+                                            <div class="value-col" id="hargaReseller" data-user-prices='@json($userPrices)'>
+                                                @if (count($visiblePrices) === 1)
+                                                    @php
+                                                        $unit = array_key_first($visiblePrices);
+                                                        $harga = $visiblePrices[$unit];
+                                                        $hargaUser = $userPrices[$unit] ?? null;
+                                                    @endphp
+
+                                                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                                        @if ($status === 'RESELLER' && $hargaUser)
+                                                            <span class="text-decoration-line-through text-muted">
+                                                                Rp {{ number_format($hargaUser, 0, ',', '.') }}
+                                                            </span>
+                                                        @endif
+                                                        <span class="text-dark">
+                                                            Rp {{ number_format($harga, 0, ',', '.') }}
+                                                        </span>
+
+
+                                                        @if ($status === 'RESELLER' && isset($discItem) && $discItem > 0)
+                                                            <span class="text-danger ms-2">Diskon: {{ $discItem }}%</span>
+                                                        @endif
+                                                    </div>
+                                                @elseif (count($visiblePrices) > 1)
+                                                    <div class="d-flex flex-column gap-1">
+                                                        @foreach($visiblePrices as $unit => $harga)
+                                                            @php $hargaUser = $userPrices[$unit] ?? null; @endphp
+                                                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                                                <span class="text-dark">
+                                                                    Rp {{ number_format($harga, 0, ',', '.') }} / {{ $unit }}
+                                                                </span>
+                                                                @if ($status === 'RESELLER' && $hargaUser)
+                                                                    <span class="text-decoration-line-through text-muted">
+                                                                        Rp {{ number_format($hargaUser, 0, ',', '.') }} / {{ $unit }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
                                                 @endif
-                                                {{-- @if ($status === 'RESELLER')
-                                                    <button id="btnUpdateHargaReseller" class="btn btn-sm btn-primary ms-3">Diskon</button>
-                                                @endif --}}
                                             </div>
                                         </li>
+
                                         <li class="d-flex flex-wrap mb-2 align-items-center">
                                             <div class="label-col">Garansi</div>
                                             <div class="value-col">{{ $garansiReseller ?? '-' }}</div>
-                                        </li>
-                                        <li class="d-flex flex-wrap mb-2 align-items-center">
-                                            <div class="label-col">Harga Pack</div>
-                                            <div class="value-col">
-                                                <span id="hargaPack" class="text-dark">
-                                                    Rp @if ($status === 'RESELLER')
-                                                        {{ number_format($pckResellerPrice, 0, ',', '.') ?? '0' }}
-                                                    @else
-                                                        {{ number_format($pckUserPrice, 0, ',', '.') ?? '0' }}                                                        
-                                                    @endif
-                                                </span>
-                                            </div>
-                                        </li>
-                                        <li class="d-flex flex-wrap mb-2 align-items-center">
-                                            <div class="label-col">Satuan</div>
-                                            <div class="value-col">
-                                                {{  
-                                                    preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $satuanItem)))
-                                                    ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $satuanItem )))
-                                                    : trim(str_replace(['[', ']'], '', $satuanItem ))
-                                                }}
-                                            </div>
                                         </li>
                                     </ul>
                                 </div>
@@ -364,227 +546,319 @@
                         @endphp
 
                         @if (count($points) > 0)
-                            <div class="col-md-12">
-                                <div class="card shadow-sm p-4">
-                                    <h6 class="mb-2">Selling Point</h6>
-                                    <ul class="ps-3 mb-0">
-                                        @foreach ($points as $point)
-                                            <li>{{ trim($point) }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                        <div class="col-md-12">
+                            <div class="card shadow-sm p-4">
+                                <h6 class="mb-2">Selling Point</h6>
+                                <ul class="ps-3 mb-0">
+                                    @foreach ($points as $point)
+                                        <li>{{ trim($point) }}</li>
+                                    @endforeach
+                                </ul>
                             </div>
+                        </div>
                         @endif
                     </div>
 
-                    @if ($status === 'KARYAWAN' || $status === 'admin')                        
-                            {{-- GUDANG NON-KONSINYASI --}}
-                            <div class="mb-4" id="nonKonsinyasiTable">
-                                <div class="card mb-2 shadow-sm">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">Store</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            @if ($filteredNonKonsinyasi->isNotEmpty())
-                                                <table class="table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Lokasi</th>
-                                                            <th class="text-center">Stok</th>
-                                                            <th class="text-center">Satuan</th>
-                                                            <th class="text-center">Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach ($filteredNonKonsinyasi as $data)
-                                                            <tr>
-                                                                <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
-                                                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                                    {{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}
-                                                                </td>
-                                                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                                    {{ 
-                                                                        preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                        ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                        : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                                    }}
-                                                                </td>
-                                                                @if ($loop->first)
-                                                                <td class="text-center" rowspan="{{ count($filteredNonKonsinyasi) }}" id="totalNonKonsinyasiStok">
-                                                                        {{ number_format($totalNonKonsinyasiStok, 0, ',', '.') }}
-                                                                    </td>
-                                                                @endif
-                                                            </tr>                                                
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            @else
-                                                <div class="text-center p-3 border rounded bg-light text-muted">
-                                                    Stok tidak ada!
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </div>
+                    {{-- START TAMPILAN TABEL KARYAWAN, ADMIN DAN RESELLER --}}
+                    
+                    @if ($status === 'KARYAWAN' || $status === 'admin' || $status === 'RESELLER')                        
+                        {{-- GUDANG NON-KONSINYASI --}}
+                        @if ($filteredNonKonsinyasi->isNotEmpty())
+                        <div class="mb-4" id="nonKonsinyasiTable">
+                            <div class="card mb-2 shadow-sm">
+                                <div class="card-header bg-info">
+                                    <h5 class="mb-0 title-table">Store</h5>
                                 </div>
-                            </div>
-
-                            {{-- GUDANG TSC --}}
-                            @php
-                                $filteredTsc = collect($tscWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                            @endphp
-                            @if ($filteredTsc->count())
-                            <div class="mb-4" id="tscwarehouseTable">
-                                <div class="card mb-2 shadow-sm">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">Tsc</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table">
-                                                <thead>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table p-2">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lokasi</th>
+                                                    <th class="text-center">Stok</th>
+                                                    <th class="text-center">Satuan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($filteredNonKonsinyasi as $data)
                                                     <tr>
-                                                        <th>Lokasi</th>
-                                                        <th class="text-center">Stok</th>
-                                                        <th class="text-center">Satuan</th>
-                                                        <th class="text-center">Total</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($filteredTsc as $data)
-                                                        <tr>
-                                                            <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
-                                                            <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                            <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                                {{ 
-                                                                    preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                    ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                    : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                                }}
-                                                            </td>
-                                                            @if ($loop->first)
-                                                                <td class="text-center" rowspan="{{ $filteredTsc->count() }}" id="totalTscStok">
-                                                                    {{ number_format($totalTscStok) }}
-                                                                </td>
-                                                            @endif
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
-
-                            {{-- GUDANG KONSINYASI --}}
-                            @php
-                                $filteredKonsinyasi = collect($konsinyasiWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                            @endphp
-                            @if ($filteredKonsinyasi->count())
-                            <div class="mb-4" id="konsinyasiTable">
-                                <div class="card mb-2 shadow-sm">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">Konsinyasi</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Lokasi</th>
-                                                        <th class="text-center">Stok</th>
-                                                        <th class="text-center">Satuan</th>
-                                                        <th class="text-center">Total</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                @foreach ($filteredKonsinyasi as $data)
-                                                    <tr>
-                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
-                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                            {{ 
-                                                                preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                            }}
+                                                        <td data-label="Lokasi" style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>      
+                                                        <td data-label="Stok" class="text-center" data-warehouse-id="{{ $data['id'] }}">
+                                                            {{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}
                                                         </td>
-                                                        @if ($loop->first)
-                                                            <td class="text-center" rowspan="{{ $filteredKonsinyasi->count() }}" id="totalKonsinyasiStok">
-                                                                {{ number_format($totalKonsinyasiStok) }}
-                                                            </td>
-                                                        @endif
-                                                    </tr>
-                                                @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
+                                                        @php
+                                                            $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                            $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                            $ratio2 = $ratio ?? null;
 
-                            {{-- GUDANG RESELLER --}}
-                            @php
-                                $filteredReseller = collect($resellerWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                            @endphp
-                            @if ($filteredReseller->count())
-                            <div class="mb-4" id="resellerwarehouseTable">
-                                <div class="card mb-2 shadow-sm">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">Reseller</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Lokasi</th>
-                                                        <th class="text-center">Stok</th>
-                                                        <th class="text-center">Satuan</th>
-                                                        <th class="text-center">Total</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                @foreach ($filteredReseller as $data)
-                                                    <tr>
-                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
-                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                            {{ 
-                                                                preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                                : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                            }}
+                                                            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                            
+                                                            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+
+                                                            $showBalanceUnit = false;
+
+                                                            if (count($matches[0]) > 1) {
+                                                                $showBalanceUnit = true;
+                                                            } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                                $showBalanceUnit = true;
+                                                            }
+
+                                                            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                        @endphp 
+                                                        <td data-label="Satuan" class="text-center">
+                                                            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
                                                         </td>
-                                                        @if ($loop->first)
-                                                            <td class="text-center" rowspan="{{ $filteredReseller->count() }}" id="totalResellerStok">
-                                                                {{ number_format($totalResellerStok) }}
-                                                            </td>
-                                                        @endif
-                                                    </tr>
+                                                    </tr>                                                
                                                 @endforeach
-                                                </tbody>
-                                            </table>
+                                            </tbody>
+                                        </table>                                        
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-end">
+                                        <div>
+                                            <h5 class="title-total">Total</h5>
+                                        </div>
+                                        <div class="card-total text-white">
+                                            <span id="totalNonKonsinyasiStok">
+                                                {{ number_format($totalNonKonsinyasiStok) }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            @endif
-
-                            {{-- GUDANG TRANSIT --}}
-                            @php
-                                $filteredTransit = collect($transitWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                            @endphp
-                            @if ($filteredTransit->count())
-                            <div class="mb-4" id="transitwarehouseTable">
-                                <div class="card mb-2 shadow-sm p-3">
+                        </div>
+                        @endif
+                            
+                        {{-- GUDANG TSC --}}
+                        @php
+                            $filteredTsc = collect($tscWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                        @endphp
+                        @if ($filteredTsc->count())
+                        <div class="mb-4" id="tscwarehouseTable">
+                            <div class="card mb-2 shadow-sm">
+                                <div class="card-header bg-success">
+                                    <h5 class="mb-0 text-white title-table">TSC</h5>
+                                </div>
+                                <div class="card-body">
                                     <div class="table-responsive">
                                         <table class="table">
-                                            <thead class="table-info">
+                                            <thead>
                                                 <tr>
-                                                    <th>Transit</th>
+                                                    <th>Lokasi</th>
+                                                    <th class="text-center">Stok</th>
+                                                    <th class="text-center">Satuan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($filteredTsc as $data)
+                                                    <tr>
+                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>                                                            
+                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                                        @php
+                                                            $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                            $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                            $ratio2 = $ratio ?? null;
+
+                                                            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                            
+                                                            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+
+                                                            $showBalanceUnit = false;
+
+                                                            if (count($matches[0]) > 1) {
+                                                                $showBalanceUnit = true;
+                                                            } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                                $showBalanceUnit = true;
+                                                            }
+
+                                                            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                        @endphp 
+                                                        <td class="text-center">
+                                                            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-end">
+                                        <div>
+                                            <h5 class="title-total">Total</h5>
+                                        </div>
+                                        <div class="card-total text-white">
+                                            <span id="totalNonKonsinyasiStok">
+                                                {{ number_format($totalTscStok) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- GUDANG KONSINYASI --}}
+                        @php
+                            $filteredKonsinyasi = collect($konsinyasiWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                        @endphp
+                        @if ($filteredKonsinyasi->count())
+                        <div class="mb-4" id="konsinyasiTable">
+                            <div class="card mb-2 shadow-sm">
+                                <div class="card-header bg-warning">
+                                    <h5 class="mb-0 title-table">Konsinyasi</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lokasi</th>
+                                                    <th class="text-center">Stok</th>
+                                                    <th class="text-center">Satuan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            @foreach ($filteredKonsinyasi as $data)
+                                                <tr>
+                                                    <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
+                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                                    @php
+                                                        $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                        $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                        $ratio2 = $ratio ?? null;
+
+                                                        preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                        
+                                                        preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                        $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+
+                                                        $showBalanceUnit = false;
+
+                                                        if (count($matches[0]) > 1) {
+                                                            $showBalanceUnit = true;
+                                                        } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                            $showBalanceUnit = true;
+                                                        }
+
+                                                        $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                    @endphp 
+                                                    <td class="text-center">
+                                                        {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-end">
+                                        <div>
+                                            <h5 class="title-total">Total</h5>
+                                        </div>
+                                        <div class="card-total text-white">
+                                            <span id="totalNonKonsinyasiStok">
+                                                {{ number_format($totalKonsinyasiStok) }}
+                                            </span>
+                                        </div>                            
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- GUDANG RESELLER --}}
+                        @php
+                            $filteredReseller = collect($resellerWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                        @endphp
+                        @if ($filteredReseller->count())
+                        <div class="mb-4" id="resellerwarehouseTable">
+                            <div class="card mb-2 shadow-sm">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0 title-table">Reseller</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lokasi</th>
+                                                    <th class="text-center">Stok</th>
+                                                    <th class="text-center">Satuan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            @foreach ($filteredReseller as $data)
+                                                <tr>
+                                                    <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
+                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                                    @php
+                                                        $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                        $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                        $ratio2 = $ratio ?? null;
+
+                                                        preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                        
+                                                        preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                        $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+
+                                                        $showBalanceUnit = false;
+
+                                                        if (count($matches[0]) > 1) {
+                                                            $showBalanceUnit = true;
+                                                        } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                            $showBalanceUnit = true;
+                                                        }
+
+                                                        $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                    @endphp
+                                                    <td class="text-center">
+                                                        {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-end">
+                                        <div>
+                                            <h5 class="title-total">Total</h5>
+                                        </div>
+                                        <div class="card-total text-white">
+                                            <span id="totalNonKonsinyasiStok">
+                                                {{ number_format($totalResellerStok) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    @endif
+
+                    @if ($status === 'KARYAWAN' || $status === 'admin')
+                        {{-- GUDANG TRANSIT --}}
+                        @php
+                            $filteredTransit = collect($transitWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                        @endphp
+                        @if ($filteredTransit->count())
+                        <div class="mb-4" id="transitwarehouseTable">
+                            <div class="card mb-2 shadow-sm ">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0 title-table">Transit</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lokasi</th>
                                                     <th class="text-center">Jumlah</th>
                                                 </tr>
                                             </thead>
@@ -598,177 +872,14 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
-                            </div>
-                        @endif
-                    @elseif ($status === 'RESELLER')
-                        {{-- GUDANG NON KONSINYASI --}}
-                        <div class="mb-4" id="nonKonsinyasiTable">
-                            <div class="table-responsive">
-                                @if ($filteredNonKonsinyasi->isNotEmpty())
-                                    <table class="table">
-                                        <thead class="table-secondary">
-                                            <tr>
-                                                <th>Lokasi Store</th>
-                                                <th class="text-center">Stok</th>
-                                                <th class="text-center">Satuan</th>
-                                                <th class="text-center">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($filteredNonKonsinyasi as $data)
-                                                <tr>
-                                                    <td style="width: 800px">{{ $data['name'] }}</td>
-                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                        {{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}
-                                                    </td>
-                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                        {{ 
-                                                            preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                            ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                            : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                        }}
-                                                    </td>
-                                                     @if ($loop->first)
-                                                       <td class="text-center" rowspan="{{ count($filteredNonKonsinyasi) }}" id="totalNonKonsinyasiStok">
-                                                            {{ number_format($totalNonKonsinyasiStok) }}
-                                                        </td>
-                                                    @endif
-                                                </tr>                                                
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                @else
-                                    <div class="text-center p-3 border rounded bg-light text-muted">
-                                        Stok tidak ada!
-                                    </div>
-                                @endif
+                                </div>                                    
                             </div>
                         </div>
+                        @endif        
+                    @endif        
 
-                        {{-- GUDANG TSC --}}
-                        @php
-                            $filteredTsc = collect($tscWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                        @endphp
-                        @if ($filteredTsc->count())
-                            <div class="mb-4" id="tscwarehouseTable">
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead class="table-secondary">
-                                            <tr>
-                                                <th>TSC</th>
-                                                <th class="text-center">Stok</th>
-                                                <th class="text-center">Satuan</th>
-                                                <th class="text-center">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($filteredTsc as $data)
-                                                <tr>
-                                                    <td style="width: 800px">{{ $data['name'] }}</td>
-                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                        {{ 
-                                                            preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                            ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                            : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                        }}
-                                                    </td>
-                                                    @if ($loop->first)
-                                                        <td class="text-center" rowspan="{{ $filteredTsc->count() }}" id="totalTscStok">
-                                                            {{ number_format($totalTscStok) }}
-                                                        </td>
-                                                    @endif
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        @endif
+                    {{-- END TAMPILAN KARYAWAN DAN ADMIN --}}
 
-                        {{-- GUDANG RESELLER --}}
-                        @php
-                            $filteredReseller = collect($resellerWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                        @endphp
-                        @if ($filteredReseller->count())
-                            <div class="mb-4" id="resellerwarehouseTable">
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead class="table-secondary">
-                                            <tr>
-                                                <th>Reseller</th>
-                                                <th class="text-center">Stok</th>
-                                                <th class="text-center">Satuan</th>
-                                                <th class="text-center">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        @foreach ($filteredReseller as $data)
-                                            <tr>
-                                                <td style="width: 800px">{{ $data['name'] }}</td>
-                                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                    {{ 
-                                                        preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                        ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                        : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                    }}
-                                                </td>
-                                                @if ($loop->first)
-                                                    <td class="text-center" rowspan="{{ $filteredReseller->count() }}" id="totalResellerStok">
-                                                        {{ number_format($totalResellerStok) }}
-                                                    </td>
-                                                @endif
-                                            </tr>
-                                        @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        @endif
-
-                        {{-- GUDANG KONSINYASI --}}
-                        @php
-                            $filteredKonsinyasi = collect($konsinyasiWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                        @endphp
-                        @if ($filteredKonsinyasi->count())
-                            <div class="mb-4" id="konsinyasiTable">
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead class="table-secondary">
-                                            <tr>
-                                                <th>Konsinyasi</th>
-                                                <th class="text-center">Stok</th>
-                                                <th class="text-center">Satuan</th>
-                                                <th class="text-center">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        @foreach ($filteredKonsinyasi as $data)
-                                            <tr>
-                                                <td style="width: 800px">{{ $data['name'] }}</td>
-                                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                <td class="text-center" data-warehouse-id="{{ $data['id'] }}">
-                                                    {{ 
-                                                        preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                        ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $data['balanceUnit'] )))
-                                                        : trim(str_replace(['[', ']'], '', $data['balanceUnit'] ))
-                                                    }}
-                                                </td>
-                                                @if ($loop->first)
-                                                    <td class="text-center" rowspan="{{ $filteredKonsinyasi->count() }}" id="totalKonsinyasiStok">
-                                                        {{ number_format($totalKonsinyasiStok) }}
-                                                    </td>
-                                                @endif
-                                            </tr>
-                                        @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        @endif
-                    @endif
                 </div>
             </div>
         </div>
@@ -781,6 +892,10 @@
 
         function goBack() {
             const lastPage = sessionStorage.getItem('lastPage') || '/';
+            const loader = document.getElementById("loader");
+            if (loader) {
+                loader.style.display = "flex"; // Tampilkan loader saat balik
+            }
             sessionStorage.removeItem('lastPage');
             window.history.back();
         }
@@ -800,102 +915,63 @@
             });
         }
 
-         const filterGudang = document.getElementById('filterGudang');
-            if (filterGudang) {
-                filterGudang.addEventListener('change', function () {
-                    const value = this.value;
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkboxes = document.querySelectorAll('.gudang-check');
+            const toggleButton = document.getElementById('dropdownGudang');
 
-                    const nonKonsinyasiTable = document.getElementById('nonKonsinyasiTable');
-                    const konsinyasiTable = document.getElementById('konsinyasiTable');
-                    const tscwarehouseTable = document.getElementById('tscwarehouseTable');
-                    const resellerwarehouseTable = document.getElementById('resellerwarehouseTable');
-                    const transitwarehouseTable = document.getElementById('transitwarehouseTable');
+            const tableMap = {
+                store: document.getElementById('nonKonsinyasiTable'),
+                tsc: document.getElementById('tscwarehouseTable'),
+                konsinyasi: document.getElementById('konsinyasiTable'),
+                resel: document.getElementById('resellerwarehouseTable'),
+                trans: document.getElementById('transitwarehouseTable')
+            };
 
-                    if (value === 'semua') {
-                        if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'block';
-                        if (konsinyasiTable) konsinyasiTable.style.display = 'block';
-                        if (tscwarehouseTable) tscwarehouseTable.style.display = 'block';
-                        if (resellerwarehouseTable) resellerwarehouseTable.style.display = 'block';
-                        if (transitwarehouseTable) transitwarehouseTable.style.display = 'block';
-                    } else if (value === 'non') {
-                        if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'block';
-                        if (konsinyasiTable) konsinyasiTable.style.display = 'none';
-                        if (tscwarehouseTable) tscwarehouseTable.style.display = 'none';
-                        if (resellerwarehouseTable) resellerwarehouseTable.style.display = 'none';
-                        if (transitwarehouseTable) transitwarehouseTable.style.display = 'none';
-                    } else if (value === 'konsinyasi') {
-                        if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'none';
-                        if (konsinyasiTable) konsinyasiTable.style.display = 'block';
-                        if (tscwarehouseTable) tscwarehouseTable.style.display = 'none';
-                        if (resellerwarehouseTable) resellerwarehouseTable.style.display = 'none';
-                        if (transitwarehouseTable) transitwarehouseTable.style.display = 'none';
-                    } else if (value === 'tsc') {
-                        if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'none';
-                        if (konsinyasiTable) konsinyasiTable.style.display = 'none';
-                        if (tscwarehouseTable) tscwarehouseTable.style.display = 'block';
-                        if (resellerwarehouseTable) resellerwarehouseTable.style.display = 'none';
-                        if (transitwarehouseTable) transitwarehouseTable.style.display = 'none';
-                    } else if (value === 'resel') {
-                        if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'none';
-                        if (konsinyasiTable) konsinyasiTable.style.display = 'none';
-                        if (tscwarehouseTable) tscwarehouseTable.style.display = 'none';
-                        if (resellerwarehouseTable) resellerwarehouseTable.style.display = 'block';
-                        if (transitwarehouseTable) transitwarehouseTable.style.display = 'none';
-                    } else if (value === 'trans') {
-                        if (nonKonsinyasiTable) nonKonsinyasiTable.style.display = 'none';
-                        if (konsinyasiTable) konsinyasiTable.style.display = 'none';
-                        if (tscwarehouseTable) tscwarehouseTable.style.display = 'none';
-                        if (resellerwarehouseTable) resellerwarehouseTable.style.display = 'none';
-                        if (transitwarehouseTable) transitwarehouseTable.style.display = 'block';
-                    }
-                });
+            function updateTableDisplay() {
+                const selected = Array.from(checkboxes)
+                .filter(c => c.checked)
+                .map(c => c.value);
+
+                const showAll = selected.length === 0;
+
+                for (const [key, table] of Object.entries(tableMap)) {
+                if (table) {
+                    table.style.display = (showAll || selected.includes(key)) ? 'block' : 'none';
+                }
+                }
+
+                // Update label tombol
+                toggleButton.textContent = selected.length > 0
+                ? `Dipilih: ${selected.join(', ')}`
+                : 'Semua Lokasi';
             }
 
-            const filterHargaGaransi = document.getElementById('filterHargaGaransi');
-            if (filterHargaGaransi) {
-                filterHargaGaransi.addEventListener('change', function () {
-                    const value = this.value;
+            // Pas load halaman langsung tampilkan semua
+            updateTableDisplay();
 
-                    const resellerSection = document.getElementById('resellerSection');
-                    const userSection = document.getElementById('userSection');
+            checkboxes.forEach(cb => cb.addEventListener('change', updateTableDisplay));
+        });
 
-                    if (value === 'semua') {
-                        if (resellerSection) resellerSection.style.display = 'block';
-                        if (userSection) userSection.style.display = 'block';
-                    } else if (value === 'reseller') {
-                        if (resellerSection) resellerSection.style.display = 'block';
-                        if (userSection) userSection.style.display = 'none';
-                    } else if (value === 'user') {
-                        if (resellerSection) resellerSection.style.display = 'none';
-                        if (userSection) userSection.style.display = 'block';
-                    }
-                });
-            }
+        const filterHargaGaransi = document.getElementById('filterHargaGaransi');
+        if (filterHargaGaransi) {
+            filterHargaGaransi.addEventListener('change', function () {
+                const value = this.value;
 
-            // const hideButtons = document.querySelectorAll('.btn-hide');
-            // hideButtons.forEach(function (btn) {
-            //     btn.addEventListener('click', function () {
-            //         const targetId = this.dataset.target;
-            //         const targetSection = document.getElementById(targetId);
-            //         if (targetSection) {
-            //             targetSection.style.display = 'none';
-            //         }
-            //     });
-            // });
+                const resellerSection = document.getElementById('resellerSection');
+                const userSection = document.getElementById('userSection');
 
-            // // TOMBOL TAMPILKAN SEMUA
-            // const showAllButton = document.getElementById('showAllButton');
-            // const resellerSection = document.getElementById('resellerSection');
-            // const userSection = document.getElementById('userSection');
-            // const filterHargaGaransi = document.getElementById('filterHargaGaransi');
-            // if (showAllButton && resellerSection && userSection && filterHargaGaransi) {
-            //     showAllButton.addEventListener('click', function () {
-            //         resellerSection.style.display = 'block';
-            //         userSection.style.display = 'block';
-            //         filterHargaGaransi.value = 'semua';
-            //     });
-            // }
-
+                if (value === 'semua') {
+                    if (resellerSection) resellerSection.style.display = 'block';
+                    if (userSection) userSection.style.display = 'block';
+                } else if (value === 'reseller') {
+                    if (resellerSection) resellerSection.style.display = 'block';
+                    if (userSection) userSection.style.display = 'none';
+                } else if (value === 'user') {
+                    if (resellerSection) resellerSection.style.display = 'none';
+                    if (userSection) userSection.style.display = 'block';
+                }
+            });
+        }
 
         const itemId = {{ $item['id'] }};
         const stokNewElements = {};
@@ -908,6 +984,11 @@
 
             // Event listener untuk select branch_id
             const branchSelect = document.getElementById('branch_id');
+            const hargaUserValue = document.getElementById("hargaUserValue");
+            const hargaResellerValue = document.getElementById("hargaResellerValue");
+
+            const initialHargaUserHTML = hargaUserValue ? hargaUserValue.innerHTML : '';
+            const initialHargaResellerHTML = hargaResellerValue ? hargaResellerValue.innerHTML : '';
             if (branchSelect) {
                 branchSelect.addEventListener('change', function () {
                     const branchId = this.value;
@@ -917,11 +998,14 @@
                     const spinner = document.getElementById('priceSpinner');
 
                     if (!branchId) {
-                        if (hargaResellerValue) hargaResellerValue.textContent = `Rp ${Number({{ $resellerPrice }}).toLocaleString('id-ID')}`;
-                        if (hargaUserValue) hargaUserValue.innerHTML = `Rp ${Number({{ $userPrice }}).toLocaleString('id-ID')}`;
-                        @if ($discItem !== null && $discItem > 0)
-                            if (hargaUserValue) hargaUserValue.innerHTML += `<p style="margin:0; color: red;">Diskon: {{ $discItem }}%</p>`;
-                        @endif
+                        if (hargaUserValue) {
+                            hargaUserValue.innerHTML = initialHargaUserHTML;
+                        }
+
+                        if (hargaResellerValue) {
+                            hargaResellerValue.innerHTML = initialHargaResellerHTML;
+                        }
+
                         return;
                     }
 
@@ -942,21 +1026,32 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            if (data.adjustedPrice !== null && data.adjustedPrice > 0) {
-                                if (hargaUserValue) {
-                                    hargaUserValue.textContent = `Rp ${Number(data.adjustedPrice).toLocaleString('id-ID')}`;
+                            if (data.adjustedPrices && hargaUserValue) {
+                                hargaUserValue.innerHTML = '';
+
+                                const entries = Object.entries(data.adjustedPrices);
+
+                                if (entries.length === 1) {
+                                    // Kalau cuma 1 harga (misal hanya "pcs"), tampilkan tanpa satuan
+                                    const price = Number(entries[0][1]).toLocaleString('id-ID');
+                                    hargaUserValue.innerHTML = `<p>Rp ${price}</p>`;
+                                } else {
+                                    // Kalau lebih dari 1 (misal pcs, dus, pak), tampilkan semua dengan satuan
+                                    entries.forEach(([unit, price]) => {
+                                        hargaUserValue.innerHTML += `<p>Rp ${Number(price).toLocaleString('id-ID')} / ${unit}</p>`;
+                                    });
                                 }
-                            } else {
-                                if (hargaUserValue) {
-                                    hargaUserValue.textContent = `Rp ${Number({{ $userPrice }}).toLocaleString('id-ID')}`;
-                                }
+
+                            } else if (hargaUserValue) {
+                                hargaUserValue.textContent = `${Number(price).toLocaleString('id-ID')} / ${unit}`;
                             }
                         } else {
                             if (hargaUserValue) {
-                                hargaUserValue.textContent = `Rp ${Number({{ $userPrice }}).toLocaleString('id-ID')}`;
+                                hargaUserValue.textContent = `${Number(price).toLocaleString('id-ID')} / ${unit}`;
                             }
                         }
                     })
+
                     .catch(error => {
                         console.error('Error:', error);
                         alert('Terjadi kesalahan saat mengambil harga penyesuaian.');
@@ -973,9 +1068,9 @@
                 const no = "{{ $item['no'] }}";
                 const priceCategoryName = "RESELLER";
                 const discountCategoryName = "RESELLER";
+                const branchName = "{{ $selectedBranchName ?? '' }}"; // misalnya dari backend
 
                 function fetchAdjustedPrice() {
-
                     fetch("{{ route('items.adjusted-price-reseller-ajax') }}", {
                         method: 'POST',
                         headers: {
@@ -986,29 +1081,60 @@
                             no: no,
                             priceCategoryName: priceCategoryName,
                             discountCategoryName: discountCategoryName,
+                            branchName: branchName
                         })
                     })
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Adjusted price response:', data);
                         const hargaReseller = document.getElementById('hargaReseller');
-                        const discElement = document.getElementById('discItemReseller');
+                        const userPrices = JSON.parse(hargaReseller.dataset.userPrices || '{}');
+                        hargaReseller.innerHTML = '';
+                        if (data.success && data.adjustedPrices) {
+                            hargaReseller.innerHTML = '';
 
-                        if (data.success) {
-                            if (hargaReseller) {
-                                hargaReseller.textContent = `Rp ${Number(data.adjustedPrice).toLocaleString('id-ID')}`;
-                            }
-                            if (discElement) {
-                                discElement.textContent = data.discItem ? `Diskon: ${data.discItem}%` : '';
+                            const entries = Object.entries(data.adjustedPrices);
+                            let html = '';
+
+                            if (entries.length === 1) {
+                                    const [unit, resellerPrice] = entries[0];
+                                    const userPrice = userPrices[unit];
+                                    let html = `<div class="mb-1 d-flex align-items-center flex-wrap gap-2">`;
+
+                                    if (userPrice && resellerPrice != userPrice) {
+                                        html += `<span class="text-decoration-line-through text-muted">Rp ${Number(userPrice).toLocaleString('id-ID')}</span>`;
+                                    }
+
+                                    html += `<span class="text-dark">Rp ${Number(resellerPrice).toLocaleString('id-ID')}</span>`;
+                                    html += `</div>`;
+
+                                    hargaReseller.innerHTML = html;
+                                } else {
+                                let html = `<div class="d-flex flex-column gap-1">`;
+
+                                entries.forEach(([unit, resellerPrice]) => {
+                                    const userPrice = userPrices[unit];
+                                    html += `<div class="d-flex align-items-center flex-wrap gap-2">`;
+
+                                    if (userPrice && resellerPrice != userPrice) {
+                                        html += `<span class="text-decoration-line-through text-muted">Rp ${Number(userPrice).toLocaleString('id-ID')} / ${unit}</span>`;
+                                    }
+
+                                    html += `<span class="text-dark">Rp ${Number(resellerPrice).toLocaleString('id-ID')} / ${unit}</span>`;
+                                    html += `</div>`;
+
+                                });
+
+                                html += `</div>`;
+                                hargaReseller.innerHTML += html;
                             }
                         } else {
-                            alert('Gagal mengambil harga terbaru.');
+                            hargaReseller.textContent = 'Harga tidak tersedia';
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         alert('Terjadi kesalahan saat mengambil harga.');
-                    })
+                    });
                 }
                 fetchAdjustedPrice();
             @endif
@@ -1039,7 +1165,7 @@
 
             // --- Stok Table AJAX & Update (untuk semua role) ---
             
-
+            
             @foreach ($konsinyasiWarehouses as $w)
                 stokNewElements[{{ $w['id'] }}] = document.querySelector(`#konsinyasiTable td[data-warehouse-id="{{ $w['id'] }}"]`);
             @endforeach
@@ -1087,98 +1213,120 @@
                 let totalReseller = 0;
                 let totalTransit = 0;
 
+                function getBalance(warehouseId) {
+                    const data = currentStokNew[warehouseId];
+                    const balance = data&&data.balance ? parseFloat(data.balance) : 0;
+                    return isNaN(balance) ? 0 : balance;
+                }
+
                 @foreach ($nonKonsinyasiWarehouses as $w)
                 {
-                    let nonKonsinyasiTd = stokNewElements[{{ $w['id'] }}];
-                    if (nonKonsinyasiTd) {
-                        let val = nonKonsinyasiTd.textContent.replace(/\./g, '');
-                        let parsed = parseInt(val);
-                        if (!isNaN(parsed)) {
-                            totalNonKonsinyasi += parsed;
-                        }
+                    const el = stokNewElements[{{ $w['id'] }}];
+                    if (el) {
+                        totalNonKonsinyasi += getBalance({{ $w['id'] }});
+                    } else {
+                        totalNonKonsinyasi += 0;
                     }
                 }
                 @endforeach
 
                 @foreach ($tscWarehouses as $w)
                 {
-                    let tscTd = stokNewElements[{{ $w['id'] }}];
-                    if (tscTd) {
-                        let val = tscTd.textContent.replace(/\./g, '');
-                        let parsed = parseInt(val);
-                        if (!isNaN(parsed)) {
-                            totalTsc += parsed;
-                        }
-                    }
+                    totalTsc += getBalance({{ $w['id'] }});
                 }
                 @endforeach
 
                 @foreach ($konsinyasiWarehouses as $w)
                 {
-                    let konsinyasiTd = stokNewElements[{{ $w['id'] }}];
-                    if (konsinyasiTd) {
-                        let val = konsinyasiTd.textContent.replace(/\./g, '');
-                        let parsed = parseInt(val);
-                        if (!isNaN(parsed)) {
-                            totalKonsinyasi += parsed;
-                        }
-                    }
+                    totalKonsinyasi += getBalance({{ $w['id'] }});
                 }
                 @endforeach
 
                 @foreach ($resellerWarehouses as $w)
                 {
-                    let resellerTd = stokNewElements[{{ $w['id'] }}];
-                    if (resellerTd) {
-                        let val = resellerTd.textContent.replace(/\./g, '');
-                        let parsed = parseInt(val);
-                        if (!isNaN(parsed)) {
-                            totalReseller += parsed;
-                        }
-                    }
+                    totalReseller += getBalance({{ $w['id'] }});
                 }
                 @endforeach
 
                 @foreach ($transitWarehouses as $w)
                 {
-                    let transitTd = stokNewElements[{{ $w['id'] }}];
-                    if (transitTd) {
-                        let val = transitTd.textContent.replace(/\./g, '');
-                        let parsed = parseInt(val);
-                        if (!isNaN(parsed)) {
-                            totalTransit += parsed;
-                        }
-                    }
+                    totalTransit += getBalance({{ $w['id'] }});
                 }
                 @endforeach
 
+                const formatter = new Intl.NumberFormat('id-ID');
+
                 const totalNonKonsinyasiEl = document.getElementById('totalNonKonsinyasiStok');
                 if (totalNonKonsinyasiEl) {
-                    totalNonKonsinyasiEl.textContent = new Intl.NumberFormat('id-ID').format(totalNonKonsinyasi);
+                    totalNonKonsinyasiEl.textContent = formatter.format(totalNonKonsinyasi);
                 }
 
                 const totalTscEl = document.getElementById('totalTscStok');
                 if (totalTscEl) {
-                    totalTscEl.textContent = new Intl.NumberFormat('id-ID').format(totalTsc);
+                    totalTscEl.textContent = formatter.format(totalTsc);
                 }
 
                 const totalKonsinyasiEl = document.getElementById('totalKonsinyasiStok');
                 if (totalKonsinyasiEl) {
-                    totalKonsinyasiEl.textContent = new Intl.NumberFormat('id-ID').format(totalKonsinyasi);
+                    totalKonsinyasiEl.textContent = formatter.format(totalKonsinyasi);
                 }
 
                 const totalResellerEl = document.getElementById('totalResellerStok');
                 if (totalResellerEl) {
-                    totalResellerEl.textContent = new Intl.NumberFormat('id-ID').format(totalReseller);
+                    totalResellerEl.textContent = formatter.format(totalReseller);
                 }
 
                 const totalTransitEl = document.getElementById('totalTransitStok');
                 if (totalTransitEl) {
-                    totalTransitEl.textContent = new Intl.NumberFormat('id-ID').format(totalTransit);
+                    totalTransitEl.textContent = formatter.format(totalTransit);
                 }
+
+                const totalSemua = totalNonKonsinyasi + totalTsc + totalKonsinyasi + totalReseller + totalTransit;
+                const totalKeseluruhanEl = document.getElementById('totalKeseluruhanStok');
+                if (totalKeseluruhanEl) {
+                    totalKeseluruhanEl.textContent = formatter.format(totalSemua);
+                }
+
+                const nonKonsinyasiWrapper = document.getElementById('nonKonsinyasiTable');
+                if (nonKonsinyasiWrapper) {
+                    if (totalNonKonsinyasi === 0) {
+                        nonKonsinyasiWrapper.style.display = 'none';
+                    } else {
+                        nonKonsinyasiWrapper.style.display = '';
+                    }
+                }
+
+                const tscWrapper = document.getElementById('tscwarehouseTable');
+                if (tscWrapper) {
+                    if (totalTsc === 0) {
+                        tscWrapper.closest('.mb-4').style.display = 'none'; 
+                    } else {
+                        tscWrapper.closest('.mb-4').style.display = '';
+                    }
+                }
+
+                const konsinyasiWrapper = document.getElementById('konsinyasiTable');
+                if (konsinyasiWrapper) {
+                    if (totalKonsinyasi === 0) {
+                        konsinyasiWrapper.closest('.mb-4').style.display = 'none';
+                    } else {
+                        konsinyasiWrapper.closest('.mb-4').style.display = '';
+                    }
+                }
+
+                const resellerWrapper = document.getElementById('resellerwarehouseTable');
+                if (resellerWrapper) {
+                    if (totalReseller === 0) {
+                        resellerWrapper.closest('.mb-4').style.display = 'none';
+                    } else {
+                        resellerWrapper.closest('.mb-4').style.display = '';
+                    }
+                }
+
             }
 
-            // Step 1: Fetch Sales Order stock (kurangi dulu stok berdasarkan Sales Order)
+            // ---- Perhitungan stok sales order dilanjutkan dengan sales invoice (Faktur dimukan) ----
+
             fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
                 method: 'POST',
                 headers: {
@@ -1192,7 +1340,6 @@
                 if (data.success) {
                     currentStokNew = data.stokNew;
 
-                    // Step 2: Fetch Matching Invoices (lanjut kurangi stok dari hasil sebelumnya)
                     return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
                         method: 'POST',
                         headers: {
@@ -1201,7 +1348,7 @@
                         },
                         body: JSON.stringify({
                             item_id: itemId,
-                            stok_awal: currentStokNew // ⬅️ kirim stok yang sudah dikurangi sales order
+                            stok_awal: currentStokNew
                         })
                     });
                 } else {
@@ -1219,9 +1366,28 @@
             .then(data => {
                 if (data.success) {
                     currentStokNew = data.stokNew;
-                    updateStokTable(currentStokNew); // ✅ tampilkan stok terbaru
+                    updateStokTable(currentStokNew);
+
+                    Toastify({
+                        text: "Data stok sudah terupdate!",
+                        duration: 10000,
+                        gravity: "top", // atau "bottom"
+                        position: "right", // atau "left"
+                        style: {
+                            background: "linear-gradient(to right, #00b09b, #96c93d)",
+                        },
+                        stopOnFocus: true,
+                    }).showToast();
                 } else {
                     console.error('Gagal mengambil data matching invoices:', data.message);
+
+                    Toastify({
+                        text: "Gagal mengambil data invoice",
+                        duration: 10000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545", // merah error
+                    }).showToast();
                 }
             })
             .catch(error => {
@@ -1231,7 +1397,6 @@
 
         document.getElementById('btnExportPdf').addEventListener('click', function () {
             const branchId = document.getElementById('branch_id') ? document.getElementById('branch_id').value : '';
-            const filterGudang = document.getElementById('filterGudang') ? document.getElementById('filterGudang').value : 'semua';
             const filterHargaGaransi = document.getElementById('filterHargaGaransi') ? document.getElementById('filterHargaGaransi').value : 'semua';
 
             if (!currentStokNew) {
@@ -1242,10 +1407,20 @@
             const formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('branch_id', branchId);
-            formData.append('filterGudang', filterGudang);
             formData.append('filterHargaGaransi', filterHargaGaransi);
             formData.append('stokNew', JSON.stringify(currentStokNew));
 
+            // ✅ Perbaikan bagian checkbox filterGudang
+            const gudangCheckboxes = document.querySelectorAll('.gudang-check:checked');
+            if (gudangCheckboxes.length === 0) {
+                formData.append('filterGudang[]', 'semua'); // kalau tidak ada yang dicentang
+            } else {
+                gudangCheckboxes.forEach(cb => {
+                    formData.append('filterGudang[]', cb.value);
+                });
+            }
+
+            // Kirim form ke server
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = "{{ route('items.export-pdf.post', ['encrypted' => Hashids::encode($item['id'])]) }}";
@@ -1262,7 +1437,9 @@
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
-         });
+        });
+
+
     </script>
 
 @endsection

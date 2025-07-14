@@ -6,6 +6,24 @@
     .table-scroll-container {
         max-height: 700px;
         overflow-y: auto;
+
+        scrollbar-width: thin;
+        scrollbar-color: #888 #f1f1f1;
+    }
+
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        /* width: 5px; */
+        background-color: #f1f1f1;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #555;
     }
 
     .card {
@@ -63,7 +81,9 @@
                                 </div>
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="{{ route('admin.user') }}" class="btn btn-secondary w-100">Reset</a>
+                                <a href="{{ route('admin.user') }}" class="btn btn-secondary w-100" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -87,10 +107,10 @@
                     <table class="table table-striped align-middle">
                         <thead class="table-secondary">
                             <tr class="text-center">
-                                <th>No</th>
-                                <th>Nama</th>
-                                <th>Email</th>
-                                <th>Status</th>
+                                <th class="position-sticky top-0 z-10 text-uppercase">No</th>
+                                <th class="position-sticky top-0 z-10 text-uppercase">Nama</th>
+                                <th class="position-sticky top-0 z-10 text-uppercase">Email</th>
+                                <th class="position-sticky top-0 z-10 text-uppercase">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -121,5 +141,14 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.getElementById('status');
+        statusSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    })
+</script>
 
 @endsection

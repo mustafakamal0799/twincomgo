@@ -118,8 +118,36 @@ class ItemController extends Controller
             'status',
             'categoryOptions',
             'currentPage',
-            'totalPages'
+            'totalPages',
         ));
+    }
+
+    public function searchCategories(Request $request)
+    {
+        $query = $request->input('q');
+
+        $params = [
+            'fields' => 'id,name',
+            'filter.keywords.op' => 'CONTAIN',
+            'filter.keywords.val[0]' => $query,
+            'sp.pageSize' => 100,
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . env('ACCURATE_API_TOKEN'),
+            'X-Session-ID' => env('ACCURATE_SESSION'),
+        ])->get('https://public.accurate.id/accurate/api/item-category/list.do', $params);
+
+        $data = $response->json();
+
+        $categories = collect($data['d'] ?? [])->map(function ($item) {
+            return [
+                'id' => $item['id'],
+                'text' => $item['name'],
+            ];
+        });
+
+        return response()->json($categories);
     }
 
     private function buildCategoryOptions(array $categories, $parentId = null, $prefix = '')
@@ -209,7 +237,7 @@ class ItemController extends Controller
 
     protected function fetchSalesOrderDetailsBatch($salesOrderList, $headers, $itemIdUtama, &$stokNew)
     {
-        $batchSize = 15;
+        $batchSize = 10;
         $salesOrderChunks = array_chunk($salesOrderList, $batchSize);
 
         foreach ($salesOrderChunks as $chunk) {
@@ -256,7 +284,7 @@ class ItemController extends Controller
                     }
                 }
             }
-            // usleep(500000);
+            // usleep(1000000);
             Log::info("Batch selesai");
         }
     }
@@ -465,9 +493,61 @@ class ItemController extends Controller
 
         if ($response->successful()) {
             $data = $response->json();
-            Log::info("fetchAdjustedPrice response data: " . json_encode($data));
-            $unitPrice = $data['d']['unitPrice'] ?? null;
-            $discItem = $data['d']['itemDiscPercent'] ?? null;
+
+            $d = $data['d'] ?? null;
+
+                if ($d && isset($d['unitPriceRule']) && is_array($d['unitPriceRule'])) {
+                    $discPercent = isset($d['itemDiscPercent']) ? floatval($d['itemDiscPercent']) : 0;
+                    $adjustedPrices = [];
+
+                    $unitMap = [
+                        52850 => "1",
+                        53550 => "BATANG",
+                        53950 => "BOX",
+                        53200 => "BTL",
+                        53450 => "CAM",
+                        53300 => "DUS",
+                        52950 => "HPP",
+                        53400 => "IKAT",
+                        53600 => "KALENG",
+                        53700 => "KARUNG",
+                        53900 => "KG",
+                        53350 => "KLG",
+                        52701 => "METER",
+                        52750 => "MTR",
+                        53000 => "PACK",
+                        53750 => "PAJAK",
+                        53100 => "PAKET",
+                        53151 => "PCH",
+                        50 => "PCS",
+                        53500 => "POTONG",
+                        53650 => "RIT",
+                        52900 => "ROLL",
+                        53150 => "SAK",
+                        53800 => "SET",
+                        53050 => "UNIT",
+                        53850 => "rim",
+                    ];
+
+                    foreach ($d['unitPriceRule'] as $rule) {
+                        $unitId = $rule['unitId'] ?? null;
+                        $price = $rule['price'] ?? null;
+
+                        if ($unitId && $price) {
+                            $unitName = $unitMap[$unitId] ?? "UNIT $unitId";
+                            $finalPrice = $discPercent > 0
+                                ? $price - ($price * $discPercent / 100)
+                                : $price;
+
+                            $adjustedPrices[$unitName] = $finalPrice;
+                        }
+                    }
+                }
+
+
+            Log::info("fetchAdjustedPrice response data: " . json_encode($adjustedPrices));
+            $unitPrice = $adjustedPrices ?? null;
+            $discItem = $discPercent ?? null;
             return [$unitPrice, $discItem];
         }
 
@@ -504,6 +584,7 @@ class ItemController extends Controller
         $garansiReseller = $item['charField7'];
         $pricePack = $item['unit2Price'];
         $satuanItem = $item['balanceInUnit'];
+        $ratio = $item['ratio2'] ?? null;
 
         $detailWarehouse = collect($detailWarehouse)->map(function ($item) {
             $unitParts = explode(' ', $item['balanceUnit']);
@@ -592,6 +673,7 @@ class ItemController extends Controller
             'transitWarehouses' => $transitWarehouses,
             'pricePack' => $pricePack,
             'satuanItem' => $satuanItem,
+            'ratio' => $ratio ?? 'ratio tidak ada',
         ]);
     }
 
@@ -752,24 +834,62 @@ class ItemController extends Controller
         if ($response->successful()) {
             $data = $response->json();
 
-        $d = $data['d'] ?? null;
+            $d = $data['d'] ?? null;
 
-        $adjustedPrice = null;
-            if ($d && isset($d['unitPrice'])) {
-                $unitPrice = $d['unitPrice'];
-                $discPercent = isset($d['itemDiscPercent']) ? floatval($d['itemDiscPercent']) : 0;
-                if ($discPercent > 0) {
-                    $adjustedPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-                } else {
-                    $adjustedPrice = $unitPrice;
+                if ($d && isset($d['unitPriceRule']) && is_array($d['unitPriceRule'])) {
+                    $discPercent = isset($d['itemDiscPercent']) ? floatval($d['itemDiscPercent']) : 0;
+                    $adjustedPrices = [];
+
+                    // Paste unitMap lengkap di sini
+                    $unitMap = [
+                        52850 => "1",
+                        53550 => "BATANG",
+                        53950 => "BOX",
+                        53200 => "BTL",
+                        53450 => "CAM",
+                        53300 => "DUS",
+                        52950 => "HPP",
+                        53400 => "IKAT",
+                        53600 => "KALENG",
+                        53700 => "KARUNG",
+                        53900 => "KG",
+                        53350 => "KLG",
+                        52701 => "METER",
+                        52750 => "MTR",
+                        53000 => "PACK",
+                        53750 => "PAJAK",
+                        53100 => "PAKET",
+                        53151 => "PCH",
+                        50 => "PCS",
+                        53500 => "POTONG",
+                        53650 => "RIT",
+                        52900 => "ROLL",
+                        53150 => "SAK",
+                        53800 => "SET",
+                        53050 => "UNIT",
+                        53850 => "rim",
+                    ];
+
+                    foreach ($d['unitPriceRule'] as $rule) {
+                        $unitId = $rule['unitId'] ?? null;
+                        $price = $rule['price'] ?? null;
+
+                        if ($unitId && $price) {
+                            $unitName = $unitMap[$unitId] ?? "UNIT $unitId";
+                            $finalPrice = $discPercent > 0
+                                ? $price - ($price * $discPercent / 100)
+                                : $price;
+
+                            $adjustedPrices[$unitName] = $finalPrice;
+                        }
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'adjustedPrices' => $adjustedPrices,
+                        'discItem' => $discPercent > 0 ? $discPercent : null,
+                    ]);
                 }
-            }
-
-            return response()->json([
-                'success' => true,
-                'adjustedPrice' => $adjustedPrice,
-                'discItem' => $d['itemDiscPercent'] ?? null,
-            ]);
 
             } else {
                 Log::warning('Gagal ambil harga dari Accurate', [
@@ -847,6 +967,9 @@ class ItemController extends Controller
 
     public function exportPdf(Request $request, $encrypted)
     {
+        Log::info('DATA REQUEST EXPORT PDF:', $request->all());
+
+        
         $decoded = Hashids::decode($encrypted);
         $id = $decoded[0] ?? null;
 
@@ -898,7 +1021,6 @@ class ItemController extends Controller
 
         // Ambil filter dari request
         $selectedBranchId = $request->input('branch_id');
-        $filterGudang = $request->input('filterGudang', 'semua');
         $filterHargaGaransi = $request->input('filterHargaGaransi', 'semua');
 
         // Ambil stok hasil pengurangan dari frontend (hasil AJAX di blade)
@@ -935,51 +1057,59 @@ class ItemController extends Controller
         }
 
         // Apply filterGudang to stokNew
-        Log::info("Filter Gudang: $filterGudang, stokNew sebelum filter: " . json_encode($stokNew));
+        // Log::info("Filter Gudang: $filterGudang, stokNew sebelum filter: " . json_encode($stokNew));
 
         // Logging stok reseller sebelum filter
         $resellerBeforeFilter = array_filter($stokNew, fn($stock) => str_contains(strtolower($stock['name']), 'reseller'));
         Log::info("Stok reseller sebelum filter: " . json_encode($resellerBeforeFilter));
 
-        if ($filterGudang && $filterGudang !== 'semua') {
+        $filterGudang = $request->input('filterGudang', []);
+
+        if (in_array('semua', $filterGudang)) {
+            $filterGudang = []; // reset kalau semua dipilih
+        }
+
+        // filter stokNew berdasarkan array tersebut
+        if (!empty($filterGudang)) {
             $stokNew = array_filter($stokNew, function ($stock) use ($filterGudang) {
                 $nameLower = strtolower($stock['name']);
                 $descLower = strtolower($stock['description'] ?? '');
 
-                if ($filterGudang === 'non') {
-                    return is_null($stock['description'] ?? null) &&
-                        !str_contains($nameLower, 'reseller') &&
-                        !str_contains($nameLower, 'tsc') &&
-                        !str_contains($nameLower, 'twintos') &&
-                        !str_contains($nameLower, 'twinmart') &&
-                        !str_contains($nameLower, 'marketing') &&
-                        !str_contains($nameLower, 'asp') &&
-                        !str_contains($nameLower, 'bazar') &&
-                        !str_contains($nameLower, 'bina') &&
-                        !str_contains($nameLower, 'dkv') &&
-                        !str_contains($nameLower, 'af') &&
-                        !str_contains($nameLower, 'barang rusak') &&
-                        !str_contains($nameLower, 'sc landasan ulin') &&
-                        !str_contains($nameLower, 'panda store landasan ulin') &&
-                        !str_contains($nameLower, 'sc banjarbaru');
-                } elseif ($filterGudang === 'konsinyasi') {
-                    return str_contains($descLower, 'konsinyasi');
-                } elseif ($filterGudang === 'tsc') {
-                    return str_contains($nameLower, 'tsc') || str_contains($nameLower, 'panda sc banjarbaru');
-                } elseif ($filterGudang === 'resel') {
-                    return str_contains($nameLower, 'reseller');
-                } elseif ($filterGudang === 'trans') {
-                    return str_contains($nameLower, 'transit');
+                foreach ($filterGudang as $filter) {
+                    if ($filter === 'store') {
+                        if (is_null($stock['description'] ?? null) &&
+                            !str_contains($nameLower, 'reseller') &&
+                            !str_contains($nameLower, 'tsc') &&
+                            !str_contains($nameLower, 'twintos') &&
+                            !str_contains($nameLower, 'twinmart') &&
+                            !str_contains($nameLower, 'marketing') &&
+                            !str_contains($nameLower, 'asp') &&
+                            !str_contains($nameLower, 'bazar') &&
+                            !str_contains($nameLower, 'bina') &&
+                            !str_contains($nameLower, 'dkv') &&
+                            !str_contains($nameLower, 'af') &&
+                            !str_contains($nameLower, 'barang rusak') &&
+                            !str_contains($nameLower, 'sc landasan ulin') &&
+                            !str_contains($nameLower, 'panda store landasan ulin') &&
+                            !str_contains($nameLower, 'sc banjarbaru')) {
+                                return true;
+                        }
+                    } elseif ($filter === 'konsinyasi' && str_contains($descLower, 'konsinyasi')) {
+                        return true;
+                    } elseif ($filter === 'tsc' && (str_contains($nameLower, 'tsc') || str_contains($nameLower, 'panda sc banjarbaru'))) {
+                        return true;
+                    } elseif ($filter === 'resel' && str_contains($nameLower, 'reseller')) {
+                        return true;
+                    } elseif ($filter === 'trans' && str_contains($nameLower, 'transit')) {
+                        return true;
+                    }
                 }
-                return true;
+
+                return false;
             });
-
-            // Logging stok reseller setelah filter
-            $resellerAfterFilter = array_filter($stokNew, fn($stock) => str_contains(strtolower($stock['name']), 'reseller'));
-            Log::info("Stok reseller setelah filter: " . json_encode($resellerAfterFilter));
-
-            Log::info("stokNew setelah filter: " . json_encode($stokNew));
         }
+
+        Log::info('DATA STOK SETELAH FILTER:', $stokNew);
 
         // Filter out stocks with zero or less balance
         $stokNew = array_filter($stokNew, fn($stock) => ($stock['balance'] ?? 0) > 0);
@@ -1043,7 +1173,6 @@ class ItemController extends Controller
                     Log::info("Masuk kategori Konsinyasi");
                 }
             } 
-           
             elseif (str_contains($nameLower, 'transit')) {
                 if (($stock['balance'] ?? 0) > 0) {
                     $transitStock[$warehouseId] = $stock;
@@ -1084,44 +1213,30 @@ class ItemController extends Controller
         // Ambil harga disesuaikan jika ada
         list($unitPrice, $discItem) = $this->fetchAdjustedPrice($headers, $selectedBranchId, $id);
 
-        Log::info("Export PDF - selectedBranchId: $selectedBranchId, unitPrice: $unitPrice, discItem: $discItem");
+        Log::info("Export PDF" , [
+            'selectedBranchId' => $selectedBranchId,
+            'unitPrice' => $unitPrice,
+            'discItem' => $discItem,
+        ]);
 
         $sellingPrices = collect($item['detailSellingPrice']);
-        $resellerPrice = $sellingPrices
-            ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'reseller')['price'] ?? 0;
-        $userPrice = $sellingPrices
-            ->first(fn($p) => strtolower($p['priceCategory']['name']) === 'user')['price'] ?? 0;
+        
 
-        $pckResellerPrice = $sellingPrices->first(function ($p) {
-            return strtolower($p['priceCategory']['name']) === 'reseller'
-                && isset($p['unit']['name']) 
-                && $p['unit']['name'] === 'PACK';
-        })['price'] ?? 0;
-
-        $pckUserPrice = $sellingPrices->first(function ($p) {
-            return strtolower($p['priceCategory']['name']) === 'user'
-                && isset($p['unit']['name']) 
-                && $p['unit']['name'] === 'PACK';
-        })['price'] ?? 0;
-
-        $finalUserPrice = $userPrice;
-        $finalResellerPrice = $resellerPrice;
-
-        if ($selectedBranchId) {
-            if ($filterHargaGaransi === 'user' && $unitPrice !== null) {
-                $discPercent = floatval($discItem ?? 0);
-                $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-                $finalResellerPrice = 0;
-            } elseif ($filterHargaGaransi === 'reseller' && $unitPrice !== null) {
-                $discPercent = floatval($discItem ?? 0);
-                $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-                $finalUserPrice = 0;
-            } elseif ($filterHargaGaransi === 'semua' && $unitPrice !== null) {
-                $discPercent = floatval($discItem ?? 0);
-                $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-                $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-            }
-        }
+        // if ($selectedBranchId) {
+        //     if ($filterHargaGaransi === 'user' && $unitPrice !== null) {
+        //         $discPercent = floatval($discItem ?? 0);
+        //         $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+        //         $finalResellerPrice = 0;
+        //     } elseif ($filterHargaGaransi === 'reseller' && $unitPrice !== null) {
+        //         $discPercent = floatval($discItem ?? 0);
+        //         $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+        //         $finalUserPrice = 0;
+        //     } elseif ($filterHargaGaransi === 'semua' && $unitPrice !== null) {
+        //         $discPercent = floatval($discItem ?? 0);
+        //         $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+        //         $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
+        //     }
+        // }
 
         $totalBalance = 0;
 
@@ -1130,7 +1245,9 @@ class ItemController extends Controller
         }
 
 
-        Log::info("Export PDF - finalUserPrice: $finalUserPrice, finalResellerPrice: $finalResellerPrice");
+        Log::info("Export PDF", [
+            'unitPrice' => $unitPrice,
+        ]);
 
         $pdf = Pdf::loadView('items.detail-pdf', [
             'item' => $item,
@@ -1140,8 +1257,8 @@ class ItemController extends Controller
             'transitStock' => $transitStock,
             'resellerStock' => $resellerStock,
             'konsinyasiStock' => $konsinyasiStock,
-            'finalUserPrice' => $finalUserPrice,
-            'finalResellerPrice' => $finalResellerPrice,
+            // 'finalUserPrice' => $finalUserPrice,
+            // 'finalResellerPrice' => $finalResellerPrice,
             'filterGudang' => $filterGudang,
             'filterHargaGaransi' => $filterHargaGaransi,
             'selectedBranchId' => $selectedBranchId,
@@ -1154,8 +1271,9 @@ class ItemController extends Controller
             'totalReseller' => $totalReseller,
             'totalKonsinyasi' => $totalKonsinyasi,
             'satuanItem' => $satuanItem,
-            'pckResellerPrice' => $pckResellerPrice,
-            'pckUserPrice' => $pckUserPrice,
+            'sellingPrices' => $sellingPrices,
+            'unitPrice' => $unitPrice,
+            
         ]);
 
         return $pdf->stream('laporan-item-' . Str::slug($item['name']) . '.pdf');
@@ -1204,22 +1322,61 @@ class ItemController extends Controller
                 $data = $response->json();
                 $d = $data['d'] ?? null;
 
-                $adjustedPrice = null;
-                if ($d && isset($d['unitPrice'])) {
-                    $unitPrice = $d['unitPrice'];
+                
+                    if ($d && isset($d['unitPriceRule']) && is_array($d['unitPriceRule'])) {
                     $discPercent = isset($d['itemDiscPercent']) ? floatval($d['itemDiscPercent']) : 0;
-                    if ($discPercent > 0) {
-                        $adjustedPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-                    } else {
-                        $adjustedPrice = $unitPrice;
-                    }
-                }
+                    $adjustedPrices = [];
 
-                return response()->json([
-                    'success' => true,
-                    'adjustedPrice' => $adjustedPrice,
-                    'discItem' => $d['itemDiscPercent'] ?? null,
-                ]);
+                    // Paste unitMap lengkap di sini
+                    $unitMap = [
+                        52850 => "1",
+                        53550 => "BATANG",
+                        53950 => "BOX",
+                        53200 => "BTL",
+                        53450 => "CAM",
+                        53300 => "DUS",
+                        52950 => "HPP",
+                        53400 => "IKAT",
+                        53600 => "KALENG",
+                        53700 => "KARUNG",
+                        53900 => "KG",
+                        53350 => "KLG",
+                        52701 => "METER",
+                        52750 => "MTR",
+                        53000 => "PACK",
+                        53750 => "PAJAK",
+                        53100 => "PAKET",
+                        53151 => "PCH",
+                        50 => "PCS",
+                        53500 => "POTONG",
+                        53650 => "RIT",
+                        52900 => "ROLL",
+                        53150 => "SAK",
+                        53800 => "SET",
+                        53050 => "UNIT",
+                        53850 => "rim",
+                    ];
+
+                    foreach ($d['unitPriceRule'] as $rule) {
+                        $unitId = $rule['unitId'] ?? null;
+                        $price = $rule['price'] ?? null;
+
+                        if ($unitId && $price) {
+                            $unitName = $unitMap[$unitId] ?? "UNIT $unitId";
+                            $finalPrice = $discPercent > 0
+                                ? $price - ($price * $discPercent / 100)
+                                : $price;
+
+                            $adjustedPrices[$unitName] = $finalPrice;
+                        }
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'adjustedPrices' => $adjustedPrices,
+                        'discItem' => $discPercent > 0 ? $discPercent : null,
+                    ]);
+                }
             } else {
                 Log::warning('Gagal ambil harga dari Accurate', [
                     'status' => $response->status(),

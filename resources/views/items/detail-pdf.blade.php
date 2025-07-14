@@ -7,7 +7,7 @@
         body {
             font-family: 'Times New Roman', Times, serif, sans-serif;
             font-size: 12px;
-            color: #333;
+            color: #000000;
             margin: 10;
         }
         .kop {
@@ -42,6 +42,7 @@
             border-bottom: 1px solid #999;
             padding-bottom: 4px;
         }
+        
         .harga {
             margin-top: 10px;
             margin-bottom: 20px;
@@ -98,6 +99,7 @@
         .kop table td {
             border: none;
         }
+        
         .page-break {
             page-break-after: always;
         }
@@ -133,12 +135,16 @@
     @php
         $status = Auth::user()->status;
 
-        $sectionCount = 0;
-        if (count($tscStock) > 0) $sectionCount++;
-        if (count($nonKonsinyasiStock) > 0) $sectionCount++;
-        if (count($resellerStock) > 0) $sectionCount++;
-        if (count($konsinyasiStock) > 0) $sectionCount++;
-        if (count($transitStock) > 0) $sectionCount++;
+        // $sectionCount = 0;
+        // if (count($tscStock) > 0) $sectionCount++;
+        // if (count($nonKonsinyasiStock) > 0) $sectionCount++;
+        // if (count($resellerStock) > 0) $sectionCount++;
+        // if (count($konsinyasiStock) > 0) $sectionCount++;
+        // if (count($transitStock) > 0) $sectionCount++;
+
+
+        $rowCount = 0;
+        $pageLimit = 11;
     @endphp
 
     <div class="kop" style="margin-bottom: 20px; border-bottom: 1px solid #8dbf9b; padding-bottom: 10px;">
@@ -177,71 +183,128 @@
                                     <td style="width: 10px; text-align: left;">:</td>
                                     <td>{{ $item['no'] }}</td>
                                 </tr>
-                                <tr>
-                                    <th style="width: 100px; text-align: left;">Satuan Barang</th>
-                                    <td style="width: 10px; text-align: left;">:</td>
-                                    <td>{{ preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $satuanItem ))) ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $satuanItem ))) : trim(str_replace(['[', ']'], '', $satuanItem ))}}</td>
-                                </tr>
                                 @if ($filterHargaGaransi === 'user' || $filterHargaGaransi === 'semua')
-                                <tr>
-                                    <th>
-                                        @if ($filterHargaGaransi === 'semua')
-                                            Harga User
-                                        @else 
-                                            Harga
-                                        @endif
-                                    </th>
-                                    <td>:</td>
-                                    <td>Rp {{ number_format($finalUserPrice, 0, ',', '.') }}</td>
-                                </tr>
-                                <tr>
-                                    <th>
-                                        @if ($filterHargaGaransi === 'semua')
-                                            Harga Pack User
-                                        @else 
-                                            Harga Pack
-                                        @endif
-                                    </th>
-                                    <td>:</td>
-                                    <td>Rp {{ number_format($pckUserPrice, 0, ',', '.') ?? '0' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Garansi</th>
-                                    <td>:</td>
-                                    <td>{{ $garansiUser ?? '-' }}</td>
-                                </tr>
+                                    <tr>
+                                        <th>
+                                            @if ($filterHargaGaransi === 'semua')
+                                                Harga User
+                                            @else 
+                                                Harga
+                                            @endif
+                                        </th>
+                                        <td>:</td>
+                                        <td>
+                                            @if(!empty($unitPrice))
+                                                @if(count($unitPrice) > 1)
+                                                    @foreach ($unitPrice as $satuan => $price)
+                                                        <p class="harga-item">Rp {{ number_format($price) }} / {{ $satuan }}</p>
+                                                    @endforeach
+                                                @else
+                                                    @foreach ($unitPrice as $price)
+                                                        <p class="harga-item">Rp {{ number_format($price) }}</p>
+                                                    @endforeach
+                                                @endif
+                                            @else
+                                                {{-- Fallback ke harga dari model --}}
+                                                @php
+                                                    $userUnitPrices = [];
+
+                                                    foreach ($sellingPrices as $price) {
+                                                        $unitName = strtoupper($price['unit']['name'] ?? '');
+                                                        $categoryName = strtolower($price['priceCategory']['name'] ?? '');
+                                                        $priceValue = $price['price'] ?? 0;
+
+                                                        if ($categoryName === 'user' && $priceValue > 0) {
+                                                            $userUnitPrices[$unitName] = $priceValue;
+                                                        }
+                                                    }
+                                                @endphp
+
+                                                @if (count($userUnitPrices) === 1)
+                                                    @php
+                                                        $onlyPrice = reset($userUnitPrices);
+                                                    @endphp
+                                                    <div class="d-flex">
+                                                        <p id="hargaUserValue">Rp {{ number_format($onlyPrice, 0, ',', '.') }}</p>
+                                                    </div>
+
+                                                @elseif(count($userUnitPrices) > 1)
+                                                <div class="d-flex">
+                                                    <div id="hargaUserValue" class="ms-2">
+                                                        {{-- Harga awal tampil di sini --}}
+                                                        @foreach($userUnitPrices as $unitName => $priceValue)
+                                                            <p>Rp {{ number_format($priceValue, 0, ',', '.') }} / {{ $unitName }}</p>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                                @endif
+
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Garansi</th>
+                                        <td>:</td>
+                                        <td>{{ $garansiUser ?? '-' }}</td>
+                                    </tr>
                                 @endif
                                 @if ($filterHargaGaransi === 'reseller' || $filterHargaGaransi === 'semua')
-                                <tr>
-                                    <th>
-                                        @if ($filterHargaGaransi === 'semua')
-                                            Harga Reseller
-                                        @else 
-                                            Harga
+                                    <tr>
+                                        <th>
+                                            @if ($filterHargaGaransi === 'semua')
+                                                Harga Reseller
+                                            @else 
+                                                Harga
+                                            @endif
+                                        </th>
+                                        <td>:</td>
+                                        @php
+                                            $resellerUnitPrices = [];
+
+                                            foreach ($sellingPrices as $price) {
+                                                $unitName = strtoupper($price['unit']['name'] ?? '');
+                                                $categoryName = strtolower($price['priceCategory']['name'] ?? '');
+                                                $priceValue = $price['price'] ?? 0;
+
+                                                if ($categoryName === 'reseller' && $priceValue > 0) {
+                                                    $resellerUnitPrices[$unitName] = $priceValue;
+                                                }
+                                            }
+                                        @endphp
+
+                                        @if (count($resellerUnitPrices) === 1)
+                                            @php
+                                                $onlyPrice = reset($resellerUnitPrices); // ambil harga pertama
+                                            @endphp
+                                            <td>
+                                                Rp {{ number_format($onlyPrice, 0, ',', '.') }}
+                                            </td>
+                                        {{-- Jika lebih dari 1 unit, tampilkan nama unit --}}
+                                        @elseif(count($resellerUnitPrices) > 1)
+                                        <td> 
+
+                                            <div class="d-flex">
+                                                <div class="ms-2">
+                                                    @foreach($resellerUnitPrices as $unitName => $priceValue)
+                                                    <p>
+                                                        Rp <span class="hargaResellerValue" data-unit="{{ $unitName }}" id="hargaResellerValue_{{ $unitName }}">
+                                                            {{ number_format($priceValue, 0, ',', '.') }}
+                                                        </span> / {{ $unitName }}
+                                                    </p>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </td>
                                         @endif
-                                    </th>
-                                    <td>:</td>
-                                    <td>Rp {{ number_format($finalResellerPrice, 0, ',', '.') }}</td>
-                                </tr>
-                                <tr>
-                                    <th>
-                                        @if ($filterHargaGaransi === 'semua')
-                                            Harga Pack Reseller
-                                        @else 
-                                            Harga Pack
-                                        @endif
-                                    </th>
-                                    <td>:</td>
-                                    <td>Rp {{ number_format($pckResellerPrice, 0, ',', '.') ?? '0' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Garansi</th>
-                                    <td>:</td>
-                                    <td>{{ $garansiReseller ?? '-' }}</td>
-                                </tr>
+                                    </tr>
+                                    <tr>
+                                        <th>Garansi</th>
+                                        <td>:</td>
+                                        <td>{{ $garansiReseller ?? '-' }}</td>
+                                    </tr>
                                 @endif
                             @elseif ($status === "RESELLER")
-                                 <tr>
+                                <tr>
                                     <td colspan="3" style="font-weight: bold; height: 50px;">{{ $item['name'] }}</td>
                                 </tr>
                                 <tr>
@@ -269,11 +332,17 @@
         </table>
     </div>
 
-    
-    @if(count($nonKonsinyasiStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'non'))
-    <div class="section-title ">Store</div>
-    <table>
-        <thead>
+        <div class="footer">
+            <div class="left">SISB TWINCOMGO</div>
+            <div class="right">{{ \Carbon\Carbon::now('Asia/Makassar')->translatedFormat('d F Y H:i') }}</div>
+        </div>
+
+    @if(!empty($nonKonsinyasiStock) > 0 && (in_array('semua', $filterGudang) || in_array('store', $filterGudang)))
+        <div style="text-align: start;">
+            <div class="section-title">Store</div>
+        </div>
+        <table>
+            <thead>
                 <tr>
                     <th style="text-align: center;">Lokasi</th>
                     <th style="text-align: center;">Stok</th>
@@ -299,16 +368,18 @@
                     </td>
                     @endif
                 </tr>
+                @php $rowCount++; @endphp
                 @endforeach
             </tbody>
         </table>
         @endif
-        <div class="footer">
-            <div class="left">SISB TWINCOMGO</div>
-            <div class="right">{{ \Carbon\Carbon::now('Asia/Makassar')->translatedFormat('d F Y H:i') }}</div>
-        </div>
-        <div class="page-break"></div>
-        @if(count($tscStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'tsc'))
+
+        @if($rowCount >= $pageLimit && (!empty($konsinyasiStock) || !empty($resellerStock) || !empty($tscStock) || !empty($transitStock)))
+            <div class="page-break"></div>
+            @php $rowCount = 0; @endphp
+        @endif
+        
+        @if(!empty($tscStock) > 0 && (in_array('semua', $filterGudang) || in_array('tsc', $filterGudang)))
             <div class="section-title">TSC</div>
             <table>
                 <thead>
@@ -337,12 +408,19 @@
                         </td>
                         @endif
                     </tr>
+                    @php $rowCount++; @endphp
                     @endforeach
                 </tbody>
             </table>
         @endif
+
+        @if($rowCount >= $pageLimit && (!empty($konsinyasiStock) || !empty($resellerStock) || !empty($transitStock)))
+            <div class="page-break"></div>
+            @php $rowCount = 0; @endphp
+        @endif
+
             
-        @if(count($resellerStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'resel'))
+        @if(!empty($resellerStock) > 0 && (in_array('semua', $filterGudang) || in_array('resel', $filterGudang)))
             <div class="section-title">Marketing Reseller</div>
             <table>
                 <thead>
@@ -371,13 +449,18 @@
                         </td>
                         @endif
                     </tr>
+                    @php $rowCount++; @endphp
                     @endforeach
                 </tbody>
-            </table>
-            
+            </table>            
         @endif
 
-        @if(count($konsinyasiStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'konsinyasi'))
+        @if($rowCount == $pageLimit && (!empty($konsinyasiStock) || !empty($transitStock)))
+            <div class="page-break"></div>
+            @php $rowCount = 0; @endphp
+        @endif
+
+        @if(!empty($konsinyasiStock) > 0 && (in_array('semua', $filterGudang) || in_array('konsinyasi', $filterGudang)))
             <div class="section-title">Konsinyasi</div>
             <table>
                 <thead>
@@ -401,17 +484,23 @@
                             }}
                         </td>
                         @if ($loop->first)
-                        <td rowspan="{{ count($konsinyasiStok) }}" style="text-align: center; vertical-align: middle;">
+                        <td rowspan="{{ count($konsinyasiStock) }}" style="text-align: center; vertical-align: middle;">
                             {{ number_format($totalKonsinyasi, 0, ',', '.') }}
                         </td>
                         @endif
                     </tr>
+                    @php $rowCount++; @endphp
                     @endforeach
                 </tbody>
             </table>
         @endif
 
-        @if(count($transitStock) > 0 && ($filterGudang === 'semua' || $filterGudang === 'trans'))
+        @if($rowCount == $pageLimit && (!empty($transitStock)))
+            <div class="page-break"></div>
+            @php $rowCount = 0; @endphp
+        @endif
+
+        @if(!empty($transitStock) > 0 && (in_array('semua', $filterGudang) || in_array('trans', $filterGudang)))
             <div class="section-title">Transit</div>
             <table>
                 <thead>

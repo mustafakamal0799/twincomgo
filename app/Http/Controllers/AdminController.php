@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Spatie\Activitylog\Models\Activity;
 
 class AdminController extends Controller
@@ -120,5 +121,43 @@ class AdminController extends Controller
         }
 
         return response()->json(['message' => 'Logout time recorded']);
+    }
+
+    public function getCustomerUserList () {
+
+        $token = env('ACCURATE_API_TOKEN');
+        $session = env('ACCURATE_SESSION');
+        $page = request()->input('page', 1);
+        $perPage = 100;
+        
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID' => $session
+        ];
+
+        $params = [
+            'sp.page' => $page,
+            'sp.pageSize' => $perPage,
+            'fields' => 'id,name,email,suspended,customerBranchName',
+            'filter.customerCategoryId' => 2701,
+            'filter.suspended' => false,
+        ];
+
+        $response = Http::withHeaders($headers)->get('https://public.accurate.id/accurate/api/customer/list.do', $params);
+
+        $custUser = [];
+        $totalUsers = 0;
+
+        if($response->successful()) {
+            $custUser = $response->json()['d'] ?? [];
+            $totalUsers = $response->json()['sp']['rowCount'] ?? 0;
+        }
+
+        return view ('admin.customer.list-user', [
+            'custUser' => $custUser,
+            'totalUsers' => $totalUsers,
+            'currentPage' => $page,
+            'perPage' => $perPage,
+        ]);
     }
 }

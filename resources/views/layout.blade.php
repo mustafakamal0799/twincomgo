@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Twincomgo</title>
     {{-- <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/png"> --}}
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
 
 
@@ -16,15 +20,18 @@
             margin: 0;
             padding: 0;
             /* ✅ Ini bagian yang menambahkan background image */
-            background-image: url('{{ asset('images/bg1.jpg') }}');
+            background-image: url("{{ asset('images/bg1.jpg') }}");
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
-            min-height: 100vh; /* Full screen */
-            font-size: 14px;
+            min-height: 100vh; 
         }
 
-        .btn-secondary.active, 
+        .full-height {
+            height: 100vh;
+        }
+
+        .btn-secondary.active,
         .btn-secondary:active {
             background-color: #6c757d !important; /* warna asli btn-secondary */
             border-color: #6c757d !important;
@@ -55,7 +62,7 @@
             left: 245px;
             /* z-index: 100; */
             transition: left 0.1s ease;
-            z-index: 1050; /* above sidebar */
+            z-index: 1000; /* above sidebar */
         }
 
         .toggle-btn.toggled {
@@ -66,7 +73,7 @@
             transition: all 0.3s ease;
             z-index: 1040;
             background-color: #212529; /* Bootstrap dark bg */
-            height: 100vh;
+            min-height: 100vh;
         }
 
         #toggleSidebar {
@@ -77,24 +84,38 @@
             left: 10px; /* Move right when toggled */
         }
         .navbar-brand {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             color: white;
         }
-        .card {
-            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
+
+        .tooltip .tooltip-inner {
+            background-color: #ffe695;
+            color: #000;
+        }
+        .bs-tooltip-top .tooltip-arrow::before,
+        .bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
+            border-top-color: #ffe695 !important;
         }
 
         @media only screen and (max-width: 768px) {
+            body {
+                font-size: 12px;
+                overflow: visible !important;
+                overflow-x: hidden !important;
+            }
+
             .navbar-brand {
                 font-size: 10px;
                 font-weight: bold;
-                color: white;            
+                color: white;
             }
+
             .dropdown-menu {
                 min-width: 100px;
             }
-           .logout-btn {
+
+            .logout-btn {
                 font-size: 12px;
                 padding: 4px 8px;
             }
@@ -120,7 +141,7 @@
                 height: 100vh;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
-                box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
             }
 
             #sidebar.show {
@@ -140,11 +161,11 @@
                 left: 0;
                 width: 100vw;
                 height: 100vh;
-                background: rgba(0,0,0,0.5);
+                background: rgba(0, 0, 0, 0.5);
                 z-index: 1030;
                 display: none;
             }
-            
+
             #sidebar-overlay.show {
                 display: block;
             }
@@ -152,12 +173,18 @@
                 font-size: 10px;
             }
         }
-        
-        
+
     </style>
+
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body>
+<div id="loader-display" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(192, 192, 192, 0.644); z-index:1050; display:flex; justify-content:center; align-items:center;">
+    <div class="spinner-border text-info" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+<div class="d-flex flex-column full-height">
     @if (Auth::user()->status === 'admin')
         <button class="btn btn-dark toggle-btn" id="toggleSidebar">
             <i class="bi bi-caret-right"></i>
@@ -200,6 +227,12 @@
                             <i class="bi bi-archive me-2"></i> Log Aktivitas
                         </a>
                     </li>
+                    {{-- <li>
+                        <a href="{{route('promo.index')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
+                            {{ Request::routeIs('promo.index') ? 'active' : '' }}">
+                            <i class="bi bi-megaphone me-2"></i> Promo
+                        </a>
+                    </li> --}}
                     <li>
                         <a href="{{route('items.index')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
                             {{ Request::routeIs('items.index') ? 'active' : '' }}">
@@ -215,128 +248,156 @@
             </div>
         </div>
     @else
-        <div class="container mt-4 mb-4">
-            <div class="card border-0" style="background: linear-gradient(90deg, #212529, #919191); border-radius: 50px;">
-                <nav class="navbar navbar-expand-lg navbar-dark px-4" style="border-radius: 50px;">
-                    <div class="container-fluid">
-                        <!-- Judul Navbar -->
-                        <a class="navbar-brand py-0" href="{{ route('items.index') }}">
-                            SISTEM INFORMASI STOK BARANG
+        <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background: linear-gradient(90deg, #212529, #919191);">
+            <div class="container-fluid">
+                <!-- Judul Navbar -->
+                <a class="navbar-brand py-0" href="{{ route('items.index') }}">
+                    SISTEM INFORMASI STOK BARANG
+                </a>
+
+                <!-- Tombol hamburger (hanya muncul di layar kecil) -->
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserMenu" aria-controls="navbarUserMenu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Isi Navbar: nama user & dropdown -->
+                <div class="collapse navbar-collapse justify-content-end" id="navbarUserMenu">
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                            <strong class="me-2">
+                                {{ Auth::user()->name }}
+                            </strong>
+                            <i class="bi bi-person-circle person-icon me-2" style="font-size: 1.2rem;"></i>
                         </a>
 
-                        <!-- Tombol hamburger (hanya muncul di layar kecil) -->
-                        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserMenu" aria-controls="navbarUserMenu" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-
-                        <!-- Isi Navbar: nama user & dropdown -->
-                        <div class="collapse navbar-collapse justify-content-end" id="navbarUserMenu">
-                            <div class="dropdown">
-                                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                                    <strong class="me-2">
-                                        {{ Auth::user()->name }}
-                                    </strong>
-                                    <i class="bi bi-person-circle person-icon me-2" style="font-size: 1.2rem;"></i>
-                                </a>
-
-                                <ul class="dropdown-menu dropdown-menu-dark text-small shadow dropdown-menu-end">
-                                    <li>
-                                        <form action="{{ route('logout') }}" method="POST" class="px-3 py-2">
-                                            @csrf
-                                            <button class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
-                                                <i class="bi bi-box-arrow-right"></i>
-                                                Logout
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow dropdown-menu-end">
+                            <li>
+                                <form action="{{ route('logout') }}" method="POST" class="px-3 py-2">
+                                    @csrf
+                                    <button class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
                     </div>
-                </nav>
+                </div>
             </div>
-        </div>
+        </nav>
 
 
         <!-- Konten -->
-        <div class="flex-fill container">
-            @yield('content')
+        <div class="flex-grow-1 d-flex">
+            <div class="flex-grow-1">
+                @yield('content')
+            </div>
         </div>
-
-    @endif
-         <!-- Footer -->
-        {{-- <footer class="bg-light text-center py-3 mt-auto">
-                <small>© {{ date('Y') }} Sistem Informasi Stok Barang - <i>Powered by</i> Twincom</small>
-        </footer> --}}
-
-
-
-
-    <div id="sidebar-overlay"></div>
+        
+        @endif
+</div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
     @stack('scripts')
-        <script>
-            const toggleBtn = document.getElementById('toggleSidebar');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
+    <script>
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
 
-            // Fungsi untuk menyimpan status sidebar ke localStorage
-            function saveSidebarState(isClosed) {
-                localStorage.setItem('sidebarClosed', isClosed ? 'true' : 'false');
+        // Show loader on page unload (navigation or reload)
+        window.addEventListener('beforeunload', function () {
+            const loader = document.getElementById('loader-display');
+            if (loader) {
+                loader.style.display = 'flex';
             }
+        });
 
-            // Fungsi untuk membaca status sidebar dari localStorage dan mengatur tampilan
-            function loadSidebarState() {
-                const isClosed = localStorage.getItem('sidebarClosed') === 'true';
-                if (window.innerWidth <= 768) {
-                    // On mobile, sidebar is hidden by default
-                    sidebar.classList.remove('show');
-                    sidebarOverlay.classList.remove('show');
-                    toggleBtn.classList.remove('toggled');
-                } else {
-                    if (isClosed) {
-                        sidebar.classList.add('d-none');
-                        toggleBtn.classList.add('toggled');
-                    } else {
-                        sidebar.classList.remove('d-none');
-                        toggleBtn.classList.remove('toggled');
-                    }
+        // Hide loader on page load
+        window.addEventListener('load', function () {
+            const loader = document.getElementById('loader-display');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        });
+
+        // Hide loader on pageshow (including when coming back from bfcache)
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                const loader = document.getElementById('loader-display');
+                if (loader) {
+                    loader.style.display = 'none';
                 }
             }
+        });
+    </script>
+    @stack('scripts')
+    <script>
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
 
-            // Muat status sidebar saat halaman dimuat
-            loadSidebarState();
+        // Fungsi untuk menyimpan status sidebar ke localStorage
+        function saveSidebarState(isClosed) {
+            localStorage.setItem('sidebarClosed', isClosed ? 'true' : 'false');
+        }
 
-            toggleBtn.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
-                    // On mobile, toggle sidebar overlay
-                    sidebar.classList.toggle('show');
-                    sidebarOverlay.classList.toggle('show');
-                } else {
-                    // Toggle kelas 'd-none' untuk menyembunyikan/memperlihatkan sidebar
-                    sidebar.classList.toggle('d-none');
-                    // Toggle class untuk pindahkan posisi tombol
-                    toggleBtn.classList.toggle('toggled');
-
-                    // Simpan status sidebar setelah toggle
-                    const isClosed = sidebar.classList.contains('d-none');
-                    saveSidebarState(isClosed);
-                }
-            });
-
-            // Click on overlay to close sidebar on mobile
-            sidebarOverlay.addEventListener('click', function() {
+        // Fungsi untuk membaca status sidebar dari localStorage dan mengatur tampilan
+        function loadSidebarState() {
+            const isClosed = localStorage.getItem('sidebarClosed') === 'true';
+            if (window.innerWidth <= 768) {
+                // On mobile, sidebar is hidden by default
                 sidebar.classList.remove('show');
                 sidebarOverlay.classList.remove('show');
-            });
+                toggleBtn.classList.remove('toggled');
+            } else {
+                if (isClosed) {
+                    sidebar.classList.add('d-none');
+                    toggleBtn.classList.add('toggled');
+                } else {
+                    sidebar.classList.remove('d-none');
+                    toggleBtn.classList.remove('toggled');
+                }
+            }
+        }
 
-            // Handle window resize to reset sidebar state
-            window.addEventListener('resize', function() {
-                loadSidebarState();
-            });
-        </script>
+        // Muat status sidebar saat halaman dimuat
+        loadSidebarState();
+
+        toggleBtn.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                // On mobile, toggle sidebar overlay
+                sidebar.classList.toggle('show');
+                sidebarOverlay.classList.toggle('show');
+            } else {
+                // Toggle kelas 'd-none' untuk menyembunyikan/memperlihatkan sidebar
+                sidebar.classList.toggle('d-none');
+                // Toggle class untuk pindahkan posisi tombol
+                toggleBtn.classList.toggle('toggled');
+
+                // Simpan status sidebar setelah toggle
+                const isClosed = sidebar.classList.contains('d-none');
+                saveSidebarState(isClosed);
+            }
+        });
+
+        // Click on overlay to close sidebar on mobile
+        sidebarOverlay.addEventListener('click', function() {
+            sidebar.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
+        });
+
+        // Handle window resize to reset sidebar state
+        window.addEventListener('resize', function() {
+            loadSidebarState();
+        });
+
+    </script>
 
 </body>
 </html>

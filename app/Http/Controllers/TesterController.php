@@ -100,4 +100,8 @@ class TesterController extends Controller
 
         return view('tester.index', compact('items', 'allCategories'));
     }
+
+    public function testContent() {
+        return view('test-content');
+    }
 }

@@ -10,6 +10,24 @@
     .table-scroll-container {
         max-height: 500px;
         overflow-y: auto;
+
+        scrollbar-width: thin;
+        scrollbar-color: #888 #f1f1f1;
+    }
+
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        /* width: 5px; */
+        background-color: #f1f1f1;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #555;
     }
 
     @media (max-width: 768px) {
@@ -64,75 +82,75 @@
             {{-- Form Pencarian Singkat + Filter Lanjutan --}}
             <form action="{{ route('admin.log') }}" method="GET">                
                 <div class="row g-3">
-                        <div class="col-6 col-md-3">
-                            <label for="user-search" class="form-label">User</label>
-                            <select id="user-search" name="user" class="form-select">
-                                @if(request('user'))
-                                    <option value="{{ request('user') }}" selected>{{ request('user') }}</option>
-                                    @endif
-                            </select>
+                    <div class="col-6 col-md-3">
+                        <label for="user-search" class="form-label">User</label>
+                        <select id="user-search" name="user" class="form-select">
+                            @if(request('user'))
+                                <option value="{{ request('user') }}" selected>{{ request('user') }}</option>
+                            @endif
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" class="form-select" id="status">
+                            <option value="">Semua Status</option>
+                            <option value="karyawan" {{ request('status') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                            <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
+                            <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
+                        </select>
+                    </div>                        
+                    <div class="col-6 col-md-3">
+                        <label for="end_date" class="form-label">Tanggal</label>
+                        <div class="dropdown w-100">
+                            <button class="btn border dropdown-toggle w-100" style="background-color: white; text-align: left;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Filter Tanggal
+                            </button>
+                            <div class="dropdown-menu p-3 w-100">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Dari</label>
+                                    <input type="date" name="start_date" class="form-control" id="start_date" value="{{ request('start_date') }}" />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">Sampai</label>
+                                    <input type="date" name="end_date" class="form-control" id="end_date" value="{{ request('end_date') }}" />
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 mt-2">Terapkan</button>
+                            </div>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select name="status" class="form-select" id="status">
-                                <option value="">Semua Status</option>
-                                <option value="karyawan" {{ request('status') == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
-                                <option value="reseller" {{ request('status') == 'reseller' ? 'selected' : '' }}>Reseller</option>
-                                <option value="admin" {{ request('status') == 'admin' ? 'selected' : '' }}>Admin</option>
-                            </select>
-                        </div>                        
-                        <div class="col-6 col-md-3">
-                            <label for="end_date" class="form-label">Tanggal</label>
-                            <div class="dropdown w-100">
-                                <button class="btn border dropdown-toggle w-100" style="background-color: white; text-align: left;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Filter Tanggal
-                                </button>
-                                <div class="dropdown-menu p-3 w-100">
-                                    <div class="mb-3">
-                                        <label for="start_date" class="form-label">Dari</label>
-                                        <input type="date" name="start_date" class="form-control" id="start_date" value="{{ request('start_date') }}" />
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="end_date" class="form-label">Sampai</label>
-                                        <input type="date" name="end_date" class="form-control" id="end_date" value="{{ request('end_date') }}" />
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100 mt-2">Terapkan</button>
+                    </div>                        
+                    <div class="col-6 col-md-3">
+                        <div class="d-flex flex-wrap align-items-end gap-2">
+                            <div style="min-width: 250px; flex-grow: 1;">
+                                <label for="search" class="form-label">Cari</label>
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control" placeholder="Cari log user..." value="{{ request('search') }}">
+                                    <button class="btn btn-outline-secondary" type="submit">
+                                        <i class="bi bi-search"></i>
+                                    </button>
                                 </div>
                             </div>
-                        </div>                        
-                        <div class="col-6 col-md-3">
-                            <div class="d-flex flex-wrap align-items-end gap-2">
-                                <div style="min-width: 250px; flex-grow: 1;">
-                                    <label for="search" class="form-label">Cari</label>
-                                    <div class="input-group">
-                                        <input type="text" name="search" class="form-control" placeholder="Cari log user..." value="{{ request('search') }}">
-                                        <button class="btn btn-outline-secondary" type="submit">
-                                            <i class="bi bi-search"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <a href="{{ route('admin.log') }}" class="btn btn-success d-flex align-items-center gap-1 btn-reset">
-                                        <i class="bi bi-arrow-clockwise"></i> Reset
-                                    </a>
-                                </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('admin.log') }}" class="btn btn-success d-flex align-items-center gap-1 btn-reset" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </a>
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
+            </form>
         </div>
-        <div class="card-body px-0 pt-0 pb-2">
-            <div class="table-responsive table-scroll-container" id="table-container">
-                <table class="table table-bordered table-striped align-middle mb-0">
-                    <thead class="table-secondary text-center">
-                        <tr>
-                            <th>#</th>
-                            <th>User</th>
-                            <th>Log</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Login</th>
-                            <th>Logout</th>
+        <div class="card-body p-0 position-relative">
+            <div class="table-responsive p-0 table-scroll-container" id="table-container">
+                <table class="table table-striped align-middle">
+                    <thead class="table-secondary">
+                        <tr class="text-center">
+                            <th class="position-sticky top-0 z-10 text-uppercase">#</th>
+                            <th class="position-sticky top-0 z-10 text-uppercase">User</th>
+                            <th class="position-sticky top-0 z-10 text-uppercase">Log</th>
+                            <th class="position-sticky top-0 z-10 text-uppercase">Status</th>
+                            <th class="position-sticky top-0 z-10 text-uppercase">Tanggal</th>
+                            <th class="position-sticky top-0 z-10 text-uppercase">Login</th>
+                            <th class="position-sticky top-0 z-10 text-uppercase">Logout</th>
                         </tr>
                     </thead>
                     <tbody>
