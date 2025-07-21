@@ -89,6 +89,7 @@
                                 <option value="{{ request('user') }}" selected>{{ request('user') }}</option>
                             @endif
                         </select>
+                        <input type="hidden" name="user" id="userId" value="{{ request('user') }}">
                     </div>
                     <div class="col-6 col-md-3">
                         <label for="status" class="form-label">Status</label>
@@ -188,44 +189,46 @@
 </div>
 
 @push('scripts')
-<!-- Select2 -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        // TomSelect untuk kategori
+        const selectedCategoryId = document.getElementById('user-search').value;
 
-<script>
-    $(document).ready(function() {
-        $('#user-search').select2({
-            placeholder: 'Pilih user...',
-            allowClear: true,
-            ajax: {
-                url: '{{ route("admin.log.user-search") }}',
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                    return { q: params.term };
-                },
-                processResults: function (data) {
-                    return {
-                        results: data.map(function(name) {
-                            return { id: name, text: name };
+        document.addEventListener("DOMContentLoaded", function () {
+            new TomSelect("#user-search", {
+                valueField: 'id',
+                labelField: 'text',
+                searchField: 'text',
+                create: false,
+                plugins: ['remove_button'],
+                placeholder: 'Pilih / Cari User',
+                maxOptions: 20,
+                allowEmptyOption: true,
+                load: function(query, callback) {
+                    if (!query.length) return callback();
+                    fetch(`/admin/log/user-search?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const results = data.map(item => ({
+                                id: item,
+                                text: item
+                            }));
+                            callback(results);
                         })
-                    };
+                        .catch(() => callback());
                 },
-                cache: true
-            }
+                onChange: function(value) {
+                    document.getElementById('userId').value = value;
+                    document.getElementById('filterForm').submit(); // 🔥 submit form GET
+                }
+            });
+
+            const statusSelect = document.getElementById('status');
+            statusSelect.addEventListener('change', function() {
+                this.form.submit();
+            });
         });
 
-        // Submit otomatis saat user dipilih
-        $('#user-search').on('select2:select', function (e) {
-            $(this).closest('form').submit();
-        });
-
-        // Auto logout saat user menutup tab atau browser
-        window.addEventListener('beforeunload', function (e) {
-            navigator.sendBeacon('{{ route("auto.logout") }}');
-        });
-    });
-</script>
+    </script>
 @endpush
 
 @endsection

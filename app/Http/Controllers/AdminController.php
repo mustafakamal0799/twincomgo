@@ -95,9 +95,9 @@ class AdminController extends Controller
             ->where('log_name', 'like', "%{$search}%")
             ->distinct()
             ->limit(10)
-            ->get();
+            ->pluck('log_name');
 
-        return response()->json($results->pluck('log_name'));
+        return response()->json($results);
     }
 
     public function autoLogout(Request $request)

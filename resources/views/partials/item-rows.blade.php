@@ -32,7 +32,7 @@
         <td class="text-center td-satuan" style="width: 100px;">
             <p class="text-xs font-weight-bold mb-0">
                 {{
-                    preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $item['availableToSellInAllUnit'], $matches)
+                    preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK|HPP)\b/i', $item['availableToSellInAllUnit'], $matches)
                     && count($matches[0]) > 1
                         ? trim(str_replace(['[', ']'], '', $item['availableToSellInAllUnit']))
                         : preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $item['availableToSellInAllUnit'])))

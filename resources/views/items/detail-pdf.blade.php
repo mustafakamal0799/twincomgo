@@ -374,6 +374,46 @@
         </table>
         @endif
 
+        @if($rowCount >= $pageLimit && (!empty($konsinyasiStock) || !empty($resellerStock) || !empty($tscStock) || !empty($transitStock) || !empty($pandaStock)))
+            <div class="page-break"></div>
+            @php $rowCount = 0; @endphp
+        @endif
+        
+        @if(!empty($pandaStock) > 0 && (in_array('semua', $filterGudang) || in_array('panda', $filterGudang)))
+            <div class="section-title">Panda Store</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Lokasi</th>
+                        <th style="text-align: center;">Stok</th>
+                        <th style="text-align: center;">Satuan</th>
+                        <th style="text-align: center;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($pandaStock as $stok)
+                    <tr>
+                        <td>{{ $stok['name'] }}</td>
+                        <td style="text-align: center;">{{ number_format($stok['balance']) }}</td>
+                        <td style="text-align: center;">
+                            {{ 
+                                preg_match('/^[\d.,]+\s+(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG)$/i', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                ? preg_replace('/^[\d.,]+\s+/', '', trim(str_replace(['[', ']'], '', $stok['balanceUnit'] )))
+                                : trim(str_replace(['[', ']'], '', $stok['balanceUnit'] ))
+                            }}
+                        </td>
+                        @if ($loop->first)
+                        <td rowspan="{{ count($pandaStock) }}" style="text-align: center; vertical-align: middle;">
+                            {{ number_format($totalPanda, 0, ',', '.') }}
+                        </td>
+                        @endif
+                    </tr>
+                    @php $rowCount++; @endphp
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
         @if($rowCount >= $pageLimit && (!empty($konsinyasiStock) || !empty($resellerStock) || !empty($tscStock) || !empty($transitStock)))
             <div class="page-break"></div>
             @php $rowCount = 0; @endphp

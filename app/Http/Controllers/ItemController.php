@@ -105,6 +105,14 @@ class ItemController extends Controller
         $categories = $allCategories->toArray();
         $categoryOptions = $this->buildCategoryOptions($categories);
 
+        // Transform $allCategories for Tom Select (id and text keys)
+        $allCategoriesForTomSelect = $allCategories->map(function ($cat) {
+            return [
+                'id' => $cat['id'],
+                'text' => $cat['name'],
+            ];
+        })->toArray();
+
         $currentPage = $data['sp']['page'] ?? 1;
         $totalPages = $data['sp']['pageSize'] ?? 1;
 
@@ -115,6 +123,7 @@ class ItemController extends Controller
         return view('items.index', compact(
             'items',
             'allCategories',
+            'allCategoriesForTomSelect',
             'status',
             'categoryOptions',
             'currentPage',
@@ -604,12 +613,16 @@ class ItemController extends Controller
             ]);
         });
 
+        $pandaWarehouses = collect($detailWarehouse)->filter(function ($w) {
+            return Str::contains(Str::lower($w['name'] ?? ''), ['panda sc banjarbaru', 'panda store banjarbaru']);
+        });
+
         $nonKonsinyasiWarehouses = collect($detailWarehouse)->filter(function ($w) {
             return is_null($w['description']) &&
                 !Str::contains(Str::lower($w['name']), [
                     'reseller','tsc','twintos','twinmart',
                     'marketing','asp','bazar','bina',
-                    'dkv','af','barang rusak', 'sc landasan ulin', 'panda store landasan ulin', 'sc banjarbaru'
+                    'dkv','af','barang rusak', 'sc landasan ulin', 'panda store landasan ulin', 'sc banjarbaru', 'panda store banjarbaru',
                 ]);
         });
 
@@ -630,9 +643,10 @@ class ItemController extends Controller
                 ->merge($tscWarehouses)
                 ->merge($nonKonsinyasiWarehouses)
                 ->merge($transitWarehouses)
-                ->merge($resellerWarehouses);
+                ->merge($resellerWarehouses)
+                ->merge($pandaWarehouses);
         } elseif (strtolower($user->status) === 'reseller') {
-             $filteredWarehouses = $konsinyasiWarehouses
+            $filteredWarehouses = $konsinyasiWarehouses
                 ->merge($nonKonsinyasiWarehouses);
         } else {
             $filteredWarehouses = collect();
@@ -663,6 +677,7 @@ class ItemController extends Controller
             'konsinyasiWarehouses' => $konsinyasiWarehouses,
             'nonKonsinyasiWarehouses' => $nonKonsinyasiWarehouses,
             'tscWarehouses' => $tscWarehouses,
+            'pandaWarehouses' => $pandaWarehouses,
             'session' => $session,
             'allBranches' => $allBranches,
             'selectedBranchId' => $selectedBranchId,
@@ -1091,12 +1106,15 @@ class ItemController extends Controller
                             !str_contains($nameLower, 'barang rusak') &&
                             !str_contains($nameLower, 'sc landasan ulin') &&
                             !str_contains($nameLower, 'panda store landasan ulin') &&
+                            !str_contains($nameLower, 'panda store banjarbaru') &&
                             !str_contains($nameLower, 'sc banjarbaru')) {
                                 return true;
                         }
                     } elseif ($filter === 'konsinyasi' && str_contains($descLower, 'konsinyasi')) {
                         return true;
-                    } elseif ($filter === 'tsc' && (str_contains($nameLower, 'tsc') || str_contains($nameLower, 'panda sc banjarbaru'))) {
+                    } elseif ($filter === 'tsc' && (str_contains($nameLower, 'tsc'))) {
+                        return true;
+                    } elseif ($filter === 'panda' && (str_contains($nameLower, 'panda store banjarbaru') || str_contains($nameLower, 'panda sc banjarbaru'))) {
                         return true;
                     } elseif ($filter === 'resel' && str_contains($nameLower, 'reseller')) {
                         return true;
@@ -1120,6 +1138,7 @@ class ItemController extends Controller
         $resellerStock = [];
         $konsinyasiStock = [];
         $transitStock = [];
+        $pandaStock = [];
 
         foreach ($stokNew as $warehouseId => $stock) {
             $nameLower = strtolower($stock['name']);
@@ -1130,10 +1149,17 @@ class ItemController extends Controller
 
             Log::info("Memeriksa stok warehouseId: $warehouseId, name: {$stock['name']}, balance: {$stock['balance']}, description: $descLower");
 
-            if (str_contains($nameLower, 'tsc') || str_contains($nameLower, 'panda sc banjarbaru')) {
+            if (str_contains($nameLower, 'tsc')) {
                 if (($stock['balance'] ?? 0) > 0) {
                     $tscStock[$warehouseId] = $stock;
                     Log::info("Masuk kategori TSC");
+                }
+                
+            } // --- FIX: pindahkan pengecekan reseller sebelum non-konsinyasi ---
+            elseif (str_contains($nameLower, 'panda store banjarbaru') || str_contains($nameLower, 'panda sc banjarbaru')) {
+                if (($stock['balance'] ?? 0) > 0) {
+                    $pandaStock[$warehouseId] = $stock;
+                    Log::info("Masuk kategori Panda");
                 }
                 
             } // --- FIX: pindahkan pengecekan reseller sebelum non-konsinyasi ---
@@ -1161,6 +1187,7 @@ class ItemController extends Controller
                     !str_contains($nameLower, 'barang rusak') &&
                     !str_contains($nameLower, 'sc landasan ulin') &&
                     !str_contains($nameLower, 'panda store landasan ulin') &&
+                    !str_contains($nameLower, 'panda store banjarbaru') &&
                     !str_contains($nameLower, 'sc banjarbaru')) {
                     if (($stock['balance'] ?? 0) > 0) {
                         $nonKonsinyasiStock[$warehouseId] = $stock;
@@ -1186,17 +1213,20 @@ class ItemController extends Controller
         Log::info("Jumlah stok Konsinyasi: " . count($konsinyasiStock));
         Log::info("Jumlah stok Reseller: " . count($resellerStock));
         Log::info("Jumlah stok Transit: " . count($transitStock));
+        Log::info("Jumlah stok Panda: " . count($pandaStock));
 
         // Filter out zero or less balance stocks in each group
         $tscStock = array_filter($tscStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
         $nonKonsinyasiStock = array_filter($nonKonsinyasiStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
         $resellerStock = array_filter($resellerStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
         $konsinyasiStock = array_filter($konsinyasiStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
+        $pandaStock = array_filter($pandaStock, fn($stock) => ($stock['balance'] ?? 0) > 0);
 
         $totalTsc = array_sum(array_column($tscStock, 'balance'));
         $totalNonKonsinyasi = array_sum(array_column($nonKonsinyasiStock, 'balance'));
         $totalReseller = array_sum(array_column($resellerStock, 'balance'));
         $totalKonsinyasi = array_sum(array_column($konsinyasiStock, 'balance'));
+        $totalPanda = array_sum(array_column($pandaStock, 'balance'));
 
         // Sort each group by warehouse name ascending
         $sortByName = function(&$array) {
@@ -1209,6 +1239,7 @@ class ItemController extends Controller
         $sortByName($nonKonsinyasiStock);
         $sortByName($resellerStock);
         $sortByName($konsinyasiStock);
+        $sortByName($pandaStock);
 
         // Ambil harga disesuaikan jika ada
         list($unitPrice, $discItem) = $this->fetchAdjustedPrice($headers, $selectedBranchId, $id);
@@ -1257,6 +1288,7 @@ class ItemController extends Controller
             'transitStock' => $transitStock,
             'resellerStock' => $resellerStock,
             'konsinyasiStock' => $konsinyasiStock,
+            'pandaStock' => $pandaStock,
             // 'finalUserPrice' => $finalUserPrice,
             // 'finalResellerPrice' => $finalResellerPrice,
             'filterGudang' => $filterGudang,
@@ -1270,6 +1302,7 @@ class ItemController extends Controller
             'totalTsc' => $totalTsc,
             'totalReseller' => $totalReseller,
             'totalKonsinyasi' => $totalKonsinyasi,
+            'totalPanda' => $totalPanda,
             'satuanItem' => $satuanItem,
             'sellingPrices' => $sellingPrices,
             'unitPrice' => $unitPrice,

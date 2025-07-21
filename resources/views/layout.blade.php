@@ -12,13 +12,20 @@
     
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
     <style>
         body {
             margin: 0;
             padding: 0;
+            font-family: "Inter", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: <weight>;
+            font-style: normal;
             /* ✅ Ini bagian yang menambahkan background image */
             background-image: url("{{ asset('images/bg1.jpg') }}");
             background-size: cover;
@@ -83,6 +90,11 @@
         #toggleSidebar.toggled {
             left: 10px; /* Move right when toggled */
         }
+
+        .navbar {
+            background-color: #343a40;
+            color: #fff;
+        }
         .navbar-brand {
             font-size: 18px;
             font-weight: bold;
@@ -96,6 +108,10 @@
         .bs-tooltip-top .tooltip-arrow::before,
         .bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
             border-top-color: #ffe695 !important;
+        }
+        .bs-tooltip-bottom .tooltip-arrow::before,
+        .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before {
+            border-bottom-color: #ffe695 !important;
         }
 
         @media only screen and (max-width: 768px) {
@@ -179,11 +195,20 @@
 </head>
 
 <body>
-<div id="loader-display" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(192, 192, 192, 0.644); z-index:1050; display:flex; justify-content:center; align-items:center;">
-    <div class="spinner-border text-info" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">Loading...</span>
+    <div id="loader-display" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0, 0, 0, 0.377); z-index:1050; display:flex; justify-content:center; align-items:center; flex-direction: column">
+        <div class="d-flex justify-content-center align-items-center mb-4">
+            <dotlottie-wc
+            src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
+            style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
+            speed="1"
+            autoplay
+            loop
+            ></dotlottie-wc>
+        </div>
+        <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">
+            Mohon tunggu...
+        </p>
     </div>
-</div>
 <div class="d-flex flex-column full-height">
     @if (Auth::user()->status === 'admin')
         <button class="btn btn-dark toggle-btn" id="toggleSidebar">
@@ -192,7 +217,7 @@
         <div class="d-flex">
             <div id="sidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 250px; min-height: 100vh;">
                 <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                    <a href="#" class="d-flex align-items-center text-white text-decoration-none" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-2 person-icon"></i>
                         <strong style="margin-right: 10px; margin-left: 10px;">{{ Auth::user()->name }}</strong>
                     </a>
@@ -248,7 +273,7 @@
             </div>
         </div>
     @else
-        <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background: linear-gradient(90deg, #212529, #919191);">
+        <nav class="navbar navbar-expand-lg navbar-dark p-3">
             <div class="container-fluid">
                 <!-- Judul Navbar -->
                 <a class="navbar-brand py-0" href="{{ route('items.index') }}">
@@ -263,7 +288,7 @@
                 <!-- Isi Navbar: nama user & dropdown -->
                 <div class="collapse navbar-collapse justify-content-end" id="navbarUserMenu">
                     <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none" data-bs-toggle="dropdown">
                             <strong class="me-2">
                                 {{ Auth::user()->name }}
                             </strong>
@@ -302,6 +327,9 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
+    
 
     @stack('scripts')
     <script>

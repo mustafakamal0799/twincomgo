@@ -147,6 +147,55 @@
         line-height: 1.5;
         padding-left: 0;
     }
+
+    .button {
+    padding: 8px 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    border: 0;
+    background-color: rgb(0, 110, 255);
+    box-shadow: rgb(0 0 0 / 5%) 0 0 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 14px;
+    transition: all 0.5s ease;
+    color: white;
+    }
+
+    .button:hover {
+    letter-spacing: 3px;
+    background-color: hsl(261deg 80% 48%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(93 24 220) 0px 7px 29px 0px;
+    }
+
+    .button:active {
+    letter-spacing: 3px;
+    background-color: hsl(261deg 80% 48%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(93 24 220) 0px 0px 0px 0px;
+    transform: translateY(10px);
+    transition: 100ms;
+    }
+
+    .input {
+    border: 2px solid transparent;
+    width: 15em;
+    height: 2.5em;
+    padding-left: 0.8em;
+    outline: none;
+    overflow: hidden;
+    background-color: #f3f3f3;
+    border-radius: 10px;
+    transition: all 0.5s;
+    }
+
+    .input:hover,
+    .input:focus {
+    border: 2px solid #4a9dec;
+    box-shadow: 0px 0px 0px 7px rgb(74, 157, 236, 20%);
+    background-color: white;
+    }
     @media only screen and (max-width: 768px) {
   /* CSS khusus untuk perangkat mobile */
         body {
@@ -314,10 +363,15 @@
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
+        .ts-control, .ts-dropdown, .ts-control input {
+            font-size: 10px !important;
+        }
+
+        dotlottie-wc {
+            width: 100px !important;
+            height: 100px !important;
+        }
     }
-
-
-
 </style>
 
 <div class="container-fluid">
@@ -337,11 +391,16 @@
                                     </select>
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <input type="hidden" name="category_id" id="itemCategoryId">
                                     <label for="category_search" class="form-label">Cari Kategori </label>
-                                    <select id="category_search" id="itemCategoryId" style="width: 100%;">
+                                    <select id="category_search" placeholder="Pilih / Cari Kategori">
                                         <option></option>
+                                        @foreach ($allCategoriesForTomSelect as $cat)
+                                            <option value="{{ $cat['id'] }}" {{ request('category_id') == $cat['id'] ? 'selected' : '' }}>
+                                                {{ $cat['text'] }}
+                                            </option>
+                                        @endforeach
                                     </select>
+                                    <input type="hidden" name="category_id" id="itemCategoryId" value="{{ request('category_id') }}">
                                 </div>
                                 <div class="col-6 col-md-2">
                                     <label for="min_price" class="form-label">Harga Minimum</label>
@@ -405,11 +464,18 @@
                     </div>
                     <div id="loader" style="display: none;">
                         <div class="loader-overlay d-flex flex-column align-items-center justify-content-center py-4">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div class="spinner-grow-custom bg-light me-2" style="animation-delay: 0s;"></div>
-                                <div class="spinner-grow-custom bg-light me-2" style="animation-delay: 0.2s;"></div>
-                                <div class="spinner-grow-custom bg-light" style="animation-delay: 0.4s;"></div>
+                            <div class="d-flex justify-content-center align-items-center mb-4">
+                                <dotlottie-wc
+                                src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
+                                style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
+                                speed="1"
+                                autoplay
+                                loop
+                                ></dotlottie-wc>
                             </div>
+                            <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">
+                                Mohon tunggu...
+                            </p>
                         </div>
                     </div>
 
@@ -426,7 +492,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-center align-items-center">
-                        <button id="load-more-btn" class="btn btn-outline-primary btn-sm">Load more ...</button>
+                        <button id="load-more-btn" class="button">Load more</button>
                     </div>
                 </div>
             </div>
@@ -436,63 +502,32 @@
 
 @push('scripts')
     <script>
+        // TomSelect untuk kategori
+        const selectedCategoryId = document.getElementById('category_search').value;
 
-    $(document).ready(function() {
-        $('#category_search').select2({
-            placeholder: 'Ketik nama kategori...',
-            allowClear: true,
-            ajax: {
-                url: '{{ route('categories.search') }}',
-                dataType: 'json',
-                delay: 250,
-                data: function(params) {
-                    return {
-                        q: params.term || '' // kirim kosong kalau kosong
-                    };
-                },
-                processResults: function(data) {
-                    return {
-                        results: data
-                    };
-                },
-                cache: true
-            }
+        document.addEventListener("DOMContentLoaded", function () {
+            new TomSelect("#category_search", {
+                valueField: 'id',
+                create: false,
+                labelField: 'text',
+                plugins: ['remove_button'],
+                searchField: 'text',
+                maxOptions: 9999,
+                placeholder: 'Pilih / Cari Kategori',
+                allowEmptyOption: false,
+                onChange: function(value) {
+                    console.log('Kategori dipilih:', value);
+                    // Set value ke hidden input agar bisa dikirim ke backend
+                    document.getElementById('itemCategoryId').value = value;
+                    performSearch(); // fungsi pencarian milikmu
+                }
+            });
         });
-
-        // Saat select
-        $('#category_search').on('select2:select', function(e) {
-            const data = e.params.data;
-            $('#itemCategoryId').val(data.id);
-            performSearch(); // kalau kamu ingin langsung cari
-        });
-
-        $('#category_search').on('select2:open', function () {
-            setTimeout(function () {
-                const searchField = $('.select2-search__field');
-                searchField.val('').trigger('input').trigger('keyup');
-            }, 100); // delay biar field-nya sudah siap
-        });
-
-        // Saat clear (klik X)
-        $('#category_search').on('select2:clear', function () {
-            $('#itemCategoryId').val('');
-            performSearch();
-        });
-
-        // Saat dikosongkan manual
-        $('#category_search').on('change', function () {
-            if (!$(this).val()) {
-                $('#itemCategoryId').val('');
-                performSearch();
-            }
-        });
-    });
-
     </script>
 @endpush
 
-
 <script>
+    // Input pencarian
     const searchInput = document.getElementById('search');
     let typingTimer;
     const doneTypingInterval = 1000; // waktu tunggu (ms) sebelum submit otomatis
@@ -503,8 +538,6 @@
             performSearch();
         }, doneTypingInterval);
     });
-    
-    
 
     document.addEventListener('DOMContentLoaded', function () {
         const categorySelect = document.getElementById('itemCategoryId');
@@ -516,7 +549,7 @@
                 performSearch();
             });
         }
-        
+
         if (stokReadySelect) {
             stokReadySelect.addEventListener('change', function () {
                 performSearch();
@@ -531,6 +564,7 @@
         }
     });
 
+    // Format input harga
     document.getElementById('max_price').addEventListener('input', function (e) {
         let value = e.target.value.replace(/[^,\d]/g, '');
         const split = value.split(',');
@@ -545,6 +579,7 @@
 
         e.target.value = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
     });
+
     document.getElementById('min_price').addEventListener('input', function (e) {
         let value = e.target.value.replace(/[^,\d]/g, '');
         const split = value.split(',');
@@ -559,121 +594,148 @@
 
         e.target.value = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
     });
-    
+
+    // Variabel global untuk pagination dan filter
     let page = 2;
     let loading = false;
     let allDataLoaded = false;
+    const maxEmptyPageSkip = 10;
+    let emptyPageCount = 0;
 
     const container = document.getElementById('table-container');
     const loader = document.getElementById('loader');
     const loadMoreBtn = document.getElementById('load-more-btn');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const search = urlParams.get('search') || '';
-    const minPrice = urlParams.get('min_price') || '';
-    const maxPrice = urlParams.get('max_price') || '';
-    const stokAda = urlParams.get('stok_ada') || '';
-    const categoryId = urlParams.get('category_id') || '';
+    let queryString = ''; // akan diupdate di performSearch()
 
-    // Bangun query param manual (kalau kosong tidak ikut)
-    // queryString harus global dan diupdate oleh performSearch
-    var queryString = '';
-    if (search) queryString += `&search=${encodeURIComponent(search)}`;
-    if (minPrice) queryString += `&min_price=${encodeURIComponent(minPrice)}`;
-    if (maxPrice) queryString += `&max_price=${encodeURIComponent(maxPrice)}`;
-    if (stokAda) queryString += `&stok_ada=${encodeURIComponent(stokAda)}`;
-    if (categoryId) queryString += `&category_id=${encodeURIComponent(categoryId)}`;
+    function buildQueryStringFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const parts = [];
+        for (const key of ['search', 'min_price', 'max_price', 'stok_ada', 'category_id']) {
+            const value = urlParams.get(key);
+            if (value) {
+                parts.push(`${key}=${encodeURIComponent(value)}`);
+            }
+        }
+        return parts.length ? '&' + parts.join('&') : '';
+    }
 
-    function loadData() {
-        if (loading || allDataLoaded) return; // ⬅️ Cegah load kalau sudah habis
+    queryString = buildQueryStringFromURL();
+
+    function resetPagination() {
+        page = 1;
+        loading = false;
+        allDataLoaded = false;
+        emptyPageCount = 0;
+        loader.innerHTML = `<div class="loader-overlay d-flex flex-column align-items-center justify-content-center py-4">
+                                <div class="d-flex justify-content-center align-items-center mb-4">
+                                    <dotlottie-wc
+                                    src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
+                                    style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
+                                    speed="1"
+                                    autoplay
+                                    loop
+                                    ></dotlottie-wc>
+                                </div>
+                                <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">
+                                    Mohon tunggu...
+                                </p>
+                            </div>`;
+        loader.style.display = 'block';
+        loadMoreBtn.style.display = 'block';
+        document.getElementById('item-table-body').innerHTML = '';
+    }
+
+    function loadData(currentQueryString) {
+        if (loading || allDataLoaded) return;
         loading = true;
         loader.style.display = 'block';
 
-        fetch(`/item?page=${page}${queryString}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.text())
-        .then(data => {
+        const fetchPage = (targetPage) => {
+            console.log(`Fetching page ${targetPage} => /item?page=${targetPage}${currentQueryString}`);
+            return fetch(`/item?page=${targetPage}${currentQueryString}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(res => res.text());
+        };
+
+        fetchPage(page).then(data => {
             if (data.trim() !== '') {
                 document.getElementById('item-table-body').insertAdjacentHTML('beforeend', data);
                 page++;
-                loading = false;
+                emptyPageCount = 0;
                 loader.style.display = 'none';
-            } else {
-                loader.innerHTML = '<p class="text-center mt-2">Semua data sudah dimuat.</p>';
-                loadMoreBtn.style.display = 'none';
-                allDataLoaded = true; // ⬅️ Tandai sudah habis
                 loading = false;
+            } else {
+                // Recursive retry up to maxEmptyPageSkip
+                const tryNextPage = () => {
+                    if (emptyPageCount >= maxEmptyPageSkip) {
+                        loader.innerHTML = '<p class="text-center mt-2">Semua data sudah dimuat.</p>';
+                        loadMoreBtn.style.display = 'none';
+                        allDataLoaded = true;
+                        loading = false;
+                        return;
+                    }
+                    page++;
+                    emptyPageCount++;
+                    fetchPage(page).then(nextData => {
+                        if (nextData.trim() !== '') {
+                            document.getElementById('item-table-body').insertAdjacentHTML('beforeend', nextData);
+                            page++;
+                            emptyPageCount = 0;
+                            loader.style.display = 'none';
+                            loading = false;
+                        } else {
+                            tryNextPage();
+                        }
+                    }).catch(() => {
+                        loader.innerHTML = '<p>Gagal memuat data.</p>';
+                        loading = false;
+                    });
+                };
+                tryNextPage();
             }
-        })
-        .catch(() => {
-            loader.innerHTML = '<p>Gagal memuat data.</p>';
+        }).catch(() => {
+            loader.innerHTML = '<p class="text-danger">Terjadi kesalahan saat mengambil data.</p>';
             loading = false;
         });
     }
 
-
-    // Trigger via scroll
-    container.addEventListener('scroll', function () {
-        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
-        if (nearBottom && !loading) {
-            loadData();
-        }
-    });
-
-    // Trigger via button
-    loadMoreBtn.addEventListener('click', function () {
-        loadData();
-    });
     function performSearch() {
-        const keyword = document.getElementById('search').value;
+        const keyword = document.getElementById('search')?.value || '';
         const minPrice = document.getElementById('min_price')?.value || '';
         const maxPrice = document.getElementById('max_price')?.value || '';
         const stokAda = document.getElementById('stok_ada')?.value || '';
         const categoryId = document.getElementById('itemCategoryId')?.value || '';
 
-        // Bangun query string
-        let query = `?search=${encodeURIComponent(keyword)}`;
-        if (minPrice) query += `&min_price=${encodeURIComponent(minPrice)}`;
-        if (maxPrice) query += `&max_price=${encodeURIComponent(maxPrice)}`;
-        if (stokAda) query += `&stok_ada=${encodeURIComponent(stokAda)}`;
-        if (categoryId) query += `&category_id=${encodeURIComponent(categoryId)}`;
+        // Build query string
+        const parts = [];
+        if (keyword) parts.push(`search=${encodeURIComponent(keyword)}`);
+        if (minPrice) parts.push(`min_price=${encodeURIComponent(minPrice)}`);
+        if (maxPrice) parts.push(`max_price=${encodeURIComponent(maxPrice)}`);
+        if (stokAda) parts.push(`stok_ada=${encodeURIComponent(stokAda)}`);
+        if (categoryId) parts.push(`category_id=${encodeURIComponent(categoryId)}`);
 
-        // Reset
-        page = 2;
-        loading = false;
-        allDataLoaded = false;
-        loader.innerHTML = '<div class="loader-overlay d-flex flex-column align-items-center justify-content-center py-4"><div class="d-flex justify-content-center align-items-center"><div class="spinner-grow-custom bg-light me-2" style="animation-delay: 0s;"></div><div class="spinner-grow-custom bg-light me-2" style="animation-delay: 0.2s;"></div><div class="spinner-grow-custom bg-light" style="animation-delay: 0.4s;"></div></div></div>'; // reset with spinner
-        loader.style.display = 'block';
-        loadMoreBtn.style.display = 'block';
-        document.getElementById('item-table-body').innerHTML = '';
+        queryString = parts.length ? '&' + parts.join('&') : '';
 
-        // Simpan query global (PASTIKAN var queryString global, bukan let)
-        if (keyword || minPrice || maxPrice || stokAda || categoryId) {
-            queryString = '&' + query.slice(1);
-        } else {
-            queryString = '';
-        }
-
-        fetch(`/item${query}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById('item-table-body').innerHTML = data;
-            loader.style.display = 'none';
-        })
-        .catch(() => {
-            document.getElementById('item-table-body').innerHTML = '<tr><td colspan="3">Gagal mengambil data.</td></tr>';
-            loader.innerHTML = '<p class="text-danger">Terjadi kesalahan saat mengambil data.</p>';
-            loader.style.display = 'block';
-            loading = false;
-        });
+        // Reset dan load ulang data dari page 1
+        resetPagination();
+        loadData(queryString);
     }
+
+    // Scroll to bottom trigger
+    container.addEventListener('scroll', () => {
+        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+        if (nearBottom && !loading) {
+            loadData(queryString);
+        }
+    });
+
+    // Load more button
+    loadMoreBtn.addEventListener('click', () => {
+        if (!loading && !allDataLoaded) {
+            loadData(queryString);
+        }
+    });
 
 </script>
 

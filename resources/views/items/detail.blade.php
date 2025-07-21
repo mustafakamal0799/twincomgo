@@ -18,6 +18,7 @@
     $totalTscStok = collect($tscWarehouses)->sum(fn($w) => $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0);
     $totalResellerStok = collect($resellerWarehouses)->sum(fn($w) => $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0);
     $totalTransitStok = collect($transitWarehouses)->sum(fn($w) => $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0);
+    $totalPandaStok = collect($pandaWarehouses)->sum(fn($w) => $stokNew[$w['id']]['balance'] ?? $w['balance'] ?? 0);
 
     $filteredNonKonsinyasi = collect($nonKonsinyasiWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? 0) > 0)->values();
 
@@ -42,6 +43,77 @@
     body {
         overflow-x: hidden;
     }
+    /* From Uiverse.io by fabiodevbr */ 
+    .button-copy {
+    background-color: #f2f7fa;
+    width: 100px;
+    height: 30px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition-duration: 700ms;
+    }
+
+    .button-copy span:first-child {
+    color: #0e418f;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    }
+
+    .button-copy span:last-child {
+    position: absolute;
+    color: #b5ccf3;
+    opacity: 0;
+    transform: translateY(100%) translateX(-50%);
+    height: 14px;
+    line-height: 13px;
+    }
+
+    .button-copy:focus {
+    background-color: #0e418f;
+    width: 100px;
+    height: 30px;
+    transition-delay: 100ms;
+    transition-duration: 500ms;
+    }
+
+    .button-copy:focus span:first-child {
+    color: #b5ccf3;
+    transform: translateX(-50%) translateY(-150%);
+    opacity: 0;
+    transition-duration: 500ms;
+    }
+
+    .button-copy:focus span:last-child {
+    transform: translateX(-50%) translateY(-50%);
+    opacity: 1;
+    transition-delay: 300ms;
+    transition-duration: 500ms;
+    }
+
+    .button-copy:focus:end {
+    background-color: #ffffff;
+    width: 100px;
+    height: 30px;
+    transition-duration: 900ms;
+    }
+
+    .centralize {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    }
+
+    .description {
+    margin-top: 10px;
+    color: #b5ccf3;
+    }
+
     .container-fluid {
         padding: 0;
     }
@@ -206,8 +278,12 @@
                                     <i class="bi bi-filetype-pdf"></i>
                                 </button>
                             @endif
-                            <button onclick="saveReferrerAndReload()" class="btn btn-success btn-sm d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i class="bi bi-arrow-repeat"></i></button>
-                            <button onclick="goBack()" class="btn btn-warning btn-sm d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Kembali"><i class="bi bi-box-arrow-left"></i></button>
+                            <button id="btnRefresh" onclick="saveReferrerAndReload()" class="btn btn-success btn-sm d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                            <button id="btnBack" onclick="goBack()" class="btn btn-warning btn-sm d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Kembali">
+                                <i class="bi bi-box-arrow-left"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -240,7 +316,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="dropdownGudang" class="form-label fw-semibold">Pilih Lokasi</label>
-                                <div class="dropdown w-100">
+                                <div class="dropdown w-100" style="z-index: 101;">
                                     <button class="form-select text-start" type="button" id="dropdownGudang" data-bs-toggle="dropdown" aria-expanded="false">
                                         Semua Lokasi
                                     </button>
@@ -250,6 +326,7 @@
                                         <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="konsinyasi" id="gudangKonsinyasi"><label class="form-check-label" for="gudangKonsinyasi">Konsinyasi</label></div></li>
                                         <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="resel" id="gudangReseller"><label class="form-check-label" for="gudangReseller">Reseller</label></div></li>
                                         <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="trans" id="gudangTransit"><label class="form-check-label" for="gudangTransit">Transit</label></div></li>
+                                        <li><div class="form-check"><input class="form-check-input gudang-check" type="checkbox" value="panda" id="gudangPanda"><label class="form-check-label" for="gudangPanda">Panda</label></div></li>
                                     </ul>
                                 </div>
                             </div>
@@ -261,13 +338,31 @@
                 <div class="card-body p-4 bg-light">                    
                     <div class="row mb-3">
                         <div class="col-md-4 text-center">
-                            <div class="card mb-3 shadow-sm p-3" style="height: 337px;">
-                                <div id="itemImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="card mb-3 shadow-sm p-3">
+                                <div id="itemImageCarousel" class="carousel slide position-relative" data-bs-ride="carousel" style="max-height: 320px;">
+                                    {{-- Tombol dropdown tetap --}}
+                                    <div class="dropdown position-absolute top-0 end-0 me-2 mt-2" style="z-index: 100;">
+                                        <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical fs-5"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <button class="dropdown-item" id="downloadActiveImage">Download</button>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" id="viewActiveImage" target="_blank">Lihat Gambar</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+
                                     <div class="carousel-inner">
                                         @forelse ($fileName as $index => $file)
+                                            @php
+                                                $imageUrl = $file ? route('proxy.image', ['fileName' => $file, 'session' => $session]) : asset('/images/noimage.jpg');
+                                            @endphp
                                             <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
                                                 <img
-                                                    src="{{ $file ? route('proxy.image', ['fileName' => $file, 'session' => $session]) : asset('/images/noimage.jpg') }}"
+                                                    src="{{ $imageUrl }}"
                                                     alt="Gambar {{ $index + 1 }}"
                                                     class="d-block w-100 img-fluid rounded shadow-sm"
                                                     style="max-height: 300px; object-fit: contain;"
@@ -285,6 +380,7 @@
                                             </div>
                                         @endforelse
                                     </div>
+
                                     <button class="carousel-control-prev" type="button" data-bs-target="#itemImageCarousel" data-bs-slide="prev">
                                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                         <span class="visually-hidden">Sebelumnya</span>
@@ -305,9 +401,32 @@
                                                 <tr>
                                                     <th class="title-kode" style="width: 50px;">Kode</th>
                                                     <td style="width: 5px">:</td>
+                                                    <td style="width: 50px">
+                                                        <span id="kodeProduk">{{ $item['no'] }}</span>                                                        
+                                                    </td>
                                                     <td>
-                                                        <span id="kodeProduk">{{ $item['no'] }}</span>
-                                                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyKodeProduk()">Copy</button>
+                                                        <button class="button-copy" onclick="copyKodeProduk()">
+                                                            <span
+                                                                ><svg
+                                                                width="12"
+                                                                height="12"
+                                                                fill="#0E418F"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                shape-rendering="geometricPrecision"
+                                                                text-rendering="geometricPrecision"
+                                                                image-rendering="optimizeQuality"
+                                                                fill-rule="evenodd"
+                                                                clip-rule="evenodd"
+                                                                viewBox="0 0 467 512.22"
+                                                                >
+                                                                <path
+                                                                    fill-rule="nonzero"
+                                                                    d="M131.07 372.11c.37 1 .57 2.08.57 3.2 0 1.13-.2 2.21-.57 3.21v75.91c0 10.74 4.41 20.53 11.5 27.62s16.87 11.49 27.62 11.49h239.02c10.75 0 20.53-4.4 27.62-11.49s11.49-16.88 11.49-27.62V152.42c0-10.55-4.21-20.15-11.02-27.18l-.47-.43c-7.09-7.09-16.87-11.5-27.62-11.5H170.19c-10.75 0-20.53 4.41-27.62 11.5s-11.5 16.87-11.5 27.61v219.69zm-18.67 12.54H57.23c-15.82 0-30.1-6.58-40.45-17.11C6.41 356.97 0 342.4 0 326.52V57.79c0-15.86 6.5-30.3 16.97-40.78l.04-.04C27.51 6.49 41.94 0 57.79 0h243.63c15.87 0 30.3 6.51 40.77 16.98l.03.03c10.48 10.48 16.99 24.93 16.99 40.78v36.85h50c15.9 0 30.36 6.5 40.82 16.96l.54.58c10.15 10.44 16.43 24.66 16.43 40.24v302.01c0 15.9-6.5 30.36-16.96 40.82-10.47 10.47-24.93 16.97-40.83 16.97H170.19c-15.9 0-30.35-6.5-40.82-16.97-10.47-10.46-16.97-24.92-16.97-40.82v-69.78zM340.54 94.64V57.79c0-10.74-4.41-20.53-11.5-27.63-7.09-7.08-16.86-11.48-27.62-11.48H57.79c-10.78 0-20.56 4.38-27.62 11.45l-.04.04c-7.06 7.06-11.45 16.84-11.45 27.62v268.73c0 10.86 4.34 20.79 11.38 27.97 6.95 7.07 16.54 11.49 27.17 11.49h55.17V152.42c0-15.9 6.5-30.35 16.97-40.82 10.47-10.47 24.92-16.96 40.82-16.96h170.35z"
+                                                                ></path>
+                                                                </svg>
+                                                                Copy</span>
+                                                                <span>Copied</span>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 @if ($status === 'admin')
@@ -566,8 +685,8 @@
                         @if ($filteredNonKonsinyasi->isNotEmpty())
                         <div class="mb-4" id="nonKonsinyasiTable">
                             <div class="card mb-2 shadow-sm">
-                                <div class="card-header bg-info">
-                                    <h5 class="mb-0 title-table">Store</h5>
+                                <div class="card-header" style="background: #10B981">
+                                    <h5 class="mb-0 title-table text-white">Store</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -631,6 +750,76 @@
                         </div>
                         @endif
                             
+                        {{-- GUDANG PANDA --}}
+                        @php
+                            $filteredPanda = collect($pandaWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                        @endphp
+                        @if ($filteredPanda->count())
+                        <div class="mb-4" id="pandawarehouseTable">
+                            <div class="card mb-2 shadow-sm">
+                                <div class="card-header bg-danger">
+                                    <h5 class="mb-0 text-white title-table">Panda Store</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lokasi</th>
+                                                    <th class="text-center">Stok</th>
+                                                    <th class="text-center">Satuan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($filteredPanda as $data)
+                                                    <tr>
+                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>                                                            
+                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                                        @php
+                                                            $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                            $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                            $ratio2 = $ratio ?? null;
+
+                                                            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                            
+                                                            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+
+                                                            $showBalanceUnit = false;
+
+                                                            if (count($matches[0]) > 1) {
+                                                                $showBalanceUnit = true;
+                                                            } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                                $showBalanceUnit = true;
+                                                            }
+
+                                                            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                        @endphp 
+                                                        <td class="text-center">
+                                                            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-end">
+                                        <div>
+                                            <h5 class="title-total">Total</h5>
+                                        </div>
+                                        <div class="card-total text-white">
+                                            <span id="totalPandaStok">
+                                                {{ number_format($totalPandaStok) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         {{-- GUDANG TSC --}}
                         @php
                             $filteredTsc = collect($tscWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
@@ -691,7 +880,7 @@
                                             <h5 class="title-total">Total</h5>
                                         </div>
                                         <div class="card-total text-white">
-                                            <span id="totalNonKonsinyasiStok">
+                                            <span id="totalTscStok">
                                                 {{ number_format($totalTscStok) }}
                                             </span>
                                         </div>
@@ -761,7 +950,7 @@
                                             <h5 class="title-total">Total</h5>
                                         </div>
                                         <div class="card-total text-white">
-                                            <span id="totalNonKonsinyasiStok">
+                                            <span id="totalKonsinyasiStok">
                                                 {{ number_format($totalKonsinyasiStok) }}
                                             </span>
                                         </div>                            
@@ -831,7 +1020,7 @@
                                             <h5 class="title-total">Total</h5>
                                         </div>
                                         <div class="card-total text-white">
-                                            <span id="totalNonKonsinyasiStok">
+                                            <span id="totalResellerStok">
                                                 {{ number_format($totalResellerStok) }}
                                             </span>
                                         </div>
@@ -886,6 +1075,32 @@
     </div>
 </div>
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const downloadBtn = document.getElementById('downloadActiveImage');
+            const viewBtn = document.getElementById('viewActiveImage');
+
+            function getActiveImageUrl() {
+                const activeItem = document.querySelector('.carousel-item.active img');
+                return activeItem ? activeItem.getAttribute('src') : '';
+            }
+
+            downloadBtn.addEventListener('click', function () {
+                const imageUrl = getActiveImageUrl();
+                const fileName = imageUrl.split('/').pop().split('?')[0] || 'gambar.jpg';
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            viewBtn.addEventListener('click', function () {
+                const imageUrl = getActiveImageUrl();
+                this.href = imageUrl;
+            });
+        });
+        
         function saveReferrerAndReload() {
             location.reload();
         }
@@ -903,7 +1118,6 @@
         function copyKodeProduk() {
             const kode = document.getElementById('kodeProduk').innerText;
             navigator.clipboard.writeText(kode);
-            alert('Kode produk disalin!');
         }
 
         function copyToClipboard(id) {
@@ -924,7 +1138,8 @@
                 tsc: document.getElementById('tscwarehouseTable'),
                 konsinyasi: document.getElementById('konsinyasiTable'),
                 resel: document.getElementById('resellerwarehouseTable'),
-                trans: document.getElementById('transitwarehouseTable')
+                trans: document.getElementById('transitwarehouseTable'),
+                panda: document.getElementById('pandawarehouseTable')
             };
 
             function updateTableDisplay() {
@@ -1185,6 +1400,10 @@
             @foreach ($transitWarehouses as $w)
                 stokNewElements[{{ $w['id'] }}] = document.querySelector(`#transitwarehouseTable td[data-warehouse-id="{{ $w['id'] }}"]`);
             @endforeach
+            
+            @foreach ($pandaWarehouses as $w)
+                stokNewElements[{{ $w['id'] }}] = document.querySelector(`#pandawarehouseTable td[data-warehouse-id="{{ $w['id'] }}"]`);
+            @endforeach
 
             function updateStokTable(stokNew) {
                 currentStokNew = stokNew;
@@ -1212,6 +1431,7 @@
                 let totalKonsinyasi = 0;
                 let totalReseller = 0;
                 let totalTransit = 0;
+                let totalPanda = 0;
 
                 function getBalance(warehouseId) {
                     const data = currentStokNew[warehouseId];
@@ -1254,6 +1474,12 @@
                 }
                 @endforeach
 
+                @foreach ($pandaWarehouses as $w)
+                {
+                    totalPanda += getBalance({{ $w['id'] }});
+                }
+                @endforeach
+
                 const formatter = new Intl.NumberFormat('id-ID');
 
                 const totalNonKonsinyasiEl = document.getElementById('totalNonKonsinyasiStok');
@@ -1276,9 +1502,9 @@
                     totalResellerEl.textContent = formatter.format(totalReseller);
                 }
 
-                const totalTransitEl = document.getElementById('totalTransitStok');
-                if (totalTransitEl) {
-                    totalTransitEl.textContent = formatter.format(totalTransit);
+                const totalPandaEl = document.getElementById('totalPandaStok');
+                if (totalPandaEl) {
+                    totalPandaEl.textContent = formatter.format(totalPanda);
                 }
 
                 const totalSemua = totalNonKonsinyasi + totalTsc + totalKonsinyasi + totalReseller + totalTransit;
@@ -1323,76 +1549,94 @@
                     }
                 }
 
+                const pandaWrapper = document.getElementById('pandawarehouseTable');
+                if (pandaWrapper) {
+                    if (totalPanda === 0) {
+                        pandaWrapper.closest('.mb-4').style.display = 'none';
+                    } else {
+                        pandaWrapper.closest('.mb-4').style.display = '';
+                    }
+                }
+
             }
 
             // ---- Perhitungan stok sales order dilanjutkan dengan sales invoice (Faktur dimukan) ----
 
-            fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ item_id: itemId, includeInvoice: false })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentStokNew = data.stokNew;
+            // document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
+            // document.getElementById('btnRefresh')?.setAttribute('disabled', true);
 
-                    return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            item_id: itemId,
-                            stok_awal: currentStokNew
-                        })
-                    });
-                } else {
-                    throw new Error('Gagal mengambil data stok sales order: ' + data.message);
-                }
-            })
-            .then(async response => {
-                if (!response.ok) {
-                    const text = await response.text();
-                    console.error('Server error:', text);
-                    throw new Error('Server returned an error for matching-invoices-ajax');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    currentStokNew = data.stokNew;
-                    updateStokTable(currentStokNew);
 
-                    Toastify({
-                        text: "Data stok sudah terupdate!",
-                        duration: 10000,
-                        gravity: "top", // atau "bottom"
-                        position: "right", // atau "left"
-                        style: {
-                            background: "linear-gradient(to right, #00b09b, #96c93d)",
-                        },
-                        stopOnFocus: true,
-                    }).showToast();
-                } else {
-                    console.error('Gagal mengambil data matching invoices:', data.message);
+            // fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            //     },
+            //     body: JSON.stringify({ item_id: itemId, includeInvoice: false })
+            // })
+            // .then(response => response.json())
+            // .then(data => {
+            //     if (data.success) {
+            //         currentStokNew = data.stokNew;
 
-                    Toastify({
-                        text: "Gagal mengambil data invoice",
-                        duration: 10000,
-                        gravity: "top",
-                        position: "right",
-                        backgroundColor: "#dc3545", // merah error
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Terjadi kesalahan saat mengambil data stok:', error);
-            });
+            //         return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
+            //             method: 'POST',
+            //             headers: {
+            //                 'Content-Type': 'application/json',
+            //                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            //             },
+            //             body: JSON.stringify({
+            //                 item_id: itemId,
+            //                 stok_awal: currentStokNew
+            //             })
+            //         });
+            //     } else {
+            //         throw new Error('Gagal mengambil data stok sales order: ' + data.message);
+            //     }
+            // })
+            // .then(async response => {
+            //     if (!response.ok) {
+            //         const text = await response.text();
+            //         console.error('Server error:', text);
+            //         throw new Error('Server returned an error for matching-invoices-ajax');
+            //     }
+            //     return response.json();
+            // })
+            // .then(data => {
+            //     if (data.success) {
+            //         currentStokNew = data.stokNew;
+            //         updateStokTable(currentStokNew);
+
+            //         Toastify({
+            //             text: "Data stok sudah terupdate!",
+            //             duration: 10000,
+            //             gravity: "top", // atau "bottom"
+            //             position: "right", // atau "left"
+            //             style: {
+            //                 background: "linear-gradient(to right, #00b09b, #96c93d)",
+            //             },
+            //             stopOnFocus: true,
+            //         }).showToast();
+            //     } else {
+            //         console.error('Gagal mengambil data matching invoices:', data.message);
+
+            //         Toastify({
+            //             text: "Gagal mengambil data invoice",
+            //             duration: 10000,
+            //             gravity: "top",
+            //             position: "right",
+            //             backgroundColor: "#dc3545", // merah error
+            //         }).showToast();
+            //     }
+            // })
+            // .catch(error => {
+            //     console.error('Terjadi kesalahan saat mengambil data stok:', error);
+            // })
+            // .finally(() => {
+            //     // Aktifkan tombol kembali
+            //     document.getElementById('btnExportPdf')?.removeAttribute('disabled');
+            //     document.getElementById('btnRefresh')?.removeAttribute('disabled');
+            // });
         });
 
         document.getElementById('btnExportPdf').addEventListener('click', function () {
