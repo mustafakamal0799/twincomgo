@@ -68,6 +68,6 @@ class AuthinticationController extends Controller
         $request->session()->invalidate(); // Invalidate session
         $request->session()->regenerateToken(); // Regenerate CSRF token
 
-        return redirect('/')->with('status', 'Anda telah logout.');
+        return redirect('/')->with('logoutSuccess', 'Anda telah logout.');
     }
 }

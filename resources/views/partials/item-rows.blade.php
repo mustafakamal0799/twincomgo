@@ -7,7 +7,7 @@
 
         <!-- Nama Barang -->
         <td class="text-start td-name" style="max-width: {{ $status === 'admin' ? '400px' : '150px' }};" title="{{ $item['name'] }}">
-            <p class="text-xs font-weight-bold mb-0">
+            <p class="font-weight-bold mb-0">
                 {{ $item['name'] ?? '-' }}
             </p>
         </td>
@@ -24,13 +24,13 @@
 
         <!-- Stok -->
         <td class="text-center td-stok" style="width: 80px;">
-            <p class="text-xs font-weight-bold mb-0">
+            <p class="font-weight-bold mb-0">
                 {{ $item['availableToSell'] ?? '-' }}
             </p>
         </td>
 
         <td class="text-center td-satuan" style="width: 100px;">
-            <p class="text-xs font-weight-bold mb-0">
+            <p class="font-weight-bold mb-0">
                 {{
                     preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK|HPP)\b/i', $item['availableToSellInAllUnit'], $matches)
                     && count($matches[0]) > 1
@@ -39,12 +39,5 @@
                 }}
             </p>
         </td>
-
-        <!-- Tombol Detail -->
-        {{-- <td class="text-center" style="width: 40px;">
-            <a href="{{ route('items.detail', ['encrypted' => Hashids::encode($item['id'])]) }}" class="btn btn-warning btn-sm">
-                Detail
-            </a>
-        </td> --}}
     </tr>
 @endforeach

@@ -3,12 +3,8 @@
 @section('content')
 
 <style>
-     .card {
-        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
-    }
-
     .table-scroll-container {
-        max-height: 500px;
+        height: 570px;
         overflow-y: auto;
 
         scrollbar-width: thin;
@@ -74,9 +70,8 @@
     }
 </style>
 
-<div class="container-fluid py-4">
-    <div class="card">
-        <div class="card-header p-3">
+<div class="container-fluid">
+        <div class="card p-3 shadow-sm mb-1">
             <h5 class="mb-3">Log Aktivitas</h5>
 
             {{-- Form Pencarian Singkat + Filter Lanjutan --}}
@@ -140,7 +135,7 @@
                 </div>
             </form>
         </div>
-        <div class="card-body p-0 position-relative">
+        <div class="card shadow-sm p-0 position-relative">
             <div class="table-responsive p-0 table-scroll-container" id="table-container">
                 <table class="table table-striped align-middle">
                     <thead class="table-secondary">

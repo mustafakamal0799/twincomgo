@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ asset('images/tw.png') }}" type="image/png">
     <title>Twincomgo | Login</title>
     
 
@@ -10,6 +11,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
 
     <style>
@@ -175,13 +177,6 @@
                     </p>
                     <h4 class="text-center mb-6"><strong>SISTEM INFORMASI
                         <br> STOK BARANG</strong></h4>
-
-                    {{-- Alert login gagal --}}
-                    @if (session('loginError'))
-                        <div class="alert alert-warning" role="alert">
-                            {{ session('loginError') }}
-                        </div>
-                    @endif
                     @if (session('status'))
                         <div class="alert alert-success">
                             {{ session('status') }}
@@ -273,5 +268,32 @@
     </script>
 
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    @if (session('logoutSuccess'))
+        <script>
+            Toastify({
+                text: "{{ session('logoutSuccess') }}",
+                duration: 5000,
+                gravity: "top", // top or bottom
+                position: "center", // left, center or right
+                backgroundColor: "#ff0000", // warna hijau sukses
+                stopOnFocus: true, 
+            }).showToast();
+        </script>
+    @endif
+
+    @if (session('loginError'))
+        <script>
+            Toastify({
+                text: "{{ session('loginError') }}",
+                duration: 5000,
+                gravity: "top", // top or bottom
+                position: "center", // left, center or right
+                backgroundColor: "#ffa500", // warna hijau sukses
+                stopOnFocus: true, 
+            }).showToast();
+        </script>
+    @endif
 </body>
 </html>

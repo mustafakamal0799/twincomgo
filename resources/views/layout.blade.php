@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Twincomgo</title>
-    {{-- <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/png"> --}}
+    <link rel="icon" href="{{ asset('images/tw.png') }}" type="image/png">
     
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -18,21 +18,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
+    
+    
+
     <style>
         body {
             margin: 0;
             padding: 0;
             font-family: "Inter", sans-serif;
             font-optical-sizing: auto;
-            font-weight: <weight>;
+            font-weight: normal;
             font-style: normal;
-            /* ✅ Ini bagian yang menambahkan background image */
+
             background-image: url("{{ asset('images/bg1.jpg') }}");
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
-            min-height: 100vh; 
+            background-attachment: fixed; /* ✅ Biar ikut scroll */
+
+            min-height: 100%;  /* Atau 100vh tetap boleh */
+            height: auto;      /* ✅ Tambahkan ini */
         }
+
 
         .full-height {
             height: 100vh;
@@ -79,8 +86,10 @@
         #sidebar {
             transition: all 0.3s ease;
             z-index: 1040;
-            background-color: #212529; /* Bootstrap dark bg */
             min-height: 100vh;
+            background-color: rgba(30, 30, 30, 0.75); /* Gelap semi-transparan */
+            backdrop-filter: blur(10px);                     /* Teks tetap putih */
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         #toggleSidebar {
@@ -89,6 +98,51 @@
 
         #toggleSidebar.toggled {
             left: 10px; /* Move right when toggled */
+        }
+
+        #sidebar .nav-link {
+            position: relative;
+            overflow: hidden;
+            color: #ffffff;
+            transition: color 0.3s ease;
+        }
+
+        #sidebar .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: #ffffff; /* Warna highlight kamu */
+            z-index: -1;
+            transition: width 0.4s ease;
+        }
+
+        #sidebar .nav-link:hover::before {
+            width: 100%;
+        }
+
+        #sidebar .nav-link:hover {
+            color: #000000;
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+        #sidebar .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+
+        #sidebar .logout-btn:hover {
+            background-color: #c0392b;
+        }
+
+        #sidebar .nav-link.active {
+            background-color: #ffffff;
+            color: #000000;
+            transform: scale(1.1)
         }
 
         .navbar {
@@ -211,65 +265,62 @@
     </div>
 <div class="d-flex flex-column full-height">
     @if (Auth::user()->status === 'admin')
-        <button class="btn btn-dark toggle-btn" id="toggleSidebar">
-            <i class="bi bi-caret-right"></i>
-        </button>
+        <!-- WRAPPER -->
         <div class="d-flex">
-            <div id="sidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 250px; min-height: 100vh;">
-                <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-white text-decoration-none" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle me-2 person-icon"></i>
-                        <strong style="margin-right: 10px; margin-left: 10px;">{{ Auth::user()->name }}</strong>
+            <!-- SIDEBAR -->
+            <nav id="sidebar" class="bg-dark p-3 flex-shrink-0" style="width: 250px; min-height: 100vh;">
+                <!-- LOGO -->
+                <div class="text-center mb-4">
+                    <a href="{{ route('admin.index') }}">
+                        <img src="{{ asset('images/logo-putih.png') }}" alt="Logo" class="img-fluid" style="max-height: 80px;">
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                        <li>
-                            <form action="{{ route('logout') }}" method="POST" class="px-3">
-                                @csrf
-                                <button class="btn btn-danger w-100 mt-2">
-                                    <i class="bi bi-box-arrow-right me-1"></i> Logout
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
                 </div>
-                <hr>
-                <ul class="nav nav-pills flex-column mb-auto">
-                    <li class="nav-item">
-                        <a href="{{route('admin.index')}}"  class="nav-link text-white mb-2 text-start btn btn-secondary
-                            {{ Request::routeIs('admin.index') ? 'active' : '' }}">
-                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{route('admin.user')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
-                            {{ Request::routeIs('admin.user') ? 'active' : '' }}">
-                            <i class="bi bi-people me-2"></i> Kelola Pengguna
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{route('admin.log')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
-                            {{ Request::routeIs('admin.log') ? 'active' : '' }}">
-                            <i class="bi bi-archive me-2"></i> Log Aktivitas
-                        </a>
-                    </li>
-                    {{-- <li>
-                        <a href="{{route('promo.index')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
-                            {{ Request::routeIs('promo.index') ? 'active' : '' }}">
-                            <i class="bi bi-megaphone me-2"></i> Promo
-                        </a>
-                    </li> --}}
-                    <li>
-                        <a href="{{route('items.index')}}" class="nav-link text-white mb-2 text-start btn btn-secondary
-                            {{ Request::routeIs('items.index') ? 'active' : '' }}">
-                            <i class="bi bi-box-seam me-2"></i> Stok Item
-                        </a>
-                    </li>
-                    <!-- Tambah menu lainnya sesuai kebutuhan -->
-                </ul>
-            </div>
+                <ul class="nav nav-pills flex-column mb-auto mt-2 border-top">
+                    @php
+                        $navItems = [
+                            ['route' => 'admin.index', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard'],
+                            ['route' => 'admin.user', 'icon' => 'bi-people', 'label' => 'Kelola Pengguna'],
+                            ['route' => 'admin.log', 'icon' => 'bi-archive', 'label' => 'Log Aktivitas'],
+                            ['route' => 'items.index', 'icon' => 'bi-box-seam', 'label' => 'Stok Item'],
+                        ];
+                    @endphp
 
-            <div class="flex-grow-1 p-4">
-                @yield('content')
+                    @foreach ($navItems as $item)
+                        <li class="nav-item mt-2">
+                            <a href="{{ route($item['route']) }}" class="nav-link text-start {{ request()->routeIs($item['route']) ? 'active' : '' }}">
+                                <i class="bi {{ $item['icon'] }} me-2"></i> {{ $item['label'] }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+
+                <form action="{{ route('logout') }}" method="POST" class="mt-auto">
+                    @csrf
+                    <button class="btn btn-danger w-100 mt-3">
+                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                    </button>
+                </form>
+            </nav>
+
+            <!-- KANAN: KONTEN + NAVBAR -->
+            <div class="flex-grow-1 d-flex flex-column" style="min-height: 100vh;">
+                <!-- NAVBAR ATAS -->
+                <nav class="navbar navbar-dark bg-dark px-4 d-flex justify-content-between align-items-center" style="height: 60px;">
+                    <button class="btn btn-outline-light" id="toggleSidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="d-flex align-items-center">
+                        <strong class="text-white">{{ Auth::user()->name }}</strong>
+                        <i class="bi bi-person-circle ms-2 text-white"></i>
+                    </div>
+                </nav>
+
+                <!-- MAIN CONTENT -->
+                <div class="flex-grow-1 d-flex">
+                    <div class="flex-grow-1 p-4">
+                        @yield('content')
+                    </div>
+                </div>
             </div>
         </div>
     @else
@@ -321,7 +372,7 @@
         
         @endif
 </div>
-
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

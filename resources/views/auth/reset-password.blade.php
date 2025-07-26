@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ asset('images/tw.png') }}" type="image/png">
     <title>Login SISB</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
         body {
@@ -65,12 +67,6 @@
                 <div class="col-md-6 form-side">
                     <h2 class="text-center mb-2" style="font-style: italic">SISB</h2>
                     <h5 class="text-center mb-3">Reset Password</h5>
-                    {{-- Alert login gagal --}}
-                    @if (session('status'))
-                        <div class="alert alert-success">
-                            {{ session('status') }}
-                        </div>
-                    @endif
                     @error('password')
                         <div class="text-danger mt-1">{{ $message }}</div>
                     @enderror
@@ -102,6 +98,8 @@
         </div>
     </div>
 
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         function togglePassword() {
             const pw = document.getElementById('password');
@@ -111,5 +109,18 @@
             pwConfirm.type = type;
             }
     </script>
+
+    @if (session('status'))
+        <script>
+            Toastify({
+                text: "{{ session('status') }}",
+                duration: 3000,
+                gravity: "top", // top or bottom
+                position: "right", // left, center or right
+                backgroundColor: "#28a745", // warna hijau sukses
+                stopOnFocus: true, 
+            }).showToast();
+        </script>
+    @endif
 </body>
 </html>

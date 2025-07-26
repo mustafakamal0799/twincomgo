@@ -12,6 +12,7 @@
         "laravel/octane": "^2.9",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+        "livewire/flux": "^2.2",
         "spatie/laravel-activitylog": "^4.10",
         "swoole/ide-helper": "^6.0",
         "vinkla/hashids": "^11.0"
@@ -67,5 +68,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": {
+        "flux-pro": {
+            "type": "composer",
+            "url": "https://composer.fluxui.dev"
+        }
+    }
 }

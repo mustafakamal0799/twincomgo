@@ -72,7 +72,7 @@
     }
 
     .button-copy:focus {
-    background-color: #0e418f;
+    background-color: #1b59b8;
     width: 100px;
     height: 30px;
     transition-delay: 100ms;
@@ -269,9 +269,9 @@
     <div class="row">
         <div class="col-12">
             <div class="card mb-4 border-0">
-                <div class="card-header py-2 d-flex flex-column bg-secondary text-white rounded-0">
+                <div class="card-header py-2 d-flex flex-column bg-secondary text-white {{$status === 'admin' ? 'rounded' : 'rounded-0'}}">
                     <div class="d-flex justify-content-between align-items-center w-100">
-                        <h4 class="title m-0">DETAIL BARANG</h4>
+                        <h4 class="title m-0" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">DETAIL BARANG</h4>
                         <div class="d-flex align-items-center gap-2">
                             @if ($status === 'admin' || $status === 'KARYAWAN')
                                 <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1" id="btnExportPdf" data-bs-toggle="tooltip" data-bs-placement="top" title="Export PDF">
@@ -291,9 +291,9 @@
                     @if ($status === 'KARYAWAN' || $status === 'admin')
                         <div class="row align-items-end mt-2">
                             <div class="col-md-4">
-                                <label for="branch_id" class="form-label fw-semibold">Pilih Harga Cabang</label>
+                                <label for="branch_id" class="form-label fw-semibold" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Pilih Harga Cabang</label>
                                 <div class="d-flex align-items-center">
-                                    <select name="branch_id" id="branch_id" class="form-select me-2">
+                                    <select name="branch_id" id="branch_id" class="form-select me-2" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
                                         <option value="">Semua Cabang</option>
                                         @foreach($allBranches as $branch)
                                             <option value="{{ $branch['name'] }}" {{ $selectedBranchId == $branch['name'] ? 'selected' : '' }}>
@@ -307,17 +307,17 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label for="filterHargaGaransi" class="form-label fw-semibold">Tampilkan Harga</label>
-                                <select id="filterHargaGaransi" class="form-select">
+                                <label for="filterHargaGaransi" class="form-label fw-semibold" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Tampilkan Harga</label>
+                                <select id="filterHargaGaransi" class="form-select" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
                                     <option value="semua">Semua Harga</option>
                                     <option value="reseller">Reseller</option>
                                     <option value="user">User</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label for="dropdownGudang" class="form-label fw-semibold">Pilih Lokasi</label>
-                                <div class="dropdown w-100" style="z-index: 101;">
-                                    <button class="form-select text-start" type="button" id="dropdownGudang" data-bs-toggle="dropdown" aria-expanded="false">
+                                <label for="dropdownGudang" class="form-label fw-semibold" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Pilih Lokasi</label>
+                                <div class="dropdown w-100" style="z-index: 101; border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                    <button class="form-select text-start" type="button" id="dropdownGudang" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 20px;">
                                         Semua Lokasi
                                     </button>
                                     <ul class="dropdown-menu p-3 w-100" aria-labelledby="dropdownGudang">
@@ -335,7 +335,7 @@
                     @endif
                 </div>
 
-                <div class="card-body p-4 bg-light">                    
+                <div class="card-body p-4 bg-light {{$status === 'admin' ? 'rounded' : 'rounded-0'}}">                    
                     <div class="row mb-3">
                         <div class="col-md-4 text-center">
                             <div class="card mb-3 shadow-sm p-3">
@@ -686,7 +686,7 @@
                         <div class="mb-4" id="nonKonsinyasiTable">
                             <div class="card mb-2 shadow-sm">
                                 <div class="card-header" style="background: #10B981">
-                                    <h5 class="mb-0 title-table text-white">Store</h5>
+                                    <h5 class="mb-0 title-table text-white" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Store</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -758,7 +758,7 @@
                         <div class="mb-4" id="pandawarehouseTable">
                             <div class="card mb-2 shadow-sm">
                                 <div class="card-header bg-danger">
-                                    <h5 class="mb-0 text-white title-table">Panda Store</h5>
+                                    <h5 class="mb-0 text-white title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Panda Store</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -828,7 +828,7 @@
                         <div class="mb-4" id="tscwarehouseTable">
                             <div class="card mb-2 shadow-sm">
                                 <div class="card-header bg-success">
-                                    <h5 class="mb-0 text-white title-table">TSC</h5>
+                                    <h5 class="mb-0 text-white title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">TSC</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -898,7 +898,7 @@
                         <div class="mb-4" id="konsinyasiTable">
                             <div class="card mb-2 shadow-sm">
                                 <div class="card-header bg-warning">
-                                    <h5 class="mb-0 title-table">Konsinyasi</h5>
+                                    <h5 class="mb-0 title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Konsinyasi</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -967,8 +967,8 @@
                         @if ($filteredReseller->count())
                         <div class="mb-4" id="resellerwarehouseTable">
                             <div class="card mb-2 shadow-sm">
-                                <div class="card-header bg-danger text-white">
-                                    <h5 class="mb-0 title-table">Reseller</h5>
+                                <div class="card-header bg-warning text-white">
+                                    <h5 class="mb-0 title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Reseller</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -1040,7 +1040,7 @@
                         <div class="mb-4" id="transitwarehouseTable">
                             <div class="card mb-2 shadow-sm ">
                                 <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0 title-table">Transit</h5>
+                                    <h5 class="mb-0 title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Transit</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -1562,81 +1562,81 @@
 
             // ---- Perhitungan stok sales order dilanjutkan dengan sales invoice (Faktur dimukan) ----
 
-            // document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
-            // document.getElementById('btnRefresh')?.setAttribute('disabled', true);
+            document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
+            document.getElementById('btnRefresh')?.setAttribute('disabled', true);
 
 
-            // fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            //     },
-            //     body: JSON.stringify({ item_id: itemId, includeInvoice: false })
-            // })
-            // .then(response => response.json())
-            // .then(data => {
-            //     if (data.success) {
-            //         currentStokNew = data.stokNew;
+            fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ item_id: itemId, includeInvoice: false })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentStokNew = data.stokNew;
 
-            //         return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
-            //             method: 'POST',
-            //             headers: {
-            //                 'Content-Type': 'application/json',
-            //                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            //             },
-            //             body: JSON.stringify({
-            //                 item_id: itemId,
-            //                 stok_awal: currentStokNew
-            //             })
-            //         });
-            //     } else {
-            //         throw new Error('Gagal mengambil data stok sales order: ' + data.message);
-            //     }
-            // })
-            // .then(async response => {
-            //     if (!response.ok) {
-            //         const text = await response.text();
-            //         console.error('Server error:', text);
-            //         throw new Error('Server returned an error for matching-invoices-ajax');
-            //     }
-            //     return response.json();
-            // })
-            // .then(data => {
-            //     if (data.success) {
-            //         currentStokNew = data.stokNew;
-            //         updateStokTable(currentStokNew);
+                    return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            item_id: itemId,
+                            stok_awal: currentStokNew
+                        })
+                    });
+                } else {
+                    throw new Error('Gagal mengambil data stok sales order: ' + data.message);
+                }
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Server error:', text);
+                    throw new Error('Server returned an error for matching-invoices-ajax');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    currentStokNew = data.stokNew;
+                    updateStokTable(currentStokNew);
 
-            //         Toastify({
-            //             text: "Data stok sudah terupdate!",
-            //             duration: 10000,
-            //             gravity: "top", // atau "bottom"
-            //             position: "right", // atau "left"
-            //             style: {
-            //                 background: "linear-gradient(to right, #00b09b, #96c93d)",
-            //             },
-            //             stopOnFocus: true,
-            //         }).showToast();
-            //     } else {
-            //         console.error('Gagal mengambil data matching invoices:', data.message);
+                    Toastify({
+                        text: "Data stok sudah terupdate!",
+                        duration: 10000,
+                        gravity: "top", // atau "bottom"
+                        position: "right", // atau "left"
+                        style: {
+                            background: "linear-gradient(to right, #00b09b, #96c93d)",
+                        },
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    console.error('Gagal mengambil data matching invoices:', data.message);
 
-            //         Toastify({
-            //             text: "Gagal mengambil data invoice",
-            //             duration: 10000,
-            //             gravity: "top",
-            //             position: "right",
-            //             backgroundColor: "#dc3545", // merah error
-            //         }).showToast();
-            //     }
-            // })
-            // .catch(error => {
-            //     console.error('Terjadi kesalahan saat mengambil data stok:', error);
-            // })
-            // .finally(() => {
-            //     // Aktifkan tombol kembali
-            //     document.getElementById('btnExportPdf')?.removeAttribute('disabled');
-            //     document.getElementById('btnRefresh')?.removeAttribute('disabled');
-            // });
+                    Toastify({
+                        text: "Gagal mengambil data invoice",
+                        duration: 10000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545", // merah error
+                    }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Terjadi kesalahan saat mengambil data stok:', error);
+            })
+            .finally(() => {
+                // Aktifkan tombol kembali
+                document.getElementById('btnExportPdf')?.removeAttribute('disabled');
+                document.getElementById('btnRefresh')?.removeAttribute('disabled');
+            });
         });
 
         document.getElementById('btnExportPdf').addEventListener('click', function () {

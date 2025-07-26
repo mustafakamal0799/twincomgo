@@ -1,6 +1,19 @@
 @extends('layout')
 
 @section('content')
+@if($status == 'admin')
+    <style>
+        .card-full {
+            height: 90vh;
+        }
+    </style>
+@else
+    <style>
+        .card-full {
+            height: 94vh;
+        }
+    </style>
+@endif
 
 <style>
     body {
@@ -8,13 +21,7 @@
     }
     .card {
         border-radius: 0%;
-    }
-    
-    .card-full {
-        height: 94vh;
-        display: flex;
-        flex-direction: column;
-        
+        border--ra
     }
 
     .card-body {
@@ -31,6 +38,7 @@
     .table-scroll-container {
         flex: 1 1 auto;
         overflow-y: auto;
+        overflow-x: hidden;
 
         scrollbar-width: thin;
         scrollbar-color: #888 #f1f1f1;
@@ -148,58 +156,68 @@
         padding-left: 0;
     }
 
+    /* From Uiverse.io by Madflows */ 
     .button {
-    padding: 8px 20px;
-    border-radius: 50px;
-    cursor: pointer;
-    border: 0;
-    background-color: rgb(0, 110, 255);
-    box-shadow: rgb(0 0 0 / 5%) 0 0 8px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    font-size: 14px;
-    transition: all 0.5s ease;
-    color: white;
+        position: relative;
+        overflow: hidden;
+        height: 2.5rem;
+        padding: 0 1rem;
+        border-radius: 1.5rem;
+        background: #3d3a4e;
+        background-size: 400%;
+        color: #fff;
+        border: none;
+        cursor: pointer;
     }
 
-    .button:hover {
-    letter-spacing: 3px;
-    background-color: hsl(261deg 80% 48%);
-    color: hsl(0, 0%, 100%);
-    box-shadow: rgb(93 24 220) 0px 7px 29px 0px;
+    .button:hover::before {
+        transform: scaleX(1);
     }
 
-    .button:active {
-    letter-spacing: 3px;
-    background-color: hsl(261deg 80% 48%);
-    color: hsl(0, 0%, 100%);
-    box-shadow: rgb(93 24 220) 0px 0px 0px 0px;
-    transform: translateY(10px);
-    transition: 100ms;
+    .button-content {
+        position: relative;
+        z-index: 1;
     }
 
-    .input {
-    border: 2px solid transparent;
-    width: 15em;
-    height: 2.5em;
-    padding-left: 0.8em;
-    outline: none;
-    overflow: hidden;
-    background-color: #f3f3f3;
-    border-radius: 10px;
-    transition: all 0.5s;
+    .button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: scaleX(0);
+        transform-origin: 0 50%;
+        width: 100%;
+        height: inherit;
+        border-radius: inherit;
+        background: linear-gradient(
+            82.3deg,
+            rgba(150, 93, 233, 1) 10.8%,
+            rgba(99, 88, 238, 1) 94.3%
+        );
+        transition: all 0.475s;
     }
 
-    .input:hover,
-    .input:focus {
-    border: 2px solid #4a9dec;
-    box-shadow: 0px 0px 0px 7px rgb(74, 157, 236, 20%);
-    background-color: white;
+    .btn-reset:hover {
+        transform: scale(1.1);
     }
+    
+    .ts-wrapper.single .ts-control {
+        border-radius: 20px !important;
+        box-shadow: 2px 2px 2px rgb(0, 0, 0); /* shadow halus */
+        border: 1px solid #ced4da; /* biar tetap terlihat seperti input normal */
+        background-color: #fff;
+        transition: box-shadow 0.2s ease;
+    }
+
     @media only screen and (max-width: 768px) {
   /* CSS khusus untuk perangkat mobile */
         body {
             font-size: 12px;
+        }
+
+        .button {
+            height: 1.5rem;
+            padding: 0 0.5rem;
         }
 
         .card-full {
@@ -377,21 +395,21 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4 card-full border-0">
-                <div class="card-header p-3 bg-secondary text-white rounded-0">
+            <div class="card mb-4 card-full border-0 rounded">
+                <div class="{{$status === 'admin' ? 'card-header p-3 bg-secondary text-white' : 'card-header p-3 bg-secondary text-white rounded-0'}}">
                     <div class="row align-items-center">
-                        <h3>Daftar Item</h3>                      
+                        <h3 style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Daftar Item</h3>                      
                         <form action="{{ route('items.index') }}" method="GET" id="filterForm">                            
                             <div class="row g-3 mt-2">
                                 <div class="col-6 col-md-2">
-                                    <label for="stok_ada" class="form-label">Stok Ready</label>
-                                    <select class="form-select" name="stok_ada" id="stok_ada">
+                                    <label for="stok_ada" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Stok Ready</label>
+                                    <select class="form-select" name="stok_ada" id="stok_ada" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
                                         <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>Ya</option>
                                         <option value="0" {{ request('stok_ada') == '0' ? 'selected' : '' }}>Tidak</option>
                                     </select>
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label for="category_search" class="form-label">Cari Kategori </label>
+                                    <label for="category_search" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Cari Kategori </label>
                                     <select id="category_search" placeholder="Pilih / Cari Kategori">
                                         <option></option>
                                         @foreach ($allCategoriesForTomSelect as $cat)
@@ -403,29 +421,29 @@
                                     <input type="hidden" name="category_id" id="itemCategoryId" value="{{ request('category_id') }}">
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label for="min_price" class="form-label">Harga Minimum</label>
-                                    <div class="input-group">                                            
-                                        <span class="input-group-text">Rp</span>
-                                        <input type="text" name="min_price" id="min_price" class="form-control" value="{{ old('min_price', request('min_price', $min_price ?? '')) }}" min="0" placeholder="Min Harga">
+                                    <label for="min_price" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Harga Minimum</label>
+                                    <div class="input-group" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">                                            
+                                        <span class="input-group-text" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
+                                        <input type="text" name="min_price" id="min_price" class="form-control" value="{{ old('min_price', request('min_price', $min_price ?? '')) }}" min="0" placeholder="Min Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
                                     </div>
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label for="max_price" class="form-label">Harga Maksimum</label>
-                                    <div class="input-group"> 
-                                        <span class="input-group-text">Rp</span>
-                                        <input type="text" name="max_price" id="max_price" class="form-control" value="{{ old('max_price', request('max_price', $max_price ?? '')) }}" min="0" placeholder="Max Harga">
+                                    <label for="max_price" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Harga Maksimum</label>
+                                    <div class="input-group" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);"> 
+                                        <span class="input-group-text" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
+                                        <input type="text" name="max_price" id="max_price" class="form-control" value="{{ old('max_price', request('max_price', $max_price ?? '')) }}" min="0" placeholder="Max Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
                                     </div>
                                 </div>                                    
                                 <div class="col-12 col-md-4">
                                     <div class="d-flex flex-wrap align-items-end gap-2">
                                         <!-- Input Pencarian -->
                                         <div style="min-width: 250px; flex-grow: 1;">
-                                            <label for="search" class="form-label">
+                                            <label for="search" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">
                                                 Gunakan % untuk kombinasi kata pencarian.
                                             </label>
-                                            <div class="input-group">
-                                                <input type="text" name="search" id="search" class="form-control" placeholder="Kode / Nama Barang" value="{{ request('search') }}">
-                                                <button class="btn btn-light" id="btnSearch">
+                                            <div class="input-group" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                                <input type="text" name="search" id="search" class="form-control" placeholder="Kode / Nama Barang" value="{{ request('search') }}" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">
+                                                <button class="btn btn-light" id="btnSearch" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
                                                     <i class="bi bi-search"></i>
                                                 </button>
                                             </div>
@@ -433,7 +451,7 @@
     
                                         <!-- Tombol Aksi -->
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('items.index') }}" class="btn btn-info d-flex align-items-center gap-1 btn-reset" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset">
+                                            <a href="{{ route('items.index') }}" class="btn btn-info d-flex align-items-center gap-1 btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
                                                 <i class="bi bi-arrow-clockwise"></i>
                                             </a>
                                         </div>
@@ -443,7 +461,7 @@
                         </form>       
                     </div>
                 </div>
-                <div class="card-body p-0 bg-light position-relative" style="height: auto;">
+                <div class="card-body p-0 bg-light position-relative" style="height: auto; ">
                     @if (count($items) > 0)
                     <div class="table-responsive p-0 table-scroll-container" id="table-container">
                         <table class="table align-items-center mb-0 table-hover">
@@ -454,7 +472,6 @@
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-harga">Harga</th>
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-stok">Stok</th>
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-satuan">Satuan</th>
-                                    {{-- <th class="position-sticky top-0 bg-white z-10 text-uppercase text-xxs font-weight-bolder opacity-7">Action</th> --}}
                                 </tr>
                             </thead>
                             <tbody id="item-table-body">
@@ -490,15 +507,18 @@
                         @endif
                     @endif                                   
                 </div>
-                <div class="card-footer">
+                <div class="card-footer" style="box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.26); z-index: 100;">
                     <div class="d-flex justify-content-center align-items-center">
-                        <button id="load-more-btn" class="button">Load more</button>
+                        <button id="load-more-btn" class="button" style="box-shadow: 0 2px 2px rgb(0, 0, 0);">
+                            <span class="button-content">Load More</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 @push('scripts')
     <script>
@@ -724,7 +744,7 @@
 
     // Scroll to bottom trigger
     container.addEventListener('scroll', () => {
-        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight;
         if (nearBottom && !loading) {
             loadData(queryString);
         }

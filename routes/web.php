@@ -126,7 +126,7 @@ Route::post('/items/adjusted-price-reseller-ajax', [ItemController::class, 'getA
 
 Route::get('/customer-users', [AdminController::class, 'getCustomerUserList'])->name('customer.users');
 
-Route::get('/test-content', [TesterController::class, 'testContent']);
+Route::get('/test-content', [TesterController::class, 'testContent'])->name('test.content');
 
 
 

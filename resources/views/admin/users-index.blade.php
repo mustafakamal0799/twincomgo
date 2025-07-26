@@ -4,7 +4,7 @@
 
 <style>
     .table-scroll-container {
-        max-height: 700px;
+        max-height: 650px;
         overflow-y: auto;
 
         scrollbar-width: thin;
@@ -24,10 +24,6 @@
 
     .table-scroll-container::-webkit-scrollbar-thumb:hover {
         background-color: #555;
-    }
-
-    .card {
-        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.8);
     }
 
     @media only screen and (max-width: 768px) {
@@ -53,9 +49,8 @@
     </div>
 @endif
 
-<div class="container-fluid py-4">
-    <div class="card">
-        <div class="card-header p-3">
+<div class="container-fluid">
+        <div class="card p-3 shadow-sm mb-1 bg-light">
             <h4 class="mb-4">Daftar User</h4>
             <form method="GET" action="{{ route('admin.user') }}">
                 <div class="row g-3 align-items-end justify-content-end">
@@ -100,8 +95,7 @@
                 </div>
             </form>
         </div>
-
-        <div class="card-body px-0 pt-0 pb-2">
+        <div class="card shadow-sm" style="height: 100%">
             @if (count($users) > 0)
                 <div class="table-responsive table-scroll-container">
                     <table class="table table-striped align-middle">
@@ -139,8 +133,6 @@
                 </div>
             @endif
         </div>
-    </div>
-</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
