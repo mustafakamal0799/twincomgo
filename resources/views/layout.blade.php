@@ -16,7 +16,8 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    
 
     
     
@@ -25,9 +26,9 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: "Inter", sans-serif;
+            font-family: "Nunito", sans-serif;
             font-optical-sizing: auto;
-            font-weight: normal;
+            font-weight: <weight>;
             font-style: normal;
 
             background-image: url("{{ asset('images/bg1.jpg') }}");
@@ -38,6 +39,7 @@
 
             min-height: 100%;  /* Atau 100vh tetap boleh */
             height: auto;      /* ✅ Tambahkan ini */
+            
         }
 
 
@@ -146,13 +148,18 @@
         }
 
         .navbar {
-            background-color: #343a40;
+            background-color: #192f6e;
             color: #fff;
         }
         .navbar-brand {
             font-size: 18px;
             font-weight: bold;
             color: white;
+        }
+
+        .navbar-brand:hover {
+            color: #ddd;
+            text-decoration: none;
         }
 
         .tooltip .tooltip-inner {
@@ -167,6 +174,37 @@
         .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before {
             border-bottom-color: #ffe695 !important;
         }
+        /* Warna & kontras navbar (sesuai yang kamu pakai) */
+        .navbar { background-color: #192f6e; color: #fff; }
+        .navbar-brand { color: #fff; font-weight: 700; }
+        .navbar-brand:hover { color: #e5e7eb; }
+
+        /* Ikon user */
+        .person-icon { font-size: 1.4rem; color: #fff; }
+
+        /* Nama user di layar kecil disembunyikan (hemat ruang), muncul di dropdown */
+        @media (max-width: 576px) {
+        .navbar { padding-top: .4rem !important; padding-bottom: .4rem !important; }
+        .navbar-brand { font-size: .9rem; line-height: 1.1; }
+        .navbar-toggler { padding: .15rem .35rem; }
+        .navbar-toggler .navbar-toggler-icon { width: 1.2rem; height: 1.2rem; }
+        .person-icon { font-size: 1.1rem; }
+        .user-name { display: none !important; }     /* hemat ruang di header */
+        .dropdown-menu { min-width: 180px; }         /* menu tetap proporsional */
+        }
+
+        /* Tablet */
+        @media (min-width: 577px) and (max-width: 768px) {
+        .navbar { padding-top: .5rem !important; padding-bottom: .5rem !important; }
+        .navbar-brand { font-size: 1rem; }
+        .navbar-toggler .navbar-toggler-icon { width: 1.25rem; height: 1.25rem; }
+        }
+
+        /* Pastikan toggler icon putih (butuh .navbar-dark di HTML) */
+        .navbar.navbar-dark .navbar-toggler {
+        border-color: transparent;
+        }
+
 
         @media only screen and (max-width: 768px) {
             body {
@@ -324,40 +362,42 @@
             </div>
         </div>
     @else
-        <nav class="navbar navbar-expand-lg navbar-dark p-3">
+        <nav class="navbar navbar-expand-lg navbar-dark px-3 py-2">
             <div class="container-fluid">
-                <!-- Judul Navbar -->
-                <a class="navbar-brand py-0" href="{{ route('items.index') }}">
-                    SISTEM INFORMASI STOK BARANG
+                <!-- Brand -->
+                <a class="navbar-brand text-truncate" href="{{ route('items.index') }}" style="max-width: 60%;">
+                SISTEM INFORMASI STOK BARANG
                 </a>
 
-                <!-- Tombol hamburger (hanya muncul di layar kecil) -->
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserMenu" aria-controls="navbarUserMenu" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+                <!-- Toggler -->
+                <button class="navbar-toggler border-0" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#navbarUserMenu"
+                        aria-controls="navbarUserMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <!-- Isi Navbar: nama user & dropdown -->
-                <div class="collapse navbar-collapse justify-content-end" id="navbarUserMenu">
-                    <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-white text-decoration-none" data-bs-toggle="dropdown">
-                            <strong class="me-2">
-                                {{ Auth::user()->name }}
-                            </strong>
-                            <i class="bi bi-person-circle person-icon me-2" style="font-size: 1.2rem;"></i>
+                <!-- Menu kanan -->
+                <div class="collapse navbar-collapse justify-content-end mt-2 mt-lg-0" id="navbarUserMenu">
+                <ul class="navbar-nav align-items-lg-center">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link d-flex align-items-center gap-2 py-2 px-2 px-lg-0"
+                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle person-icon"></i>
+                            <strong class="text-white d-sm-inline">{{ Auth::user()->name }}</strong>
                         </a>
-
-                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow dropdown-menu-end">
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST" class="px-3 py-2">
-                                    @csrf
-                                    <button class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
-                                        <i class="bi bi-box-arrow-right"></i>
-                                        Logout
-                                    </button>
-                                </form>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
+                            <li><hr class="dropdown-divider d-sm-none"></li>
+                            <li class="px-3 py-2">
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                                </button>
+                            </form>
                             </li>
                         </ul>
-                    </div>
+                    </li>
+                </ul>
                 </div>
             </div>
         </nav>

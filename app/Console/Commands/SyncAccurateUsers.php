@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Helpers\AccurateHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -29,8 +30,8 @@ class SyncAccurateUsers extends Command
     {
         $this->info('⏳ Memulai sinkronisasi data dari Accurate...');
 
-        $token = env('ACCURATE_API_TOKEN');
-        $session = env('ACCURATE_SESSION');
+        $token = AccurateHelper::getToken();
+        $session = AccurateHelper::getSession();
         $pageSize = 100;
 
         $totalUsers = 0;
@@ -49,7 +50,7 @@ class SyncAccurateUsers extends Command
             $params = [
                 'sp.page' => $page,
                 'sp.pageSize' => $pageSize,
-                'fields' => 'id,name,email,suspended,customerBranchName',
+                'fields' => 'id,name,email,suspended,customerBranchName,customerNo',
                 'filter.customerCategoryId' => 2650,
             ];
 
@@ -122,7 +123,7 @@ class SyncAccurateUsers extends Command
                 $user->accurate_id = $accurateId;
                 $user->name        = $cust['name'];
                 $user->email       = $email;
-                $user->province    = $province;      // <— set shipProvince di sini
+                $user->province    = $province;      
                 $user->status      = 'RESELLER';
                 $user->customer_branch = $cust['customerBranchName'] ?? null; // tambahkan customerBranch
                 $user->save();

@@ -183,7 +183,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{route('auth.login-post')}}">
+                    <form method="POST" action="{{route('auth.login.post')}}">
                         @csrf
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>

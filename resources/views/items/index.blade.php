@@ -21,7 +21,6 @@
     }
     .card {
         border-radius: 0%;
-        border--ra
     }
 
     .card-body {
@@ -29,6 +28,11 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+    }
+
+    .card-header {
+        color : #192f6e;
+        background: #fff
     }
 
     .container-fluid {
@@ -43,12 +47,18 @@
         scrollbar-width: thin;
         scrollbar-color: #888 #f1f1f1;
     }
+
+    .table-scroll-container thead th {
+        background-color: #f7f7f7;
+        color: #192f6e;
+        z-index: 10;
+        box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+    }
     .td-harga {
         width: 100px;
         text-align: right;
         vertical-align: middle;
     }
-
     .harga-grid {
         display: grid;
         grid-template-columns: 30px 1fr; /* Rp selalu 30px, nominal menyesuaikan */
@@ -163,7 +173,7 @@
         height: 2.5rem;
         padding: 0 1rem;
         border-radius: 1.5rem;
-        background: #3d3a4e;
+        background: #192f6e;
         background-size: 400%;
         color: #fff;
         border: none;
@@ -189,12 +199,13 @@
         width: 100%;
         height: inherit;
         border-radius: inherit;
-        background: linear-gradient(
-            82.3deg,
-            rgba(150, 93, 233, 1) 10.8%,
-            rgba(99, 88, 238, 1) 94.3%
-        );
+        background: #fff;
         transition: all 0.475s;
+    }
+
+    .button:hover .button-content {
+        color: #000; /* atau #fff tergantung background hover */
+        transition: color 0.480s;
     }
 
     .btn-reset:hover {
@@ -202,22 +213,27 @@
     }
     
     .ts-wrapper.single .ts-control {
-        border-radius: 20px !important;
-        box-shadow: 2px 2px 2px rgb(0, 0, 0); /* shadow halus */
+        border-radius: 20px !important; 
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important; /* shadow halus */
         border: 1px solid #ced4da; /* biar tetap terlihat seperti input normal */
         background-color: #fff;
         transition: box-shadow 0.2s ease;
     }
 
     @media only screen and (max-width: 768px) {
-  /* CSS khusus untuk perangkat mobile */
+    /* CSS khusus untuk perangkat mobile */
         body {
             font-size: 12px;
+        }
+
+        .card-footer {
+            padding: 0 !important;
         }
 
         .button {
             height: 1.5rem;
             padding: 0 0.5rem;
+            font-size: 8px;
         }
 
         .card-full {
@@ -232,7 +248,6 @@
             -webkit-overflow-scrolling: touch;
         }
         .card {
-            width: 100%;
             margin-bottom: 20px;
         }
         .title {
@@ -301,7 +316,7 @@
         }
         .btn-reset {
             font-size: 8px;
-            height: 30px;
+            height: 50px;
         }
         .btn i {
             font-size: 8px !important;
@@ -392,24 +407,24 @@
     }
 </style>
 
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid px-0">
+    <div class="row g-0">
         <div class="col-12">
-            <div class="card mb-4 card-full border-0 rounded">
-                <div class="{{$status === 'admin' ? 'card-header p-3 bg-secondary text-white' : 'card-header p-3 bg-secondary text-white rounded-0'}}">
+            <div class="{{$status === 'admin' ? 'card mb-4 card-full border-0 rounded' : 'card mb-4 card-full border-0 rounded-0'}}">
+                <div class="{{$status === 'admin' ? 'card-header p-3 rounded' : 'card-header p-3 shadow-sm border-0'}}">
                     <div class="row align-items-center">
-                        <h3 style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Daftar Item</h3>                      
+                        <h3>DAFTAR ITEM</h3>                      
                         <form action="{{ route('items.index') }}" method="GET" id="filterForm">                            
                             <div class="row g-3 mt-2">
                                 <div class="col-6 col-md-2">
-                                    <label for="stok_ada" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Stok Ready</label>
-                                    <select class="form-select" name="stok_ada" id="stok_ada" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                    <label for="stok_ada" class="form-label">Stok Ready</label>
+                                    <select class="form-select shadow-sm" name="stok_ada" id="stok_ada" style="border-radius: 20px;">
                                         <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>Ya</option>
                                         <option value="0" {{ request('stok_ada') == '0' ? 'selected' : '' }}>Tidak</option>
                                     </select>
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label for="category_search" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Cari Kategori </label>
+                                    <label for="category_search" class="form-label">Cari Kategori </label>
                                     <select id="category_search" placeholder="Pilih / Cari Kategori">
                                         <option></option>
                                         @foreach ($allCategoriesForTomSelect as $cat)
@@ -421,29 +436,29 @@
                                     <input type="hidden" name="category_id" id="itemCategoryId" value="{{ request('category_id') }}">
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label for="min_price" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Harga Minimum</label>
-                                    <div class="input-group" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">                                            
-                                        <span class="input-group-text" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
-                                        <input type="text" name="min_price" id="min_price" class="form-control" value="{{ old('min_price', request('min_price', $min_price ?? '')) }}" min="0" placeholder="Min Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
+                                    <label for="min_price" class="form-label">Harga Minimum</label>
+                                    <div class="input-group" style="border-radius: 20px;">                                            
+                                        <span class="input-group-text shadow-sm" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
+                                        <input type="text" name="min_price" id="min_price" class="form-control shadow-sm" value="{{ old('min_price', request('min_price', $min_price ?? '')) }}" min="0" placeholder="Min Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
                                     </div>
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label for="max_price" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Harga Maksimum</label>
-                                    <div class="input-group" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);"> 
-                                        <span class="input-group-text" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
-                                        <input type="text" name="max_price" id="max_price" class="form-control" value="{{ old('max_price', request('max_price', $max_price ?? '')) }}" min="0" placeholder="Max Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
+                                    <label for="max_price" class="form-label">Harga Maksimum</label>
+                                    <div class="input-group" style="border-radius: 20px;"> 
+                                        <span class="input-group-text shadow-sm" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
+                                        <input type="text" name="max_price" id="max_price" class="form-control shadow-sm" value="{{ old('max_price', request('max_price', $max_price ?? '')) }}" min="0" placeholder="Max Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
                                     </div>
                                 </div>                                    
                                 <div class="col-12 col-md-4">
                                     <div class="d-flex flex-wrap align-items-end gap-2">
                                         <!-- Input Pencarian -->
                                         <div style="min-width: 250px; flex-grow: 1;">
-                                            <label for="search" class="form-label" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                            <label for="search" class="form-label">
                                                 Gunakan % untuk kombinasi kata pencarian.
                                             </label>
-                                            <div class="input-group" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
-                                                <input type="text" name="search" id="search" class="form-control" placeholder="Kode / Nama Barang" value="{{ request('search') }}" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">
-                                                <button class="btn btn-light" id="btnSearch" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
+                                            <div class="input-group" style="border-radius: 20px;">
+                                                <input type="text" name="search" id="search" class="form-control shadow-sm" placeholder="Kode / Nama Barang" value="{{ request('search') }}" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">
+                                                <button class="btn btn-light shadow-sm" id="btnSearch" style="border-start-end-radius: 20px; border-end-end-radius: 20px; border: 1px solid #ced4da;" data-bs-toggle="tooltip" data-bs-placement="top" title="Cari">
                                                     <i class="bi bi-search"></i>
                                                 </button>
                                             </div>
@@ -451,9 +466,9 @@
     
                                         <!-- Tombol Aksi -->
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('items.index') }}" class="btn btn-info d-flex align-items-center gap-1 btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                            <button type="button" id="btnResetFilter" class="btn d-flex align-items-center gap-1 btn-icon shadow-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset" style="border-radius: 20px; background-color: #192f6e; color: #ffffff;">
                                                 <i class="bi bi-arrow-clockwise"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -463,9 +478,9 @@
                 </div>
                 <div class="card-body p-0 bg-light position-relative" style="height: auto; ">
                     @if (count($items) > 0)
-                    <div class="table-responsive p-0 table-scroll-container" id="table-container">
+                    <div class="table-responsive p-0 table-scroll-container" id="table-container" data-pagecount="{{ $pageCount ?? 1 }}">
                         <table class="table align-items-center mb-0 table-hover">
-                            <thead class="table-light">
+                            <thead style="background-color: #0d9401 !important;">
                                 <tr class="text-center">
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-kode">Kode</th>
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-name">Nama Item</th>
@@ -507,11 +522,13 @@
                         @endif
                     @endif                                   
                 </div>
-                <div class="card-footer" style="box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.26); z-index: 100;">
-                    <div class="d-flex justify-content-center align-items-center">
-                        <button id="load-more-btn" class="button" style="box-shadow: 0 2px 2px rgb(0, 0, 0);">
-                            <span class="button-content">Load More</span>
-                        </button>
+                <div class="card-footer p-2" style="box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.26); z-index: 100; background-color: #f7f7f7;">
+                    <div class="d-flex justify-content-center align-items-center p-2">
+                        <div class="d-flex justify-content-center align-items-center">
+                            <button id="load-more-btn" class="button" style="box-shadow: 0 2px 2px rgb(0, 0, 0);">
+                                <span class="button-content">Load More</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -559,10 +576,17 @@
         }, doneTypingInterval);
     });
 
+    searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault(); // blokir Enter supaya tidak submit form
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         const categorySelect = document.getElementById('itemCategoryId');
         const stokReadySelect = document.getElementById('stok_ada');
         const btnSearch = document.getElementById('btnSearch');
+        const resetBtn = document.getElementById('btnResetFilter');
 
         if (categorySelect) {
             categorySelect.addEventListener('change', function () {
@@ -579,6 +603,21 @@
         if (btnSearch) {
             btnSearch.addEventListener('click', function(event) {
                 event.preventDefault();
+                performSearch();
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                // Reset semua input
+                document.getElementById('stok_ada').value = 1;
+                document.getElementById('category_search').tomselect.clear();
+                document.getElementById('itemCategoryId').value = '';
+                document.getElementById('min_price').value = '';
+                document.getElementById('max_price').value = '';
+                document.getElementById('search').value = '';
+
+                // Panggil pencarian ulang
                 performSearch();
             });
         }
@@ -619,8 +658,10 @@
     let page = 2;
     let loading = false;
     let allDataLoaded = false;
-    const maxEmptyPageSkip = 10;
+    let maxEmptyPageSkip = parseInt(document.getElementById('table-container').dataset.pagecount) || 1;
     let emptyPageCount = 0;
+
+    console.log('Max empty page skip:', maxEmptyPageSkip);
 
     const container = document.getElementById('table-container');
     const loader = document.getElementById('loader');
@@ -675,49 +716,41 @@
             console.log(`Fetching page ${targetPage} => /item?page=${targetPage}${currentQueryString}`);
             return fetch(`/item?page=${targetPage}${currentQueryString}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            }).then(res => res.text());
+            }).then(res => res.json());
         };
 
-        fetchPage(page).then(data => {
-            if (data.trim() !== '') {
-                document.getElementById('item-table-body').insertAdjacentHTML('beforeend', data);
-                page++;
-                emptyPageCount = 0;
-                loader.style.display = 'none';
+        const tryNextPage = () => {
+            if (page > maxEmptyPageSkip) {
+                loader.innerHTML = '<p class="text-center mt-2">Semua data sudah dimuat.</p>';
+                loadMoreBtn.style.display = 'none';
+                allDataLoaded = true;
                 loading = false;
-            } else {
-                // Recursive retry up to maxEmptyPageSkip
-                const tryNextPage = () => {
-                    if (emptyPageCount >= maxEmptyPageSkip) {
-                        loader.innerHTML = '<p class="text-center mt-2">Semua data sudah dimuat.</p>';
-                        loadMoreBtn.style.display = 'none';
-                        allDataLoaded = true;
-                        loading = false;
-                        return;
-                    }
-                    page++;
-                    emptyPageCount++;
-                    fetchPage(page).then(nextData => {
-                        if (nextData.trim() !== '') {
-                            document.getElementById('item-table-body').insertAdjacentHTML('beforeend', nextData);
-                            page++;
-                            emptyPageCount = 0;
-                            loader.style.display = 'none';
-                            loading = false;
-                        } else {
-                            tryNextPage();
-                        }
-                    }).catch(() => {
-                        loader.innerHTML = '<p>Gagal memuat data.</p>';
-                        loading = false;
-                    });
-                };
-                tryNextPage();
+                return;
             }
-        }).catch(() => {
-            loader.innerHTML = '<p class="text-danger">Terjadi kesalahan saat mengambil data.</p>';
-            loading = false;
-        });
+
+            fetchPage(page).then(({ html, pageCount }) => {
+                // ✅ update pageCount hanya sekali (saat awal pencarian)
+                if (page === 1) {
+                    maxEmptyPageSkip = pageCount;
+                    console.log("Max empty page skip (refreshed):", maxEmptyPageSkip);
+                }
+
+                if (html.trim() !== '') {
+                    document.getElementById('item-table-body').insertAdjacentHTML('beforeend', html);
+                    page++;
+                    loader.style.display = 'none';
+                    loading = false;
+                } else {
+                    page++;        // skip kosong
+                    tryNextPage(); // cek page berikutnya
+                }
+            }).catch(() => {
+                loader.innerHTML = '<p class="text-danger">Terjadi kesalahan saat mengambil data.</p>';
+                loading = false;
+            });
+        };
+
+        tryNextPage();
     }
 
     function performSearch() {
@@ -739,12 +772,16 @@
 
         // Reset dan load ulang data dari page 1
         resetPagination();
+
+        maxEmptyPageSkip = parseInt(document.getElementById('table-container').dataset.pagecount) || 1;
+        console.log("Max empty page skip (refreshed):", maxEmptyPageSkip);
+
         loadData(queryString);
     }
 
     // Scroll to bottom trigger
     container.addEventListener('scroll', () => {
-        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight;
+        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
         if (nearBottom && !loading) {
             loadData(queryString);
         }

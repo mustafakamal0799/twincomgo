@@ -28,7 +28,7 @@ use App\Http\Controllers\AuthinticationController;
 
 //Authintication
 Route::get('/', [AuthinticationController::class, 'index'])->middleware('guest')->name('auth.login');
-Route::post('/login-post', [AuthinticationController::class, 'login'])->name('auth.login-post');
+Route::post('/', [AuthinticationController::class, 'login'])->name('auth.login.post');
 Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logout');
 
 Route::get('/landing', [LandingPageController::class, 'index'])->name('landingPage.index');

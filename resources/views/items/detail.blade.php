@@ -43,6 +43,7 @@
     body {
         overflow-x: hidden;
     }
+
     /* From Uiverse.io by fabiodevbr */ 
     .button-copy {
     background-color: #f2f7fa;
@@ -160,6 +161,15 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* sedikit bayangan */
         color: #fff;
     }
+
+    table,
+    .table,
+    .table th,
+    .table td,
+    .table thead th,
+    .table tbody tr {
+    background-color: transparent !important;
+    }
     
     @media only screen and (max-width: 768px) {
         .title { 
@@ -265,13 +275,13 @@
 
 </style>
 
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid px-0">
+    <div class="row g-0">
         <div class="col-12">
             <div class="card mb-4 border-0">
-                <div class="card-header py-2 d-flex flex-column bg-secondary text-white {{$status === 'admin' ? 'rounded' : 'rounded-0'}}">
+                <div class="card-header card-head py-2 d-flex flex-column text-dark {{$status === 'admin' ? 'rounded' : 'rounded-0'}}">
                     <div class="d-flex justify-content-between align-items-center w-100">
-                        <h4 class="title m-0" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">DETAIL BARANG</h4>
+                        <h4 class="title m-0">DETAIL BARANG</h4>
                         <div class="d-flex align-items-center gap-2">
                             @if ($status === 'admin' || $status === 'KARYAWAN')
                                 <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1" id="btnExportPdf" data-bs-toggle="tooltip" data-bs-placement="top" title="Export PDF">
@@ -291,9 +301,15 @@
                     @if ($status === 'KARYAWAN' || $status === 'admin')
                         <div class="row align-items-end mt-2">
                             <div class="col-md-4">
-                                <label for="branch_id" class="form-label fw-semibold" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Pilih Harga Cabang</label>
+                                <div class="d-flex align-items-center gap-2 mt-2 justify-content-between">
+                                    <label for="branch_id" class="form-label fw-semibold">Pilih Harga Cabang</label>
+                                    <div>
+                                        <input type="radio" name="priceCategoryName" value="USER" checked> User
+                                        <input type="radio" name="priceCategoryName" value="RESELLER"> Reseller
+                                    </div>
+                                </div>
                                 <div class="d-flex align-items-center">
-                                    <select name="branch_id" id="branch_id" class="form-select me-2" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                    <select name="branch_id" id="branch_id" class="form-select me-2 shadow-sm" style="border-radius: 20px;">
                                         <option value="">Semua Cabang</option>
                                         @foreach($allBranches as $branch)
                                             <option value="{{ $branch['name'] }}" {{ $selectedBranchId == $branch['name'] ? 'selected' : '' }}>
@@ -307,16 +323,16 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label for="filterHargaGaransi" class="form-label fw-semibold" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Tampilkan Harga</label>
-                                <select id="filterHargaGaransi" class="form-select" style="border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                <label for="filterHargaGaransi" class="form-label fw-semibold">Tampilkan Harga</label>
+                                <select id="filterHargaGaransi" class="form-select shadow-sm" style="border-radius: 20px;">
                                     <option value="semua">Semua Harga</option>
                                     <option value="reseller">Reseller</option>
                                     <option value="user">User</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label for="dropdownGudang" class="form-label fw-semibold" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Pilih Lokasi</label>
-                                <div class="dropdown w-100" style="z-index: 101; border-radius: 20px; box-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                <label for="dropdownGudang" class="form-label fw-semibold">Pilih Lokasi</label>
+                                <div class="dropdown w-100 shadow-sm" style="z-index: 101; border-radius: 20px;">
                                     <button class="form-select text-start" type="button" id="dropdownGudang" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 20px;">
                                         Semua Lokasi
                                     </button>
@@ -335,7 +351,7 @@
                     @endif
                 </div>
 
-                <div class="card-body p-4 bg-light {{$status === 'admin' ? 'rounded' : 'rounded-0'}}">                    
+                <div class="card-body ca-body p-4 bg-light {{$status === 'admin' ? 'rounded' : 'rounded-0'}}">                    
                     <div class="row mb-3">
                         <div class="col-md-4 text-center">
                             <div class="card mb-3 shadow-sm p-3">
@@ -393,8 +409,8 @@
                             </div>
                         </div>
                         <div class="col-md-8">
-                            @if ($status === 'KARYAWAN' || $status === 'admin')                                
-                                    <div class="card p-3 shadow-sm mb-3">
+                            @if ($status === 'KARYAWAN' || $status === 'admin')
+                                    <div class="card p-3 mb-2 shadow-sm">
                                         <p class="mb-3 fw-semibold" style="font-size: 16px">{{ $item['name'] }}</p>
                                         <table class="table table-borderless table-sm mb-4">
                                             <tbody>
@@ -496,6 +512,14 @@
                                                             @endforeach
                                                         </div>
                                                     </div>
+                                                    @else
+                                                <div class="d-flex">
+                                                    <strong class="me-2 title-hargaUser" style="width: 60px;">Harga</strong>
+                                                    <span>:</span>
+                                                    <span class="ms-2 text-muted">
+                                                        <p id="hargaResellerValue">Rp {{ number_format($finalResellerPrice ?? '-', 0, ',', '.')}}</p>
+                                                    </span>
+                                                </div>
                                                 @endif
                                                 <div class="mb-2 d-flex">
                                                     <strong class="me-2 title-garansiReseller" style="width: 60px;">Garansi</strong>
@@ -556,6 +580,14 @@
                                                             <p>Rp {{ number_format($priceValue, 0, ',', '.') }} / {{ $unitName }}</p>
                                                         @endforeach
                                                     </div>
+                                                </div>
+                                                @else
+                                                <div class="d-flex">
+                                                    <strong class="me-2 title-hargaUser" style="width: 60px;">Harga</strong>
+                                                    <span>:</span>
+                                                    <span class="ms-2 text-muted">
+                                                        <p id="hargaUserValue">Rp {{ number_format($finalUserPrice ?? '-', 0, ',', '.')}}</p>
+                                                    </span>
                                                 </div>
                                                 @endif
 
@@ -1196,87 +1228,104 @@
             if (!sessionStorage.getItem('lastPage')) {
                 sessionStorage.setItem('lastPage', document.referrer);
             }
-
-            // Event listener untuk select branch_id
             const branchSelect = document.getElementById('branch_id');
             const hargaUserValue = document.getElementById("hargaUserValue");
             const hargaResellerValue = document.getElementById("hargaResellerValue");
+            const spinner = document.getElementById('priceSpinner');
 
             const initialHargaUserHTML = hargaUserValue ? hargaUserValue.innerHTML : '';
             const initialHargaResellerHTML = hargaResellerValue ? hargaResellerValue.innerHTML : '';
-            if (branchSelect) {
-                branchSelect.addEventListener('change', function () {
-                    const branchId = this.value;
-                    const itemId = {{ $item['id'] }};
-                    const hargaResellerValue = document.getElementById('hargaResellerValue');
-                    const hargaUserValue = document.getElementById('hargaUserValue');
-                    const spinner = document.getElementById('priceSpinner');
 
-                    if (!branchId) {
-                        if (hargaUserValue) {
-                            hargaUserValue.innerHTML = initialHargaUserHTML;
+            const itemId = {{ $item['id'] }};
+
+            function getCheckedValue(name) {
+                const el = document.querySelector(`input[name="${name}"]:checked`);
+                return el ? el.value : '';
+            }
+
+            function fetchAdjustedPrice() {
+                const branchId = branchSelect.value;
+                const priceCategoryName = getCheckedValue("priceCategoryName");
+                const discountCategoryName = priceCategoryName;
+
+                if (!branchId || !priceCategoryName || !discountCategoryName) {
+                    // Reset ke harga awal
+                    if (hargaUserValue) hargaUserValue.innerHTML = initialHargaUserHTML;
+                    if (hargaResellerValue) hargaResellerValue.innerHTML = initialHargaResellerHTML;
+                    return;
+                }
+
+                spinner.style.display = 'inline-block';
+                branchSelect.disabled = true;
+
+                fetch(`{{ url('/items/adjusted-price-ajax') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        branch_name: branchId,
+                        item_id: itemId,
+                        price_category_name: priceCategoryName,
+                        discount_category_name: discountCategoryName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.adjustedPrices) {
+                        const entries = Object.entries(data.adjustedPrices);
+
+                        if (priceCategoryName.toLowerCase() === 'user' && hargaUserValue) {
+                            hargaUserValue.innerHTML = '';
+
+                            if (entries.length === 1) {
+                                const price = Number(entries[0][1]).toLocaleString('id-ID');
+                                hargaUserValue.innerHTML = `<p>Rp ${price}</p>`;
+                            } else {
+                                entries.forEach(([unit, price]) => {
+                                    hargaUserValue.innerHTML += `<p>Rp ${Number(price).toLocaleString('id-ID')} / ${unit}</p>`;
+                                });
+                            }
                         }
 
-                        if (hargaResellerValue) {
-                            hargaResellerValue.innerHTML = initialHargaResellerHTML;
-                        }
+                        if (priceCategoryName.toLowerCase() === 'reseller' && hargaResellerValue) {
+                            hargaResellerValue.innerHTML = '';
 
-                        return;
+                            if (entries.length === 1) {
+                                const price = Number(entries[0][1]).toLocaleString('id-ID');
+                                hargaResellerValue.innerHTML = `<p>Rp ${price}</p>`;
+                            } else {
+                                entries.forEach(([unit, price]) => {
+                                    hargaResellerValue.innerHTML += `<p>Rp ${Number(price).toLocaleString('id-ID')} / ${unit}</p>`;
+                                });
+                            }
+                        }
+                    } else {
+                        // Jika gagal, kembalikan harga awal
+                        if (hargaUserValue) hargaUserValue.innerHTML = initialHargaUserHTML;
+                        if (hargaResellerValue) hargaResellerValue.innerHTML = initialHargaResellerHTML;
                     }
-
-                    spinner.style.display = 'inline-block';
-                    branchSelect.disabled = true;
-
-                    fetch(`{{ url('/items/adjusted-price-ajax') }}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            branch_name: branchId,
-                            item_id: itemId
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            if (data.adjustedPrices && hargaUserValue) {
-                                hargaUserValue.innerHTML = '';
-
-                                const entries = Object.entries(data.adjustedPrices);
-
-                                if (entries.length === 1) {
-                                    // Kalau cuma 1 harga (misal hanya "pcs"), tampilkan tanpa satuan
-                                    const price = Number(entries[0][1]).toLocaleString('id-ID');
-                                    hargaUserValue.innerHTML = `<p>Rp ${price}</p>`;
-                                } else {
-                                    // Kalau lebih dari 1 (misal pcs, dus, pak), tampilkan semua dengan satuan
-                                    entries.forEach(([unit, price]) => {
-                                        hargaUserValue.innerHTML += `<p>Rp ${Number(price).toLocaleString('id-ID')} / ${unit}</p>`;
-                                    });
-                                }
-
-                            } else if (hargaUserValue) {
-                                hargaUserValue.textContent = `${Number(price).toLocaleString('id-ID')} / ${unit}`;
-                            }
-                        } else {
-                            if (hargaUserValue) {
-                                hargaUserValue.textContent = `${Number(price).toLocaleString('id-ID')} / ${unit}`;
-                            }
-                        }
-                    })
-
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat mengambil harga penyesuaian.');
-                    })
-                    .finally(() => {
-                        spinner.style.display = 'none';
-                        branchSelect.disabled = false;
-                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat mengambil harga penyesuaian.');
+                })
+                .finally(() => {
+                    spinner.style.display = 'none';
+                    branchSelect.disabled = false;
                 });
             }
+
+            if (branchSelect) {
+                branchSelect.addEventListener('change', fetchAdjustedPrice);
+            }
+
+            // Trigger fetch ulang kalau kategori harga berubah
+            document.querySelectorAll('input[name="priceCategoryName"], input[name="discountCategoryName"]').forEach(el => {
+                el.addEventListener('change', fetchAdjustedPrice);
+            });
+
 
              // --- Price Adjustment Reseller (khusus RESELLER) ---
             @if ($status === 'RESELLER')
@@ -1562,82 +1611,82 @@
 
             // ---- Perhitungan stok sales order dilanjutkan dengan sales invoice (Faktur dimukan) ----
 
-            document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
-            document.getElementById('btnRefresh')?.setAttribute('disabled', true);
+        //     document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
+        //     document.getElementById('btnRefresh')?.setAttribute('disabled', true);
 
 
-            fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ item_id: itemId, includeInvoice: false })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentStokNew = data.stokNew;
+        //     fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //             'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        //         },
+        //         body: JSON.stringify({ item_id: itemId, includeInvoice: false })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         if (data.success) {
+        //             currentStokNew = data.stokNew;
 
-                    return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            item_id: itemId,
-                            stok_awal: currentStokNew
-                        })
-                    });
-                } else {
-                    throw new Error('Gagal mengambil data stok sales order: ' + data.message);
-                }
-            })
-            .then(async response => {
-                if (!response.ok) {
-                    const text = await response.text();
-                    console.error('Server error:', text);
-                    throw new Error('Server returned an error for matching-invoices-ajax');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    currentStokNew = data.stokNew;
-                    updateStokTable(currentStokNew);
+        //             return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
+        //                 method: 'POST',
+        //                 headers: {
+        //                     'Content-Type': 'application/json',
+        //                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        //                 },
+        //                 body: JSON.stringify({
+        //                     item_id: itemId,
+        //                     stok_awal: currentStokNew
+        //                 })
+        //             });
+        //         } else {
+        //             throw new Error('Gagal mengambil data stok sales order: ' + data.message);
+        //         }
+        //     })
+        //     .then(async response => {
+        //         if (!response.ok) {
+        //             const text = await response.text();
+        //             console.error('Server error:', text);
+        //             throw new Error('Server returned an error for matching-invoices-ajax');
+        //         }
+        //         return response.json();
+        //     })
+        //     .then(data => {
+        //         if (data.success) {
+        //             currentStokNew = data.stokNew;
+        //             updateStokTable(currentStokNew);
 
-                    Toastify({
-                        text: "Data stok sudah terupdate!",
-                        duration: 10000,
-                        gravity: "top", // atau "bottom"
-                        position: "right", // atau "left"
-                        style: {
-                            background: "linear-gradient(to right, #00b09b, #96c93d)",
-                        },
-                        stopOnFocus: true,
-                    }).showToast();
-                } else {
-                    console.error('Gagal mengambil data matching invoices:', data.message);
+        //             Toastify({
+        //                 text: "Data stok sudah terupdate!",
+        //                 duration: 10000,
+        //                 gravity: "top", // atau "bottom"
+        //                 position: "right", // atau "left"
+        //                 style: {
+        //                     background: "linear-gradient(to right, #00b09b, #96c93d)",
+        //                 },
+        //                 stopOnFocus: true,
+        //             }).showToast();
+        //         } else {
+        //             console.error('Gagal mengambil data matching invoices:', data.message);
 
-                    Toastify({
-                        text: "Gagal mengambil data invoice",
-                        duration: 10000,
-                        gravity: "top",
-                        position: "right",
-                        backgroundColor: "#dc3545", // merah error
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Terjadi kesalahan saat mengambil data stok:', error);
-            })
-            .finally(() => {
-                // Aktifkan tombol kembali
-                document.getElementById('btnExportPdf')?.removeAttribute('disabled');
-                document.getElementById('btnRefresh')?.removeAttribute('disabled');
-            });
-        });
+        //             Toastify({
+        //                 text: "Gagal mengambil data invoice",
+        //                 duration: 10000,
+        //                 gravity: "top",
+        //                 position: "right",
+        //                 backgroundColor: "#dc3545", // merah error
+        //             }).showToast();
+        //         }
+        //     })
+        //     .catch(error => {
+        //         console.error('Terjadi kesalahan saat mengambil data stok:', error);
+        //     })
+        //     .finally(() => {
+        //         // Aktifkan tombol kembali
+        //         document.getElementById('btnExportPdf')?.removeAttribute('disabled');
+        //         document.getElementById('btnRefresh')?.removeAttribute('disabled');
+        //     });
+        // });
 
         document.getElementById('btnExportPdf').addEventListener('click', function () {
             const branchId = document.getElementById('branch_id') ? document.getElementById('branch_id').value : '';
