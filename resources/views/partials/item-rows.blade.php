@@ -1,5 +1,5 @@
 @foreach ($items as $item)
-    <tr onclick="window.location='{{ route('items.detail', ['encrypted' => Hashids::encode($item['id'])]) }}'" style="cursor: pointer;">
+    <tr onclick="window.location='{{ route('karyawan.show', ['encrypted' => Hashids::encode($item['id'])]) }}'" style="cursor: pointer;">
         <!-- Nomor -->
         <td class="text-center td-kode" style="width: 100px;">
             {{ $item['no'] ?? 'N/A' }}
@@ -13,14 +13,16 @@
         </td>
 
         <!-- Harga (Rp + Angka) -->
+        
         <td class="td-harga" style="width: 150px;">
             <div class="harga-grid">
                 <span class="harga-rp">Rp</span>
                 <span class="harga-nominal">
-                {{ is_numeric($item['branchPrice'] ?? null) ? number_format($item['branchPrice'], 0, ',', '.') : '-' }}
+                {{ is_numeric($item['price'] ?? null) ? number_format($item['price'], 0, ',', '.') : '-' }}
                 </span>
             </div>
         </td>
+
 
         <!-- Stok -->
         <td class="text-center td-stok" style="width: 80px;">

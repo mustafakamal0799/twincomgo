@@ -16,6 +16,14 @@ class ResetController extends Controller
             'token' => 'required',    
             'email' => 'required|email',    
             'password' => 'required|min:8|confirmed',    
+        ],
+        [
+            'token.required'           => 'Token reset tidak ditemukan.',
+            'email.required'           => 'Email wajib diisi.',
+            'email.email'              => 'Format email tidak valid.',
+            'password.required'        => 'Kata sandi wajib diisi.',
+            'password.min'             => 'Kata sandi minimal :min karakter.',
+            'password.confirmed'       => 'Konfirmasi kata sandi tidak cocok.',
         ]);     
     
         $status = Password::reset(
@@ -33,7 +41,7 @@ class ResetController extends Controller
         );
     
         return $status === Password::PASSWORD_RESET    
-                    ? redirect()->route('auth.login')->with('status', __($status))    
+                    ? redirect()->route('auth.login')->with('success', __($status))    
                     : back()->withErrors(['email' => [__($status)]]);
     }
 }

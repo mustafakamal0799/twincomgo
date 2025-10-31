@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Models\AccurateToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\ItemController;
@@ -8,11 +9,20 @@ use Illuminate\Support\Facades\Password;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ResetController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\TesterController;
 use App\Http\Controllers\AccurateController;
+use App\Http\Controllers\KaryawanController;
+use App\Http\Controllers\ResellerController;
+use App\Http\Controllers\UserHeadController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\AccurateAuthController;
 use App\Http\Controllers\AccurateSyncController;
+use App\Http\Controllers\AccurateTokenController;
 use App\Http\Controllers\AuthinticationController;
+use App\Http\Controllers\AccurateAccountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,16 +41,13 @@ Route::get('/', [AuthinticationController::class, 'index'])->middleware('guest')
 Route::post('/', [AuthinticationController::class, 'login'])->name('auth.login.post');
 Route::post('/logout', [AuthinticationController::class, 'logout'])->name('logout');
 
-Route::get('/landing', [LandingPageController::class, 'index'])->name('landingPage.index');
-
-Route::get('/promo', [PromoController::class, 'index'])->name('promo.index');
-Route::get('/promo-upload', [PromoController::class, 'create'])->name('promo.create');
-Route::post('/promo-upload', [PromoController::class, 'store'])->name('promo.store');
-Route::get('/promo-edit/{id}', [PromoController::class, 'edit'])->name('promo.edit');
-Route::put('/promo-update/{id}', [PromoController::class, 'update'])->name('promo.update');
-Route::delete('/promo-delete/{id}', [PromoController::class, 'destroy'])->name('promo.destroy');
-
 Route::get('/categories/search', [ItemController::class, 'searchCategories'])->name('categories.search');
+
+// routes/web.php
+Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
+Route::get('/item/{id}/price', [KaryawanController::class, 'getPrice'])->name('item.price');
+
+
 
 
 
@@ -86,7 +93,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin-log', [AdminController::class, 'logActivity'])->name('admin.log');    
     Route::get('/admin/log/user-search', [AdminController::class, 'searchUser'])->name('admin.log.user-search');
     Route::post('/auto-logout', [AdminController::class, 'autoLogout'])->name('auto.logout');
+
+    
 });
+
+// web.php
+Route::get('/items/export-pdf', [ItemController::class, 'exportPdf1'])->name('items.export.pdf');
+
 
 
 Route::post('/sync-accurate-users', function () {
@@ -102,9 +115,6 @@ Route::post('/sync-accurate-users', function () {
 Route::get('/uji', function () {
     return view('uji-coba');
 });
-
-
-Route::get('/test', [TesterController::class, 'test']);
 
 Route::get('/image/{filename}', [ItemController::class, 'getAccurateImage'])->where('filename', '.*');
 Route::get('/accurate-image/{filename}', [ItemController::class, 'getAccurateImage'])
@@ -122,11 +132,42 @@ Route::get('/items/search-items-ajax', [ItemController::class, 'searchItemsAjax'
 Route::post('/items/matching-invoices-ajax', [ItemController::class, 'getMatchingInvoicesAjax'])->name('items.matching-invoices-ajax');
 Route::post('/items/adjusted-price-reseller-ajax', [ItemController::class, 'getAdjustedPriceResellerAjax'])->name('items.adjusted-price-reseller-ajax');
 
-// Route::get('/item-test', [TesterController::class, 'index'])->name('item-test');
 
-Route::get('/customer-users', [AdminController::class, 'getCustomerUserList'])->name('customer.users');
+Route::middleware(['auth','can:manage-users'])->group(function () {
 
-Route::get('/test-content', [TesterController::class, 'testContent'])->name('test.content');
+    Route::get('/admin/accurate/{account}/connect', [AccurateAuthController::class,'connect'])
+        ->name('admin.accurate.connect');
+    Route::get('/admin/accurate/callback', [AccurateAuthController::class,'callback'])
+    ->name('admin.accurate.callback');
+});
+
+
+Route::get('/users/create', [AdminController::class, 'create'])->name('users.create');
+Route::post('/users', [AdminController::class, 'store'])->name('users.post');
+Route::get('/users/{id}', [AdminController::class, 'show'])->name('users.show');
+
+Route::get('/reseller', [ResellerController::class, 'index2'])->name('reseller.index');
+Route::get('/reseller/test', [ResellerController::class, 'index'])->name('reseller.test');
+Route::get('/reseller/{encrypted}/detail', [ResellerController::class, 'getItemDetails'])->name('reseller.detail');
+
+Route::get('/admin/users', [UserController::class, 'index'])->name('users2.index');
+Route::get('/admin/users/create', [UserController::class, 'create'])->name('users2.create');
+Route::post('/admin/users', [UserController::class, 'store'])->name('users2.store');
+Route::get('/admin/users/{id}/edit', [UserController::class, 'edit'])->name('users2.edit');
+Route::put('/admin/users/{id}', [UserController::class, 'update'])->name('users2.update');
+Route::delete('/admin/users/{id}', [UserController::class, 'destroy'])->name('users2.destroy');
+
+// (Sudah ada) Accurate Accounts & mapping — biarkan seperti sebelumnya
+Route::get('/admin/accurate-accounts', [AccurateAccountController::class, 'index'])->name('aa.index');
+Route::get('/admin/accurate-accounts/create', [AccurateAccountController::class, 'create'])->name('aa.create');
+Route::post('/admin/accurate-accounts', [AccurateAccountController::class, 'store'])->name('aa.store');
+Route::get('/admin/accurate-accounts/{id}/edit', [AccurateAccountController::class, 'edit'])->name('aa.edit');
+Route::put('/admin/accurate-accounts/{id}', [AccurateAccountController::class, 'update'])->name('aa.update');
+Route::delete('/admin/accurate-accounts/{id}', [AccurateAccountController::class, 'destroy'])->name('aa.destroy');
+
+//Karyawan
+Route::get('/detail/{encrypted}', [KaryawanController::class, 'show'])->name('karyawan.show');
+
 
 
 

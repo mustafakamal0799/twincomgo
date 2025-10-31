@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Helpers\AccurateGlobal;
 use App\Helpers\AccurateHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -30,8 +31,10 @@ class SyncAccurateUsers extends Command
     {
         $this->info('⏳ Memulai sinkronisasi data dari Accurate...');
 
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
         $pageSize = 100;
 
         $totalUsers = 0;

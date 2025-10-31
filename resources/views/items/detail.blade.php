@@ -481,7 +481,6 @@
                                                             $sortedPrices[$unit] = $resellerUnitPrices[$unit];
                                                         }
                                                     }
-
                                                     $resellerUnitPrices = $sortedPrices;
                                                 @endphp
 
@@ -693,9 +692,9 @@
                             @endif
                         </div>
                         @php
-                            $points = array_filter(explode('-', $item['notes']), fn($p) => trim($p) !== '');
+                            $points = preg_split('/\s*-\s+/', $item['notes'], -1, PREG_SPLIT_NO_EMPTY);
                         @endphp
-
+                        
                         @if (count($points) > 0)
                         <div class="col-md-12">
                             <div class="card shadow-sm p-4">
@@ -718,7 +717,13 @@
                         <div class="mb-4" id="nonKonsinyasiTable">
                             <div class="card mb-2 shadow-sm">
                                 <div class="card-header" style="background: #10B981">
-                                    <h5 class="mb-0 title-table text-white" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Store</h5>
+                                    <h5 class="mb-0 title-table text-white" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">
+                                        @if ($status === 'KARYAWAN' || $status === 'admin')
+                                            Store
+                                        @else
+                                            Twincom Store
+                                        @endif
+                                    </h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -852,76 +857,6 @@
                         </div>
                         @endif
 
-                        {{-- GUDANG TSC --}}
-                        @php
-                            $filteredTsc = collect($tscWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
-                        @endphp
-                        @if ($filteredTsc->count())
-                        <div class="mb-4" id="tscwarehouseTable">
-                            <div class="card mb-2 shadow-sm">
-                                <div class="card-header bg-success">
-                                    <h5 class="mb-0 text-white title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">TSC</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Lokasi</th>
-                                                    <th class="text-center">Stok</th>
-                                                    <th class="text-center">Satuan</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($filteredTsc as $data)
-                                                    <tr>
-                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>                                                            
-                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                        @php
-                                                            $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
-                                                            $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
-                                                            $ratio2 = $ratio ?? null;
-
-                                                            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
-                                                            
-                                                            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
-                                                            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
-
-                                                            $showBalanceUnit = false;
-
-                                                            if (count($matches[0]) > 1) {
-                                                                $showBalanceUnit = true;
-                                                            } elseif ($ratio2 && $firstNumber !== $stock) {
-                                                                $showBalanceUnit = true;
-                                                            }
-
-                                                            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
-                                                        @endphp 
-                                                        <td class="text-center">
-                                                            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="card-footer">
-                                    <div class="d-flex justify-content-between align-items-end">
-                                        <div>
-                                            <h5 class="title-total">Total</h5>
-                                        </div>
-                                        <div class="card-total text-white">
-                                            <span id="totalTscStok">
-                                                {{ number_format($totalTscStok) }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
                         {{-- GUDANG KONSINYASI --}}
                         @php
                             $filteredKonsinyasi = collect($konsinyasiWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
@@ -992,15 +927,17 @@
                         </div>
                         @endif
 
-                        {{-- GUDANG RESELLER --}}
+                    @if ($status === 'KARYAWAN' || $status === 'admin')
+
+                        {{-- GUDANG TSC --}}
                         @php
-                            $filteredReseller = collect($resellerWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                            $filteredTsc = collect($tscWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
                         @endphp
-                        @if ($filteredReseller->count())
-                        <div class="mb-4" id="resellerwarehouseTable">
+                        @if ($filteredTsc->count())
+                        <div class="mb-4" id="tscwarehouseTable">
                             <div class="card mb-2 shadow-sm">
-                                <div class="card-header bg-warning text-white">
-                                    <h5 class="mb-0 title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Reseller</h5>
+                                <div class="card-header bg-success">
+                                    <h5 class="mb-0 text-white title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">TSC</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -1013,35 +950,35 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                            @foreach ($filteredReseller as $data)
-                                                <tr>
-                                                    <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
-                                                    <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
-                                                    @php
-                                                        $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
-                                                        $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
-                                                        $ratio2 = $ratio ?? null;
+                                                @foreach ($filteredTsc as $data)
+                                                    <tr>
+                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>                                                            
+                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                                        @php
+                                                            $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                            $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                            $ratio2 = $ratio ?? null;
 
-                                                        preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
-                                                        
-                                                        preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
-                                                        $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+                                                            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                            
+                                                            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
 
-                                                        $showBalanceUnit = false;
+                                                            $showBalanceUnit = false;
 
-                                                        if (count($matches[0]) > 1) {
-                                                            $showBalanceUnit = true;
-                                                        } elseif ($ratio2 && $firstNumber !== $stock) {
-                                                            $showBalanceUnit = true;
-                                                        }
+                                                            if (count($matches[0]) > 1) {
+                                                                $showBalanceUnit = true;
+                                                            } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                                $showBalanceUnit = true;
+                                                            }
 
-                                                        $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
-                                                    @endphp
-                                                    <td class="text-center">
-                                                        {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
-                                                    </td>
-                                                </tr>
-                                            @endforeach
+                                                            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                        @endphp 
+                                                        <td class="text-center">
+                                                            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
                                             </tbody>
                                         </table>
                                     </div>
@@ -1052,8 +989,8 @@
                                             <h5 class="title-total">Total</h5>
                                         </div>
                                         <div class="card-total text-white">
-                                            <span id="totalResellerStok">
-                                                {{ number_format($totalResellerStok) }}
+                                            <span id="totalTscStok">
+                                                {{ number_format($totalTscStok) }}
                                             </span>
                                         </div>
                                     </div>
@@ -1061,9 +998,77 @@
                             </div>
                         </div>
                         @endif
-                    @endif
+                        
+                        {{-- GUDANG RESELLER --}}
+                        @php
+                            $filteredReseller = collect($resellerWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
+                        @endphp
+                        @if ($filteredReseller->count())
+                            <div class="mb-4" id="resellerwarehouseTable">
+                                <div class="card mb-2 shadow-sm">
+                                    <div class="card-header bg-warning text-white">
+                                        <h5 class="mb-0 title-table" style="text-shadow: 2px 2px 2px rgb(0, 0, 0);">Reseller</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Lokasi</th>
+                                                        <th class="text-center">Stok</th>
+                                                        <th class="text-center">Satuan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                @foreach ($filteredReseller as $data)
+                                                    <tr>
+                                                        <td style="width: {{ $status === 'KARYAWAN' ? '800px' : '1200px'}}">{{ $data['name'] }}</td>
+                                                        <td class="text-center" data-warehouse-id="{{ $data['id'] }}">{{ number_format($stokNew[$data['id']]['balance'] ?? $data['balance']) }}</td>
+                                                        @php
+                                                            $balanceUnit = trim(str_replace(['[', ']'], '', $data['balanceUnit']));
+                                                            $stock = $stokNew[$data['id']]['balance'] ?? $data['balance'];
+                                                            $ratio2 = $ratio ?? null;
 
-                    @if ($status === 'KARYAWAN' || $status === 'admin')
+                                                            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
+                                                            
+                                                            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
+                                                            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+
+                                                            $showBalanceUnit = false;
+
+                                                            if (count($matches[0]) > 1) {
+                                                                $showBalanceUnit = true;
+                                                            } elseif ($ratio2 && $firstNumber !== $stock) {
+                                                                $showBalanceUnit = true;
+                                                            }
+
+                                                            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
+                                                        @endphp
+                                                        <td class="text-center">
+                                                            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="d-flex justify-content-between align-items-end">
+                                            <div>
+                                                <h5 class="title-total">Total</h5>
+                                            </div>
+                                            <div class="card-total text-white">
+                                                <span id="totalResellerStok">
+                                                    {{ number_format($totalResellerStok) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+                        @endif
                         {{-- GUDANG TRANSIT --}}
                         @php
                             $filteredTransit = collect($transitWarehouses)->filter(fn($data) => ($stokNew[$data['id']]['balance'] ?? $data['balance']) > 0)->values();
@@ -1611,82 +1616,82 @@
 
             // ---- Perhitungan stok sales order dilanjutkan dengan sales invoice (Faktur dimukan) ----
 
-        //     document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
-        //     document.getElementById('btnRefresh')?.setAttribute('disabled', true);
+            document.getElementById('btnExportPdf')?.setAttribute('disabled', true);
+            document.getElementById('btnRefresh')?.setAttribute('disabled', true);
 
 
-        //     fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //             'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        //         },
-        //         body: JSON.stringify({ item_id: itemId, includeInvoice: false })
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) {
-        //             currentStokNew = data.stokNew;
+            fetch(`{{ url('/items/salesorder-stock-ajax') }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ item_id: itemId, includeInvoice: false })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentStokNew = data.stokNew;
 
-        //             return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
-        //                 method: 'POST',
-        //                 headers: {
-        //                     'Content-Type': 'application/json',
-        //                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        //                 },
-        //                 body: JSON.stringify({
-        //                     item_id: itemId,
-        //                     stok_awal: currentStokNew
-        //                 })
-        //             });
-        //         } else {
-        //             throw new Error('Gagal mengambil data stok sales order: ' + data.message);
-        //         }
-        //     })
-        //     .then(async response => {
-        //         if (!response.ok) {
-        //             const text = await response.text();
-        //             console.error('Server error:', text);
-        //             throw new Error('Server returned an error for matching-invoices-ajax');
-        //         }
-        //         return response.json();
-        //     })
-        //     .then(data => {
-        //         if (data.success) {
-        //             currentStokNew = data.stokNew;
-        //             updateStokTable(currentStokNew);
+                    return fetch(`{{ url('/items/matching-invoices-ajax') }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            item_id: itemId,
+                            stok_awal: currentStokNew
+                        })
+                    });
+                } else {
+                    throw new Error('Gagal mengambil data stok sales order: ' + data.message);
+                }
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Server error:', text);
+                    throw new Error('Server returned an error for matching-invoices-ajax');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    currentStokNew = data.stokNew;
+                    updateStokTable(currentStokNew);
 
-        //             Toastify({
-        //                 text: "Data stok sudah terupdate!",
-        //                 duration: 10000,
-        //                 gravity: "top", // atau "bottom"
-        //                 position: "right", // atau "left"
-        //                 style: {
-        //                     background: "linear-gradient(to right, #00b09b, #96c93d)",
-        //                 },
-        //                 stopOnFocus: true,
-        //             }).showToast();
-        //         } else {
-        //             console.error('Gagal mengambil data matching invoices:', data.message);
+                    Toastify({
+                        text: "Data stok sudah terupdate!",
+                        duration: 10000,
+                        gravity: "top", // atau "bottom"
+                        position: "right", // atau "left"
+                        style: {
+                            background: "linear-gradient(to right, #00b09b, #96c93d)",
+                        },
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    console.error('Gagal mengambil data matching invoices:', data.message);
 
-        //             Toastify({
-        //                 text: "Gagal mengambil data invoice",
-        //                 duration: 10000,
-        //                 gravity: "top",
-        //                 position: "right",
-        //                 backgroundColor: "#dc3545", // merah error
-        //             }).showToast();
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Terjadi kesalahan saat mengambil data stok:', error);
-        //     })
-        //     .finally(() => {
-        //         // Aktifkan tombol kembali
-        //         document.getElementById('btnExportPdf')?.removeAttribute('disabled');
-        //         document.getElementById('btnRefresh')?.removeAttribute('disabled');
-        //     });
-        // });
+                    Toastify({
+                        text: "Gagal mengambil data invoice",
+                        duration: 10000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545", // merah error
+                    }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Terjadi kesalahan saat mengambil data stok:', error);
+            })
+            .finally(() => {
+                // Aktifkan tombol kembali
+                document.getElementById('btnExportPdf')?.removeAttribute('disabled');
+                document.getElementById('btnRefresh')?.removeAttribute('disabled');
+            });
+        });
 
         document.getElementById('btnExportPdf').addEventListener('click', function () {
             const branchId = document.getElementById('branch_id') ? document.getElementById('branch_id').value : '';

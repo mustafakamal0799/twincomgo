@@ -10,405 +10,19 @@
 @else
     <style>
         .card-full {
-            height: 94vh;
+            height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
         }
     </style>
 @endif
 
-<style>
-    body {
-        overflow: hidden;
-    }
-    .card {
-        border-radius: 0%;
-    }
-
-    .card-body {
-        flex: 1 1 auto;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .card-header {
-        color : #192f6e;
-        background: #fff
-    }
-
-    .container-fluid {
-        padding: 0;
-    }
-
-    .table-scroll-container {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        overflow-x: hidden;
-
-        scrollbar-width: thin;
-        scrollbar-color: #888 #f1f1f1;
-    }
-
-    .table-scroll-container thead th {
-        background-color: #f7f7f7;
-        color: #192f6e;
-        z-index: 10;
-        box-shadow: 0 2px 2px rgba(0,0,0,0.1);
-    }
-    .td-harga {
-        width: 100px;
-        text-align: right;
-        vertical-align: middle;
-    }
-    .harga-grid {
-        display: grid;
-        grid-template-columns: 30px 1fr; /* Rp selalu 30px, nominal menyesuaikan */
-        justify-content: end;
-        align-items: center;
-    }
-
-    .harga-rp {
-        text-align: left;
-    }
-
-    .harga-nominal {
-        text-align: right;
-    }
-
-    .table th,
-    .table td {
-        padding-top: 16px;
-        padding-bottom: 16px;
-        vertical-align: middle;
-    }
-    .dropdown {
-        margin-left: 10px;
-    }
-    .check-box{
-        margin-left: 10px;
-    }
-
-    .loader-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.377);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-    }
-
-    .loader-text {
-        font-weight: bold;
-        color: #000000;
-        font-size: 16px;
-        margin-top: 10px;
-    }
-
-    @keyframes pulse {
-        0% { opacity: 0.3; }
-        50% { opacity: 1; }
-        100% { opacity: 0.3; }
-    }
-
-    .spinner-grow-custom {
-        width: 1rem;
-        height: 1rem;
-        border-radius: 50%;
-        opacity: 0;
-        animation: growSmooth 1.2s infinite ease-in-out;
-        }
-
-        @keyframes growSmooth {
-        0% {
-            transform: scale(0.3);
-            opacity: 0;
-        }
-        50% {
-            transform: scale(1);
-            opacity: 1;
-        }
-        100% {
-            transform: scale(0.3);
-            opacity: 0;
-        }
-    }
-
-    .table-scroll-container::-webkit-scrollbar {
-        height: 8px;
-        /* width: 5px; */
-        background-color: #f1f1f1;
-    }
-
-    .table-scroll-container::-webkit-scrollbar-thumb {
-        background-color: #888;
-        border-radius: 4px;
-    }
-
-    .table-scroll-container::-webkit-scrollbar-thumb:hover {
-        background-color: #555;
-    }
-
-    .select2-container--default .select2-selection--single {
-        height: calc(2.365rem + 2px); /* sama dengan tinggi .form-control di Bootstrap 5 */
-        padding: 0.375rem 0.75rem;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        display: flex;
-        align-items: center;
-    }
-
-    /* Samakan tinggi teks di dalam Select2 */
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 1.5;
-        padding-left: 0;
-    }
-
-    /* From Uiverse.io by Madflows */ 
-    .button {
-        position: relative;
-        overflow: hidden;
-        height: 2.5rem;
-        padding: 0 1rem;
-        border-radius: 1.5rem;
-        background: #192f6e;
-        background-size: 400%;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-    }
-
-    .button:hover::before {
-        transform: scaleX(1);
-    }
-
-    .button-content {
-        position: relative;
-        z-index: 1;
-    }
-
-    .button::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        transform: scaleX(0);
-        transform-origin: 0 50%;
-        width: 100%;
-        height: inherit;
-        border-radius: inherit;
-        background: #fff;
-        transition: all 0.475s;
-    }
-
-    .button:hover .button-content {
-        color: #000; /* atau #fff tergantung background hover */
-        transition: color 0.480s;
-    }
-
-    .btn-reset:hover {
-        transform: scale(1.1);
-    }
-    
-    .ts-wrapper.single .ts-control {
-        border-radius: 20px !important; 
-        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important; /* shadow halus */
-        border: 1px solid #ced4da; /* biar tetap terlihat seperti input normal */
-        background-color: #fff;
-        transition: box-shadow 0.2s ease;
-    }
-
-    @media only screen and (max-width: 768px) {
-    /* CSS khusus untuk perangkat mobile */
-        body {
-            font-size: 12px;
-        }
-
-        .card-footer {
-            padding: 0 !important;
-        }
-
-        .button {
-            height: 1.5rem;
-            padding: 0 0.5rem;
-            font-size: 8px;
-        }
-
-        .card-full {
-            height: 95vh;
-            display: flex;
-            flex-direction: column;
-            
-        }
-        .table-scroll-wrapper {
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-        }
-        .card {
-            margin-bottom: 20px;
-        }
-        .title {
-            font-size: 13px;
-            margin-bottom: -100px;
-        }
-        .table th,
-        .table td {
-            font-size: 9px;
-        }
-
-        .table .th-harga {
-            text-align: center;
-        }
-        .table .td-harga {
-            text-align: end;
-        }
-
-        .table .th-name, .table .td-name {
-            min-width: 150px;
-            text-align: justify;
-        }
-
-        .harga-grid {
-            display: flex;
-            gap: 4px;
-            justify-content: flex-start;
-            align-items: center;
-            flex-wrap: nowrap;
-        }
-
-        .harga-rp {
-            flex-shrink: 0;
-        }
-
-        .harga-nominal {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline-block;
-            text-align: right;
-        }
-
-        .table-scroll-container {
-            padding: 0 !important;
-            max-height: 400px; /* Sesuaikan tinggi untuk mobile */
-        }
-        .pagination .page-link {
-            font-size: 10px;
-            padding: 2px 6px; /* biar tombol juga ikut kecil */
-        }
-
-        .form-control {
-            font-size: 10px;
-            padding: 4px 8px;
-        }
-
-        .form-check-label,
-        .form-check-input {
-            font-size: 10px;
-        }
-
-        .btn {
-            font-size: 8px;
-            padding: 4px 8px;
-        }
-        .btn-reset {
-            font-size: 8px;
-            height: 50px;
-        }
-        .btn i {
-            font-size: 8px !important;
-        }
-
-        .form-check {
-            margin-right: 5px !important;
-        }
-        .form-label {
-            font-size: 10px;
-            max-width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline-block;
-            vertical-align: middle;
-        }
-        .form-control, .form-select {
-            font-size: 10px;
-            padding: 6px;
-        }
-        .form-check-label {
-            font-size: 10px;
-        }
-        .btn i {
-            font-size: 10px;
-        }
-        .row.g-2 > div {
-            margin-bottom: 10px;
-        }
-        .tombol-aksi {
-            display: flex !important;
-            flex-direction: row !important;
-            gap: 6px !important;
-            justify-content: space-between;
-        }
-
-        .tombol-aksi .btn {
-            flex: 1 1 48%; /* Biar mereka punya lebar hampir separuh */
-            padding: 4px 0;
-        }
-        .kategori-stok-group .form-label {
-            font-size: 13px;
-        }
-
-        .kategori-stok-group .form-select {
-            font-size: 10px;
-            padding: 6px;
-        }
-        .custom-margin-mobile {
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            margin-top: -50px;
-        }
-        #loader {
-            font-size: 12px;
-        }
-
-        #loader .spinner-border {
-            width: 1rem;
-            height: 1rem;
-        }
-
-        #loader .p-4 {
-            padding: 1rem !important;
-        }
-        .input-group .input-group-text {
-            font-size: 10px;
-        }
-
-        #min_price::placeholder,
-        #max_price::placeholder {
-            font-size: 10px;
-        }
-        .container-fluid {
-            padding-top: 20px !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
-        .ts-control, .ts-dropdown, .ts-control input {
-            font-size: 10px !important;
-        }
-
-        dotlottie-wc {
-            width: 100px !important;
-            height: 100px !important;
-        }
-    }
-</style>
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/item-users.css') }}">
+@endpush
 
 <div class="container-fluid px-0">
-    <div class="row g-0">
+    <div class="row g-0 row-wrap">
         <div class="col-12">
             <div class="{{$status === 'admin' ? 'card mb-4 card-full border-0 rounded' : 'card mb-4 card-full border-0 rounded-0'}}">
                 <div class="{{$status === 'admin' ? 'card-header p-3 rounded' : 'card-header p-3 shadow-sm border-0'}}">
@@ -480,7 +94,7 @@
                     @if (count($items) > 0)
                     <div class="table-responsive p-0 table-scroll-container" id="table-container" data-pagecount="{{ $pageCount ?? 1 }}">
                         <table class="table align-items-center mb-0 table-hover">
-                            <thead style="background-color: #0d9401 !important;">
+                            <thead>
                                 <tr class="text-center">
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-kode">Kode</th>
                                     <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-name">Nama Item</th>
@@ -523,12 +137,24 @@
                     @endif                                   
                 </div>
                 <div class="card-footer p-2" style="box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.26); z-index: 100; background-color: #f7f7f7;">
-                    <div class="d-flex justify-content-center align-items-center p-2">
-                        <div class="d-flex justify-content-center align-items-center">
-                            <button id="load-more-btn" class="button" style="box-shadow: 0 2px 2px rgb(0, 0, 0);">
+                    <div class="d-flex justify-content-between align-items-center p-2">
+                        <!-- Kiri: nama aplikasi -->
+                        <div class="fw-bold">
+                        TWINCOMGO
+                        </div>
+                        <!-- Tengah: tombol load more -->
+                        <div>
+                            <button id="load-more-btn" class="button" style="box-shadow:0 2px 2px rgb(0,0,0);">
                                 <span class="button-content">Load More</span>
                             </button>
+                            <span id="footer-status" class="text-muted small d-none"></span>
                         </div>
+                        <!-- Kanan: informasi halaman -->
+                        <div id="page-indicator" class="text-muted small">
+                        Halaman <span id="current-page">1</span> / 
+                        <span id="total-pages">{{ $pageCount ?? 1 }}</span>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -540,9 +166,13 @@
 @push('scripts')
     <script>
         // TomSelect untuk kategori
-        const selectedCategoryId = document.getElementById('category_search').value;
-
         document.addEventListener("DOMContentLoaded", function () {
+            const catEl = document.getElementById('category_search');
+            if (!catEl) return;
+            if (catEl.dataset.tsInit === '1') return; // anti double init
+            catEl.dataset.tsInit = '1';
+
+            const selectedCategoryId = catEl.value; // aman: cuma lokal di callback
             new TomSelect("#category_search", {
                 valueField: 'id',
                 create: false,
@@ -564,15 +194,48 @@
 @endpush
 
 <script>
+
+    function setLoadMoreLoading(isLoading) {
+        const btn = document.getElementById('load-more-btn');
+        if (!btn) return;
+        const span = btn.querySelector('.button-content');
+        if (isLoading) {
+            btn.disabled = true;
+            span.textContent = 'Loading...';
+        } else {
+            btn.disabled = false;
+            span.textContent = 'Load More';
+        }
+    }
+
+
+    // Helper: jalankan search sambil disable tombol, aktifkan lagi ketika loading selesai
+    function triggerSearchWithBtnLock() {
+        const btnSearch = document.getElementById('btnSearch');
+        if (btnSearch) btnSearch.disabled = true;
+
+        performSearch();
+
+        (function waitUnlock() {
+            if (!loading) {                 // loading milikmu: false = fetch selesai
+            if (btnSearch) btnSearch.disabled = false;
+            return;
+            }
+            requestAnimationFrame(waitUnlock);
+        })();
+    }
     // Input pencarian
     const searchInput = document.getElementById('search');
     let typingTimer;
     const doneTypingInterval = 1000; // waktu tunggu (ms) sebelum submit otomatis
 
     searchInput.addEventListener('input', function () {
+        const btnSearch = document.getElementById('btnSearch');
+        if (btnSearch) btnSearch.disabled = true;   // langsung disable saat user mulai mengetik
+        
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
-            performSearch();
+            triggerSearchWithBtnLock();
         }, doneTypingInterval);
     });
 
@@ -600,25 +263,57 @@
             });
         }
 
-        if (btnSearch) {
-            btnSearch.addEventListener('click', function(event) {
-                event.preventDefault();
-                performSearch();
+        if (btnSearch && !btnSearch.__bound) {
+            let searchBtnLocked = false;
+
+            btnSearch.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // ⛔ Stop kalau semua filter kosong
+            if (filtersEmpty()) {
+                // opsional: kasih feedback kecil
+                btnSearch.classList.add('btn-reset'); // pakai kelasmu untuk efek kecil
+                setTimeout(() => btnSearch.classList.remove('btn-reset'), 300);
+                return;
+            }
+
+            if (searchBtnLocked) return;           // abaikan klik dobel
+            searchBtnLocked = true;
+            btnSearch.disabled = true;             // feedback ke user
+
+            performSearch();
+
+            // Lepas lock begitu "loading" selesai (pakai flag loading yang sudah ada)
+            (function waitUnlock() {
+                if (!loading) {                      // loading = false -> fetch selesai
+                searchBtnLocked = false;
+                btnSearch.disabled = false;
+                return;
+                }
+                requestAnimationFrame(waitUnlock);   // cek lagi frame berikutnya
+            })();
             });
+
+            btnSearch.__bound = true; // cegah double-binding
         }
 
         if (resetBtn) {
             resetBtn.addEventListener('click', function () {
-                // Reset semua input
-                document.getElementById('stok_ada').value = 1;
-                document.getElementById('category_search').tomselect.clear();
-                document.getElementById('itemCategoryId').value = '';
-                document.getElementById('min_price').value = '';
-                document.getElementById('max_price').value = '';
-                document.getElementById('search').value = '';
+                // bersihkan UI
+            document.getElementById('stok_ada').value = '1';
+            document.getElementById('category_search').tomselect?.clear();
+            document.getElementById('itemCategoryId').value = '';
+            document.getElementById('min_price').value = '';
+            document.getElementById('max_price').value = '';
+            document.getElementById('search').value = '';
 
-                // Panggil pencarian ulang
-                performSearch();
+            // Bersihkan query string di URL (tanpa reload)
+            history.replaceState({}, '', '{{ route("items.index") }}');
+
+            // Paksa ambil daftar awal (page 1) via AJAX
+            queryString = '';          // penting: kosongkan query
+            resetPagination();         // page=1, flags reset, show loader
+            loadData('');              // ambil /item?page=1 (default)
             });
         }
     });
@@ -685,75 +380,147 @@
 
     function resetPagination() {
         page = 1;
+        const tableEl = document.getElementById('table-container');
+        const totalFromDataset = tableEl && tableEl.dataset ? (parseInt(tableEl.dataset.pagecount) || 1) : 1;
+        setPageIndicator(1, totalFromDataset);
+
         loading = false;
         allDataLoaded = false;
         emptyPageCount = 0;
+
+        const footerStatus = document.getElementById('footer-status');
+        if (footerStatus) footerStatus.classList.add('d-none');   // <- sembunyikan pesan footer
+
         loader.innerHTML = `<div class="loader-overlay d-flex flex-column align-items-center justify-content-center py-4">
-                                <div class="d-flex justify-content-center align-items-center mb-4">
-                                    <dotlottie-wc
-                                    src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
-                                    style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
-                                    speed="1"
-                                    autoplay
-                                    loop
-                                    ></dotlottie-wc>
-                                </div>
-                                <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">
-                                    Mohon tunggu...
-                                </p>
-                            </div>`;
+            <div class="d-flex justify-content-center align-items-center mb-4">
+            <dotlottie-wc src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
+                style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
+                speed="1" autoplay loop>
+            </dotlottie-wc>
+            </div>
+            <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">Mohon tunggu...</p>
+        </div>`;
         loader.style.display = 'block';
-        loadMoreBtn.style.display = 'block';
+
+        loadMoreBtn.style.display = 'block';                        // <- tampilkan tombol lagi
         document.getElementById('item-table-body').innerHTML = '';
+    }
+
+    function getEmptyMessage() {
+        const stokAda = document.getElementById('stok_ada')?.value;
+        if (stokAda === '0') return 'Stok kosong.';                 // filter stok=0 tapi tidak ada hasil
+        return 'Tidak ada/Stok kosong.';                        // filter lain: keyword/kategori/harga
     }
 
     function loadData(currentQueryString) {
         if (loading || allDataLoaded) return;
         loading = true;
         loader.style.display = 'block';
-
+        setLoadMoreLoading(true);
+        let appendedThisRound = false;   // <- lacak ada baris yang berhasil ditambah
+        
         const fetchPage = (targetPage) => {
             console.log(`Fetching page ${targetPage} => /item?page=${targetPage}${currentQueryString}`);
             return fetch(`/item?page=${targetPage}${currentQueryString}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).then(res => res.json());
         };
 
         const tryNextPage = () => {
             if (page > maxEmptyPageSkip) {
-                loader.innerHTML = '<p class="text-center mt-2">Semua data sudah dimuat.</p>';
+                // Semua page sudah dicoba
+                loader.style.display = 'none';
                 loadMoreBtn.style.display = 'none';
+
+                const footerStatus = document.getElementById('footer-status');
+                const tbody = document.getElementById('item-table-body');
+                const hasAnyRows = !!tbody && tbody.querySelector('tr') !== null;  // << cek tabel sudah ada data sebelumnya
+
+                if (footerStatus) {
+                    footerStatus.textContent = (hasAnyRows || appendedThisRound)
+                    ? 'Semua data sudah dimuat.'
+                    : getEmptyMessage(); // 'Stok kosong.' atau 'Tidak ada data yang cocok.'
+                    footerStatus.classList.remove('d-none');
+                }
+
                 allDataLoaded = true;
                 loading = false;
                 return;
             }
 
             fetchPage(page).then(({ html, pageCount }) => {
-                // ✅ update pageCount hanya sekali (saat awal pencarian)
-                if (page === 1) {
-                    maxEmptyPageSkip = pageCount;
-                    console.log("Max empty page skip (refreshed):", maxEmptyPageSkip);
-                }
+            if (page === 1 && pageCount) {
+                maxEmptyPageSkip = pageCount;
+                if (totalPagesEl) totalPagesEl.textContent = String(pageCount);
+            }
 
-                if (html.trim() !== '') {
-                    document.getElementById('item-table-body').insertAdjacentHTML('beforeend', html);
-                    page++;
-                    loader.style.display = 'none';
-                    loading = false;
-                } else {
-                    page++;        // skip kosong
-                    tryNextPage(); // cek page berikutnya
-                }
-            }).catch(() => {
-                loader.innerHTML = '<p class="text-danger">Terjadi kesalahan saat mengambil data.</p>';
+            if (html && html.trim() !== '') {
+                document.getElementById('item-table-body').insertAdjacentHTML('beforeend', html);
+                appendedThisRound = true;
+                setPageIndicator(page, maxEmptyPageSkip);
+
+                page++; // siapkan untuk next page
+                loader.style.display = 'none';
                 loading = false;
+                setLoadMoreLoading(false);
+            } else {
+                // halaman kosong → lanjut ke halaman berikutnya
+                page++;
+                tryNextPage();
+            }
+            }).catch(() => {
+            loader.innerHTML = '<p class="text-danger text-center">Terjadi kesalahan saat mengambil data.</p>';
+            loading = false;
+            setLoadMoreLoading(false);
             });
         };
 
         tryNextPage();
     }
 
+
+    const currentPageEl = document.getElementById('current-page');
+    const totalPagesEl  = document.getElementById('total-pages');
+
+    function setPageIndicator(curr, total) {
+        if (currentPageEl) currentPageEl.textContent = String(curr);
+        if (totalPagesEl)  totalPagesEl.textContent  = String(total);
+    }
+
+    function filtersEmpty() {
+        const keyword    = document.getElementById('search')?.value.trim() || '';
+        const minPrice   = document.getElementById('min_price')?.value.trim() || '';
+        const maxPrice   = document.getElementById('max_price')?.value.trim() || '';
+        const stokAda    = document.getElementById('stok_ada')?.value ?? ''; // stokAda punya default "1" di UI kamu
+        const categoryId = document.getElementById('itemCategoryId')?.value || '';
+
+        // Kalau kamu ingin "Stok Ready = 1" dianggap default (tidak dihitung filter),
+        // anggap kosong ketika stokAda == '1'
+        const stokConsideredEmpty = (stokAda === '');
+
+        return (
+        keyword === '' &&
+        minPrice === '' &&
+        maxPrice === '' &&
+        categoryId === '' &&
+        stokConsideredEmpty
+        );
+    }
+
     function performSearch() {
+        // ⛔ kalau kosong semua, jangan request apa pun
+        if (filtersEmpty()) {
+            // kalau sebelumnya ada query di URL, kita bersihkan & reset tabel awal
+            if (window.location.search) {
+            history.replaceState({}, '', '{{ route("items.index") }}'); // bersihkan query string
+            }
+            // reset tampilan ke kondisi awal (tanpa memanggil API)
+            document.getElementById('item-table-body').innerHTML = '';
+            loader.style.display = 'none';
+            loadMoreBtn.style.display = 'none';
+            return;
+        }
+
         const keyword = document.getElementById('search')?.value || '';
         const minPrice = document.getElementById('min_price')?.value || '';
         const maxPrice = document.getElementById('max_price')?.value || '';

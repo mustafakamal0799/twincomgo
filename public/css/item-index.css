@@ -1,0 +1,174 @@
+.desktop-table {
+    padding-right: 20px;
+}
+
+.price-input label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.td-harga {
+    width: 150px;
+    text-align: right;
+    vertical-align: middle;
+}
+.harga-grid {
+    display: grid;
+    grid-template-columns: 30px 1fr; /* Rp selalu 30px, nominal menyesuaikan */
+    justify-content: end;
+    align-items: center;
+}
+.harga-rp {
+    text-align: left;
+}
+
+.harga-nominal {
+    text-align: right;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.384);
+    z-index: 1050;
+    border-radius: 5px;
+    margin-right: 20px;
+}
+#item-container {
+    position: relative;
+}
+
+.action-sidebar {
+    position: fixed;
+    top: 35%;
+    right: 20px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.action-sidebar .btn {
+    width: 50px;
+    height: 50px;
+    justify-content: center;
+    border-radius: 5px;
+    transition: all 0.25s ease;
+}
+
+.action-sidebar .btn i {
+    font-size: 1.3rem;
+}
+
+.action-sidebar .btn small {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.action-sidebar .btn:hover {
+    transform: scale(1.08);
+}
+
+/* ======== KHUSUS MOBILE ======== */
+@media (max-width: 767.98px) {
+    body {
+        font-size: 12px;
+    }
+
+    .export-floating {
+        position: fixed;
+        bottom: 80px;
+        right: 16px;
+        z-index: 50;
+        border-radius: 50%;
+        padding: 14px 16px;
+        font-size: 0;
+    }
+    .export-floating i {
+        font-size: 1.4rem;
+    }
+    .export-floating span {
+        display: none;
+    }
+
+    /* 🔹 Form filter di atas */
+    .form-label,
+    .form-select,
+    .form-control,
+    .input-group-text {
+        font-size: 10px !important;
+    }
+
+    .form-select,
+    .form-control {
+        padding: 4px 6px;
+        height: auto;
+    }
+
+    /* 🔹 Tombol pencarian kecil */
+    .btn {
+        font-size: 10px;
+        padding: 5px 8px;
+    }
+
+    /* 🔹 Sembunyikan tabel di mobile */
+    .desktop-table {
+        display: none !important;
+    }
+
+    /* 🔹 Style card produk di mobile */
+    .product-card {
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.6rem;
+        padding: 0.8rem;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .product-title {
+        font-weight: 600;
+        color: #111;
+        font-size: 10px;
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    .harga-grid {
+        justify-content: flex-end;
+        font-weight: 700;
+        font-size: 10px;
+    }
+
+    .harga-rp {
+        font-size: 0.75rem;
+    }
+
+    .harga-nominal {
+        font-size: 12px;
+        color: #000;
+    }
+
+    .product-meta {
+        font-size: 10px;
+        color: #6b7280;
+    }
+
+    .btn-detail {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    @media (min-width: 768px) {
+        .mobile-list {
+            display: none;
+        }
+    }
+}

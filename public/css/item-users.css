@@ -1,0 +1,400 @@
+body {
+    overflow: hidden;
+}
+.card {
+    border-radius: 0%;
+}
+
+.card-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    color: #192f6e;
+    background: #fff;
+    flex: 0 0 auto;
+}
+
+.container-fluid {
+    padding: 0;
+}
+
+.card-footer {
+    flex: 0 0 auto; /* footer tetap */
+}
+
+.table-scroll-container {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.table-scroll-container thead th {
+    background-color: #f7f7f7;
+    color: #192f6e;
+    z-index: 10;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+}
+.td-harga {
+    width: 100px;
+    text-align: right;
+    vertical-align: middle;
+}
+.harga-grid {
+    display: grid;
+    grid-template-columns: 30px 1fr; /* Rp selalu 30px, nominal menyesuaikan */
+    justify-content: end;
+    align-items: center;
+}
+
+.harga-rp {
+    text-align: left;
+}
+
+.harga-nominal {
+    text-align: right;
+}
+
+.table th,
+.table td {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    vertical-align: middle;
+}
+.dropdown {
+    margin-left: 10px;
+}
+.check-box {
+    margin-left: 10px;
+}
+
+.loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.377);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.loader-text {
+    font-weight: bold;
+    color: #000000;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.3;
+    }
+}
+
+.spinner-grow-custom {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    opacity: 0;
+    animation: growSmooth 1.2s infinite ease-in-out;
+}
+
+@keyframes growSmooth {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+}
+
+.table-scroll-container::-webkit-scrollbar {
+    height: 8px;
+    /* width: 5px; */
+    background-color: #f1f1f1;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+}
+
+.select2-container--default .select2-selection--single {
+    height: calc(
+        2.365rem + 2px
+    ); /* sama dengan tinggi .form-control di Bootstrap 5 */
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Samakan tinggi teks di dalam Select2 */
+.select2-container--default
+    .select2-selection--single
+    .select2-selection__rendered {
+    line-height: 1.5;
+    padding-left: 0;
+}
+
+/* From Uiverse.io by Madflows */
+.button {
+    position: relative;
+    overflow: hidden;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 1.5rem;
+    background: #192f6e;
+    background-size: 400%;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.button:hover::before {
+    transform: scaleX(1);
+}
+
+.button-content {
+    position: relative;
+    z-index: 1;
+}
+
+.button:hover {
+    background: #0f1f4b;
+}
+
+.btn-reset:hover {
+    transform: scale(1.1);
+}
+
+.ts-wrapper.single .ts-control {
+    border-radius: 20px !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; /* shadow halus */
+    border: 1px solid #ced4da; /* biar tetap terlihat seperti input normal */
+    background-color: #fff;
+    transition: box-shadow 0.2s ease;
+}
+
+#load-more-btn:disabled {
+    opacity: 0.6; /* bikin agak transparan */
+    filter: blur(0.5px); /* kasih efek kabur tipis */
+    cursor: not-allowed; /* ubah cursor biar keliatan nonaktif */
+    transform: none !important; /* cegah efek hover animasi */
+}
+
+@media only screen and (max-width: 768px) {
+    /* CSS khusus untuk perangkat mobile */
+    body {
+        font-size: 12px;
+    }
+
+    .card-footer {
+        padding: 0 !important;
+    }
+
+    .button {
+        height: 1.5rem;
+        padding: 0 0.5rem;
+        font-size: 8px;
+    }
+
+    .card-full {
+        height: 95vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .table-scroll-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+    .card {
+        margin-bottom: 20px;
+    }
+    .title {
+        font-size: 13px;
+        margin-bottom: -100px;
+    }
+    .table th,
+    .table td {
+        font-size: 9px;
+    }
+
+    .table .th-harga {
+        text-align: center;
+    }
+    .table .td-harga {
+        text-align: end;
+    }
+
+    .table .th-name,
+    .table .td-name {
+        min-width: 150px;
+        text-align: justify;
+    }
+
+    .harga-grid {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-start;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    .harga-rp {
+        flex-shrink: 0;
+    }
+
+    .harga-nominal {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        text-align: right;
+    }
+
+    .table-scroll-container {
+        padding: 0 !important;
+        max-height: 400px; /* Sesuaikan tinggi untuk mobile */
+    }
+    .pagination .page-link {
+        font-size: 10px;
+        padding: 2px 6px; /* biar tombol juga ikut kecil */
+    }
+
+    .form-control {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    .form-check-label,
+    .form-check-input {
+        font-size: 10px;
+    }
+
+    .btn {
+        font-size: 8px;
+        padding: 4px 8px;
+    }
+    .btn-reset {
+        font-size: 8px;
+        height: 50px;
+    }
+    .btn i {
+        font-size: 8px !important;
+    }
+
+    .form-check {
+        margin-right: 5px !important;
+    }
+    .form-label {
+        font-size: 10px;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .form-control,
+    .form-select {
+        font-size: 10px;
+        padding: 6px;
+    }
+    .form-check-label {
+        font-size: 10px;
+    }
+    .btn i {
+        font-size: 10px;
+    }
+    .row.g-2 > div {
+        margin-bottom: 10px;
+    }
+    .tombol-aksi {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 6px !important;
+        justify-content: space-between;
+    }
+
+    .tombol-aksi .btn {
+        flex: 1 1 48%; /* Biar mereka punya lebar hampir separuh */
+        padding: 4px 0;
+    }
+    .kategori-stok-group .form-label {
+        font-size: 13px;
+    }
+
+    .kategori-stok-group .form-select {
+        font-size: 10px;
+        padding: 6px;
+    }
+    .custom-margin-mobile {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top: -50px;
+    }
+    #loader {
+        font-size: 12px;
+    }
+
+    #loader .spinner-border {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    #loader .p-4 {
+        padding: 1rem !important;
+    }
+    .input-group .input-group-text {
+        font-size: 10px;
+    }
+
+    #min_price::placeholder,
+    #max_price::placeholder {
+        font-size: 10px;
+    }
+    .container-fluid {
+        padding-top: 20px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    .ts-control,
+    .ts-dropdown,
+    .ts-control input {
+        font-size: 10px !important;
+    }
+
+    dotlottie-wc {
+        width: 100px !important;
+        height: 100px !important;
+    }
+}

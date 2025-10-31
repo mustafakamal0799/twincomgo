@@ -19,4 +19,5 @@ class AccurateSyncController extends Controller
         SyncCustomerFromAccurate::dispatch();
         return back()->with('success', 'Sinkronisasi customer sedang diproses.');
     }
+
 }

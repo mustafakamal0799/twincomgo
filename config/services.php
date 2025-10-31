@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'accurate' => [
+        'client_id'     => env('ACCURATE_CLIENT_ID'),
+        'client_secret' => env('ACCURATE_CLIENT_SECRET'),
+        'redirect'      => env('ACCURATE_REDIRECT_URI'),
+        'base_auth'     => 'https://account.accurate.id',
+        'base_api'      => 'https://public.accurate.id/accurate/api',
+    ],
+
 ];

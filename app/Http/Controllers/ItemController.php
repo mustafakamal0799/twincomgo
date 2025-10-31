@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Helpers\AccurateGlobal;
 use App\Helpers\AccurateHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpParser\Node\Stmt\Foreach_;
@@ -14,131 +15,210 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Response;
+use App\Services\Accurate\AccurateClient;
 
 class ItemController extends Controller
 {
     public function index(Request $request)
     {
-        $token   = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $user   = Auth::user();
+        $status = $user->status;
 
-        // Default stok_ada = 1 kalau tidak dikirim
-        if (!$request->exists('stok_ada')) {
-            return redirect()->route('items.index', array_merge($request->all(), ['stok_ada' => 1]));
-        }
+        $acc     = AccurateGlobal::token();
+        $token   = $acc['access_token'];
+        $session = $acc['session_id'];
 
-        $isMerdeka  = now()->month === 8;
-        $page       = $request->input('page', 1);
-        $categoryId = $request->input('category_id');
-        $stokAda    = $request->input('stok_ada');
-        $minPrice   = $request->input('min_price') !== null ? floatval(str_replace(['.', ','], ['', '.'], $request->input('min_price'))) : null;
-        $maxPrice   = $request->input('max_price') !== null ? floatval(str_replace(['.', ','], ['', '.'], $request->input('max_price'))) : null;
-        $status     = Auth::user()->status;
+        $baseUrl = rtrim(config('services.accurate.base_api'), '/');
 
-        // 🔹 Params untuk API item
-        $params = [
-            'sp.page'      => $page,
-            'sp.pageSize'  => 100,
-            'fields'       => 'id,name,no,availableToSell,branchPrice,itemUnit,availableToSellInAllUnit',
-            'filter.suspended' => 'false',
-        ];
+        $perPage    = 11;
+        $page       = max(1, (int) $request->query('page', 1));
+        $offset     = ($page - 1) * $perPage;
 
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $params['filter.keywords.op']    = 'CONTAIN';
-            $params['filter.keywords.val[0]'] = $search;
-        }
+        $search     = trim($request->query('search', ''));
+        $categoryId = $request->query('category_id');
+        $priceMode  = $request->query('price_mode', 'default');
+        $stokAda    = $request->query('stok_ada', '1');
+        $minPrice   = $request->filled('min_price') ? floatval(str_replace(['.', ','], ['', '.'], $request->input('min_price'))) : null;
+        $maxPrice   = $request->filled('max_price') ? floatval(str_replace(['.', ','], ['', '.'], $request->input('max_price'))) : null;
+        $usePriceFilter = ($minPrice !== null || $maxPrice !== null);
 
-        if ($categoryId) {
-            $params['filter.itemCategoryId'] = $categoryId;
-        }
+        $items = collect();
+        $currentPageAccurate = 1;
+        $pageCountAccurate = 1;
+        $skipped = 0;
+        $limitNeed = $perPage + 1; // ambil 1 ekstra untuk cek hasMore
 
-        // 🔹 Request data item
-        $responseItems = Http::withHeaders([
-            'Authorization' => 'Bearer '.$token,
-            'X-Session-ID'  => $session,
-        ])->get('https://public.accurate.id/accurate/api/item/list.do', $params);
+        do {
+            $query = [
+                'sp.page'      => $currentPageAccurate,
+                'sp.pageSize'  => 100,
+                'fields'       => 'id,name,no,availableToSell,itemCategory.name,availableToSellInAllUnit,detailItemImage',
+                'filter.suspended' => false,
+            ];
 
-        $dataItems = $responseItems->json();
-        $items     = $dataItems['d'] ?? [];
+            if ($search !== '') {
+                $query['filter.keywords.op'] = 'CONTAIN';
+                $query['filter.keywords.val[0]'] = $search;
+            }
+            if (!empty($categoryId)) {
+                $query['filter.itemCategoryId'] = $categoryId;
+            }
 
-        // 🔹 Filter tambahan di Laravel (harga + stok)
-        if ($minPrice !== null || $maxPrice !== null) {
-            $items = array_filter($items, function ($item) use ($minPrice, $maxPrice) {
-                $price = $item['branchPrice'] ?? null;
-                if ($price === null) return false;
-                if ($minPrice !== null && $price < $minPrice) return false;
-                if ($maxPrice !== null && $price > $maxPrice) return false;
-                return true;
+            $resp = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'X-Session-ID'  => $session,
+            ])->get("{$baseUrl}/item/list.do", $query);
+
+            if (!$resp->successful()) break;
+
+            $json = $resp->json();
+            $pageCountAccurate = $json['sp']['pageCount'] ?? 1;
+            $data = collect($json['d'] ?? []);
+
+            // Filter stok ada
+            $filtered = ($stokAda == '1')
+                ? $data->filter(fn($i) => ($i['availableToSell'] ?? 0) > 0)->values()
+                : $data->values();
+
+            // Filter harga
+            if ($usePriceFilter) {
+                $filtered = $filtered->map(function ($it) use ($token, $session) {
+                    $it['price'] = $this->getPriceGlobal($it['id'], $token, $session);
+                    return $it;
+                })->filter(function ($it) use ($minPrice, $maxPrice) {
+                    if ($minPrice !== null && $it['price'] < $minPrice) return false;
+                    if ($maxPrice !== null && $it['price'] > $maxPrice) return false;
+                    return true;
+                })->values();
+            }
+
+            // Skip item sampai offset tercapai
+            if ($skipped < $offset) {
+                $canSkip = min($filtered->count(), $offset - $skipped);
+                $skipped += $canSkip;
+                $filtered = $filtered->slice($canSkip)->values();
+            }
+
+            // Tambah item sampai melebihi limitNeed (biar bisa tahu hasMore)
+            if ($filtered->isNotEmpty()) {
+                $need = $limitNeed - $items->count();
+                $items = $items->merge($filtered->take($need));
+            }
+
+            if ($items->count() >= $limitNeed) break;
+
+            $currentPageAccurate++;
+        } while ($currentPageAccurate <= $pageCountAccurate);
+
+        // 🔹 Tentukan apakah masih ada halaman berikutnya
+        $hasMore = $items->count() > $perPage;
+
+        // 🔹 Potong ke jumlah tampilan (12)
+        $items = $items->take($perPage)->values();
+
+        // 🔹 PageCount realistis (bukan dari Accurate)
+        $pageCount = $hasMore ? $page + 1 : $page;
+
+        // Tambah harga default kalau belum
+        if (!$usePriceFilter) {
+            $items = $items->map(function ($it) use ($token, $session, $priceMode) {
+                $priceCategory = match ($priceMode) {
+                    'reseller' => 'RESELLER',
+                    default    => 'USER', // default normal
+                };
+                $it['price'] = $this->getPriceGlobal($it['id'], $token, $session, $priceCategory);
+                return $it;
             });
         }
 
-        if ($stokAda == '1') {
-            $items = array_filter($items, fn($item) => isset($item['availableToSell']) && $item['availableToSell'] > 0);
-        }
+        // Tambahkan gambar
+        $items = $items->map(function ($item) {
+            $item['fileName'] = collect($item['detailItemImage'] ?? [])
+                ->pluck('fileName')->filter()->values()->toArray();
+            return $item;
+        });
 
-        // 🔹 Ambil data kategori (dipisah variabel biar gak ketiban)
-        $allCategories = collect();
-        $pageCat = 1;
+        // Categories cache
+        $categories = Cache::remember("accurate:categories:global", 1800, function () use ($token, $session, $baseUrl) {
+            $cats = collect();
+            $page = 1;
+            do {
+                $resp = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'X-Session-ID'  => $session,
+                ])->get("{$baseUrl}/item-category/list.do", [
+                    'sp.page' => $page,
+                    'sp.pageSize' => 100,
+                    'fields' => 'id,name,parent',
+                ]);
+                if (!$resp->successful()) break;
+                $json = $resp->json();
+                $cats = $cats->merge($json['d'] ?? []);
+                $page++;
+            } while (($json['sp']['pageCount'] ?? 1) >= $page);
+            return $cats->values();
+        });
 
-        do {
-            $paramsCat = [
-                'sp.page'     => $pageCat,
-                'fields'      => 'id,name,parent',
-                'sp.pageSize' => 100
-            ];
+        $viewData = [
+            'items'      => $items,
+            'page'       => $page,
+            'pageCount'  => $pageCount,
+            'categories' => $categories,
+            'status'     => $status,
+            'categoryId' => $categoryId,
+            'stokAda'    => $stokAda,
+            'minPrice'   => $minPrice,
+            'maxPrice'   => $maxPrice,
+            'session'    => $session,
+            'search'     => $search,
+        ];
 
-            $responseCat = Http::withHeaders([
-                'Authorization' => 'Bearer '.$token,
-                'X-Session-ID'  => $session,
-            ])->get('https://public.accurate.id/accurate/api/item-category/list.do', $paramsCat);
-
-            $dataCat    = $responseCat->json();
-            $categories = collect($dataCat['d'] ?? []);
-            $allCategories = $allCategories->merge($categories);
-
-            $totalCatPages = $dataCat['sp']['pageCount'] ?? 1;
-            $pageCat++;
-        } while ($pageCat <= $totalCatPages);
-
-        $categories      = $allCategories->toArray();
-        $categoryOptions = $this->buildCategoryOptions($categories);
-
-        // 🔹 Untuk TomSelect
-        $allCategoriesForTomSelect = $allCategories->map(fn($cat) => [
-            'id'   => $cat['id'],
-            'text' => $cat['name'],
-        ])->toArray();
-
-        // 🔹 Data pagination item
-        $currentPage = $dataItems['sp']['page'] ?? 1;
-        $pageCount   = $dataItems['sp']['pageCount'] ?? 1;
-        $rowCount    = $dataItems['sp']['rowCount'] ?? 0;
-
-        // 🔹 Response untuk ajax (load more)
         if ($request->ajax()) {
-            return response()->json([
-                'html'       => view('partials.item-rows', compact('items','status'))->render(),
-                'pageCount'  => $dataItems['sp']['pageCount'] ?? 1,
-                'currentPage'=> $dataItems['sp']['page'] ?? 1,
-                'rowCount'   => $dataItems['sp']['rowCount'] ?? 0,
-            ]);
+            return response()->view('items.index3', $viewData);
         }
 
-        // 🔹 Response utama
-        return view('items.index', compact(
-            'items',
-            'allCategories',
-            'allCategoriesForTomSelect',
-            'status',
-            'categoryOptions',
-            'currentPage',
-            'pageCount',
-            'rowCount',
-            'isMerdeka'
-        ));
+        return view('items.index3', $viewData);
     }
 
+    public function exportPdf1(Request $request)
+    {
+        // 🔹 Ambil data terakhir dari session
+        $items = collect(session('last_items', []));
+        $query = session('last_query', []);
+        $page = (int) ($query['page'] ?? 1);
+        $perPage = 12;
+
+        // 🔹 Ambil hanya data yang tampil di halaman aktif
+        $offset = ($page - 1) * $perPage;
+        $pagedItems = $items->slice($offset, $perPage);
+
+        // 🔹 Generate PDF
+        $pdf = Pdf::loadView('items.export-pdf', [
+            'items' => $pagedItems,
+            'title' => 'Daftar Produk (Halaman ' . $page . ')',
+            'date'  => now()->format('d/m/Y H:i'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('daftar-produk-halaman-' . $page . '.pdf');
+    }
+
+    private function getPriceGlobal($itemId, $token, $session, $priceCategory = 'USER')
+    {
+        $resp = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID'  => $session,
+        ])->get("https://public.accurate.id/accurate/api/item/get-selling-price.do", [
+            'id' => $itemId,
+            'priceCategoryName' => $priceCategory,
+        ]);
+
+        $json = $resp->json();
+        $data = $json['d'] ?? [];
+
+        // 🔹 Ini yang penting — ambil dari field yang benar
+        return $data['unitPrice']
+            ?? ($data['unitPriceRule'][0]['price'] ?? 0);
+    }
 
     public function searchCategories(Request $request)
     {
@@ -170,26 +250,6 @@ class ItemController extends Controller
 
         return response()->json($categories);
     }
-
-    private function buildCategoryOptions(array $categories, $parentId = null, $prefix = '')
-    {
-        $html = '';
-
-        foreach ($categories as $category) {
-            $catParentId = $category['parent']['id'] ?? null;
-
-            if ($catParentId == $parentId) {
-                $selected = request('category_id') == $category['id'] ? 'selected' : '';
-                $html .= '<option value="' . $category['id'] . '" ' . $selected . '>' . $prefix . $category['name'] . '</option>';
-                // Rekursif untuk anaknya
-                $html .= $this->buildCategoryOptions($categories, $category['id'], $prefix . '-- ');
-            }
-        }
-
-        return $html;
-    }
-
-
 
     protected function fetchItemDetails($id, $headers)
     {
@@ -396,8 +456,10 @@ class ItemController extends Controller
             ], 400);
         }
 
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,
@@ -540,7 +602,7 @@ class ItemController extends Controller
                         53750 => "PAJAK",
                         53100 => "PAKET",
                         53151 => "PCH",
-                        50 => "PCS",
+                        50    => "PCS",
                         53500 => "POTONG",
                         53650 => "RIT",
                         52900 => "ROLL",
@@ -586,8 +648,10 @@ class ItemController extends Controller
         }
         
         $user = Auth::user();
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,
@@ -708,8 +772,10 @@ class ItemController extends Controller
     {
         $itemIdUtama = $request->input('item_id');
 
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,
@@ -778,9 +844,11 @@ class ItemController extends Controller
     public function getImageFromApi(Request $request)
     {
         // fileName & session, bisa dari param request atau fixed
-        $fileName = $request->query('fileName'); 
-        $session = $request->query('session');   
-        $token = AccurateHelper::getToken();
+        $fileName = $request->query('fileName');
+        $session = $request->query('session');
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
 
         $baseUrl = 'https://public.accurate.id';
         $url = $baseUrl . $fileName . '?session=' . $session;
@@ -819,8 +887,10 @@ class ItemController extends Controller
             ], 400);
         }
 
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,
@@ -954,8 +1024,10 @@ class ItemController extends Controller
             ], 400);
         }
 
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,
@@ -1010,8 +1082,10 @@ class ItemController extends Controller
         }
 
         $user = Auth::user();
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,
@@ -1268,23 +1342,6 @@ class ItemController extends Controller
         ]);
 
         $sellingPrices = collect($item['detailSellingPrice']);
-        
-
-        // if ($selectedBranchId) {
-        //     if ($filterHargaGaransi === 'user' && $unitPrice !== null) {
-        //         $discPercent = floatval($discItem ?? 0);
-        //         $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-        //         $finalResellerPrice = 0;
-        //     } elseif ($filterHargaGaransi === 'reseller' && $unitPrice !== null) {
-        //         $discPercent = floatval($discItem ?? 0);
-        //         $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-        //         $finalUserPrice = 0;
-        //     } elseif ($filterHargaGaransi === 'semua' && $unitPrice !== null) {
-        //         $discPercent = floatval($discItem ?? 0);
-        //         $finalUserPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-        //         $finalResellerPrice = $unitPrice - ($unitPrice * $discPercent / 100);
-        //     }
-        // }
 
         $totalBalance = 0;
 
@@ -1306,8 +1363,6 @@ class ItemController extends Controller
             'resellerStock' => $resellerStock,
             'konsinyasiStock' => $konsinyasiStock,
             'pandaStock' => $pandaStock,
-            // 'finalUserPrice' => $finalUserPrice,
-            // 'finalResellerPrice' => $finalResellerPrice,
             'filterGudang' => $filterGudang,
             'filterHargaGaransi' => $filterHargaGaransi,
             'selectedBranchId' => $selectedBranchId,
@@ -1344,8 +1399,10 @@ class ItemController extends Controller
             ], 400);
         }
 
-        $token = AccurateHelper::getToken();
-        $session = AccurateHelper::getSession();
+        $acc = AccurateGlobal::token();
+
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
 
         $headers = [
             'Authorization' => 'Bearer ' . $token,

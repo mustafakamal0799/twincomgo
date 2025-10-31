@@ -15,9 +15,12 @@ class AccurateHelper
         }
 
         if ($refreshToken = Cache::get('accurate_refresh_token')) {
-            $response = Http::asForm()
-                ->withBasicAuth(env('ACCURATE_CLIENT_ID'), env('ACCURATE_CLIENT_SECRET'))
-                ->post('https://account.accurate.id/oauth/token', [
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/x-www-form-urlencoded;charset=UTF-8',
+                'Authorization' => 'Basic ' . env('ACCURATE_AUTHORIZATION_BASIC', ''),
+            ])->asForm()->post('https://account.accurate.id/oauth/token', 
+                [
                     'grant_type'    => 'refresh_token',
                     'refresh_token' => $refreshToken,
                 ]);
@@ -83,5 +86,18 @@ class AccurateHelper
         $host = Cache::get('accurate_host');
         if (!$host) throw new \Exception('Host Accurate belum tersedia');
         return rtrim($host, '/');
+    }
+
+    public static function getApi($path, $params = [])
+    {
+        $token = self::getToken();
+        $session = self::getSession();
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID'  => $session,
+        ])->get('https://public.accurate.id/accurate/api' . $path, $params);
+
+        return $response->json();
     }
 }

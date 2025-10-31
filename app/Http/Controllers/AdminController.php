@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
+use App\Models\AccurateAccount;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Spatie\Activitylog\Models\Activity;
 
@@ -13,15 +15,28 @@ class AdminController extends Controller
 {
     public function index() {
 
+        // 🔹 Total seluruh user
         $totalUsers = User::count();
+
+        // 🔹 Total reseller (status = RESELLER)
+        $totalReseller = User::where('status', 'RESELLER')->count();
+
+        // 🔹 Total Accurate Account (tabel accurate_accounts)
+        $totalAccurate = AccurateAccount::count();
+
+        // 🔹 Aktivitas hari ini
         $logToday = Activity::whereDate('created_at', Carbon::today())->count();
 
+        // 🔹 Log terbaru (10 terakhir)
         $recentLogs = Activity::latest()->take(10)->get();
 
+        // 🔹 Kirim ke view
         return view('admin.dashboard', compact(
             'totalUsers',
+            'totalReseller',
+            'totalAccurate',
             'logToday',
-            'recentLogs',
+            'recentLogs'
         ));
     }
 
@@ -159,5 +174,39 @@ class AdminController extends Controller
             'currentPage' => $page,
             'perPage' => $perPage,
         ]);
+    }
+
+    public function create () 
+    {
+        $accounts = AccurateAccount::orderBy('label')->get(['id','label']);
+        $user = new User();
+        return view('admin.users.create', compact('user','accounts'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|unique:users,email',
+            'password' => 'required|min:6',
+            'status' => 'required|string',
+            'accurate_account_id' => ['nullable','exists:accurate_accounts,id'],
+        ]);
+
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'status' => $validated['status'],
+            'accurate_account_id' => $data['accurate_account_id'] ?? null,
+        ]);
+
+        return redirect()->route('users.create')->with('succes', 'Data berhasil ditambahkan');
+    }
+
+    public function show($id)
+    {
+        $user = User::findOrFail($id);
+        return view('admin.users.detail', compact('user'));
     }
 }

@@ -33,7 +33,7 @@ class AuthinticationController extends Controller
                 ->causedBy(Auth::user())
                 ->inLog(auth()->user()->name)
                 ->log('Reseller dengan email ' . auth()->user()->email . ' sedang melakukan login');
-                return redirect()->route('items.index');
+                return redirect()->route('reseller.index');
             }elseif($user->status === 'KARYAWAN') {
                 activity()
                 ->causedBy(Auth::user())

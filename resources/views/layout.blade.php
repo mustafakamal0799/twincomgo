@@ -18,271 +18,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="{{asset('css/layout.css')}}">
 
-    
-    
-
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Nunito", sans-serif;
-            font-optical-sizing: auto;
-            font-weight: <weight>;
-            font-style: normal;
-
-            background-image: url("{{ asset('images/bg1.jpg') }}");
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
-            background-attachment: fixed; /* ✅ Biar ikut scroll */
-
-            min-height: 100%;  /* Atau 100vh tetap boleh */
-            height: auto;      /* ✅ Tambahkan ini */
-            
-        }
-
-
-        .full-height {
-            height: 100vh;
-        }
-
-        .btn-secondary.active,
-        .btn-secondary:active {
-            background-color: #6c757d !important; /* warna asli btn-secondary */
-            border-color: #6c757d !important;
-            color: #fff !important;
-        }
-
-        .logout-btn {
-            font-size: 14px;
-            padding: 6px 10px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .logout-btn i {
-            font-size: 16px;
-            margin-right: 5px;
-        }
-        .person-icon {
-            color: white;
-            font-size: 35px;
-        }
-
-        .toggle-btn {
-            position: fixed;
-            top: -5px;
-            left: 245px;
-            /* z-index: 100; */
-            transition: left 0.1s ease;
-            z-index: 1000; /* above sidebar */
-        }
-
-        .toggle-btn.toggled {
-            left: -5px !important;
-        }
-
-        #sidebar {
-            transition: all 0.3s ease;
-            z-index: 1040;
-            min-height: 100vh;
-            background-color: rgba(30, 30, 30, 0.75); /* Gelap semi-transparan */
-            backdrop-filter: blur(10px);                     /* Teks tetap putih */
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        #toggleSidebar {
-            transition: left 0.3s ease;
-        }
-
-        #toggleSidebar.toggled {
-            left: 10px; /* Move right when toggled */
-        }
-
-        #sidebar .nav-link {
-            position: relative;
-            overflow: hidden;
-            color: #ffffff;
-            transition: color 0.3s ease;
-        }
-
-        #sidebar .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0%;
-            background: #ffffff; /* Warna highlight kamu */
-            z-index: -1;
-            transition: width 0.4s ease;
-        }
-
-        #sidebar .nav-link:hover::before {
-            width: 100%;
-        }
-
-        #sidebar .nav-link:hover {
-            color: #000000;
-            transform: scale(1.1);
-            z-index: 1;
-        }
-
-        #sidebar .logout-btn {
-            background-color: #e74c3c;
-            color: white;
-            transition: background-color 0.2s ease;
-        }
-
-        #sidebar .logout-btn:hover {
-            background-color: #c0392b;
-        }
-
-        #sidebar .nav-link.active {
-            background-color: #ffffff;
-            color: #000000;
-            transform: scale(1.1)
-        }
-
-        .navbar {
-            background-color: #192f6e;
-            color: #fff;
-        }
-        .navbar-brand {
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-        }
-
-        .navbar-brand:hover {
-            color: #ddd;
-            text-decoration: none;
-        }
-
-        .tooltip .tooltip-inner {
-            background-color: #ffe695;
-            color: #000;
-        }
-        .bs-tooltip-top .tooltip-arrow::before,
-        .bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
-            border-top-color: #ffe695 !important;
-        }
-        .bs-tooltip-bottom .tooltip-arrow::before,
-        .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before {
-            border-bottom-color: #ffe695 !important;
-        }
-        /* Warna & kontras navbar (sesuai yang kamu pakai) */
-        .navbar { background-color: #192f6e; color: #fff; }
-        .navbar-brand { color: #fff; font-weight: 700; }
-        .navbar-brand:hover { color: #e5e7eb; }
-
-        /* Ikon user */
-        .person-icon { font-size: 1.4rem; color: #fff; }
-
-        /* Nama user di layar kecil disembunyikan (hemat ruang), muncul di dropdown */
-        @media (max-width: 576px) {
-        .navbar { padding-top: .4rem !important; padding-bottom: .4rem !important; }
-        .navbar-brand { font-size: .9rem; line-height: 1.1; }
-        .navbar-toggler { padding: .15rem .35rem; }
-        .navbar-toggler .navbar-toggler-icon { width: 1.2rem; height: 1.2rem; }
-        .person-icon { font-size: 1.1rem; }
-        .user-name { display: none !important; }     /* hemat ruang di header */
-        .dropdown-menu { min-width: 180px; }         /* menu tetap proporsional */
-        }
-
-        /* Tablet */
-        @media (min-width: 577px) and (max-width: 768px) {
-        .navbar { padding-top: .5rem !important; padding-bottom: .5rem !important; }
-        .navbar-brand { font-size: 1rem; }
-        .navbar-toggler .navbar-toggler-icon { width: 1.25rem; height: 1.25rem; }
-        }
-
-        /* Pastikan toggler icon putih (butuh .navbar-dark di HTML) */
-        .navbar.navbar-dark .navbar-toggler {
-        border-color: transparent;
-        }
-
-
-        @media only screen and (max-width: 768px) {
-            body {
-                font-size: 12px;
-                overflow: visible !important;
-                overflow-x: hidden !important;
-            }
-
-            .navbar-brand {
-                font-size: 10px;
-                font-weight: bold;
-                color: white;
-            }
-
-            .dropdown-menu {
-                min-width: 100px;
-            }
-
-            .logout-btn {
-                font-size: 12px;
-                padding: 4px 8px;
-            }
-
-            .logout-btn i {
-                font-size: 12px;
-                margin-right: 3px;
-            }
-            .person-icon {
-                font-size: 15px;
-            }
-
-            .dropdown a strong {
-                font-size: 10px;
-            }
-
-            /* Sidebar hidden by default on mobile */
-            #sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 250px;
-                height: 100vh;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
-            }
-
-            #sidebar.show {
-                transform: translateX(0);
-            }
-
-            /* Toggle button position on mobile */
-            .toggle-btn {
-                top: 10px;
-                left: 10px;
-            }
-
-            /* Overlay to cover content when sidebar is open */
-            #sidebar-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1030;
-                display: none;
-            }
-
-            #sidebar-overlay.show {
-                display: block;
-            }
-            .navbar-toggler {
-                font-size: 10px;
-            }
-        }
-
-    </style>
+    @stack('styles')
 
 </head>
 
@@ -320,6 +58,8 @@
                             ['route' => 'admin.user', 'icon' => 'bi-people', 'label' => 'Kelola Pengguna'],
                             ['route' => 'admin.log', 'icon' => 'bi-archive', 'label' => 'Log Aktivitas'],
                             ['route' => 'items.index', 'icon' => 'bi-box-seam', 'label' => 'Stok Item'],
+                            ['route' => 'users2.index', 'icon' => 'bi-person-bounding-box', 'label' => 'Accurate Users'],
+                            ['route' => 'aa.index', 'icon' => 'bi bi-diagram-3', 'label' => 'Accurate Accounts'],
                         ];
                     @endphp
 
@@ -404,8 +144,8 @@
 
 
         <!-- Konten -->
-        <div class="flex-grow-1 d-flex">
-            <div class="flex-grow-1">
+        <div class="flex-grow-1 d-flex flex-column min-vh-100">
+            <div class="flex-grow-1 d-flex flex-column">
                 @yield('content')
             </div>
         </div>
@@ -413,110 +153,19 @@
         @endif
 </div>
     
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Library JS (CDN) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
-    
+<!-- Script utama proyek -->
+<script src="{{ asset('js/layout.js') }}"></script>
 
-    @stack('scripts')
-    <script>
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
-
-        // Show loader on page unload (navigation or reload)
-        window.addEventListener('beforeunload', function () {
-            const loader = document.getElementById('loader-display');
-            if (loader) {
-                loader.style.display = 'flex';
-            }
-        });
-
-        // Hide loader on page load
-        window.addEventListener('load', function () {
-            const loader = document.getElementById('loader-display');
-            if (loader) {
-                loader.style.display = 'none';
-            }
-        });
-
-        // Hide loader on pageshow (including when coming back from bfcache)
-        window.addEventListener('pageshow', function (event) {
-            if (event.persisted) {
-                const loader = document.getElementById('loader-display');
-                if (loader) {
-                    loader.style.display = 'none';
-                }
-            }
-        });
-    </script>
-    @stack('scripts')
-    <script>
-        const toggleBtn = document.getElementById('toggleSidebar');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-        // Fungsi untuk menyimpan status sidebar ke localStorage
-        function saveSidebarState(isClosed) {
-            localStorage.setItem('sidebarClosed', isClosed ? 'true' : 'false');
-        }
-
-        // Fungsi untuk membaca status sidebar dari localStorage dan mengatur tampilan
-        function loadSidebarState() {
-            const isClosed = localStorage.getItem('sidebarClosed') === 'true';
-            if (window.innerWidth <= 768) {
-                // On mobile, sidebar is hidden by default
-                sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
-                toggleBtn.classList.remove('toggled');
-            } else {
-                if (isClosed) {
-                    sidebar.classList.add('d-none');
-                    toggleBtn.classList.add('toggled');
-                } else {
-                    sidebar.classList.remove('d-none');
-                    toggleBtn.classList.remove('toggled');
-                }
-            }
-        }
-
-        // Muat status sidebar saat halaman dimuat
-        loadSidebarState();
-
-        toggleBtn.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                // On mobile, toggle sidebar overlay
-                sidebar.classList.toggle('show');
-                sidebarOverlay.classList.toggle('show');
-            } else {
-                // Toggle kelas 'd-none' untuk menyembunyikan/memperlihatkan sidebar
-                sidebar.classList.toggle('d-none');
-                // Toggle class untuk pindahkan posisi tombol
-                toggleBtn.classList.toggle('toggled');
-
-                // Simpan status sidebar setelah toggle
-                const isClosed = sidebar.classList.contains('d-none');
-                saveSidebarState(isClosed);
-            }
-        });
-
-        // Click on overlay to close sidebar on mobile
-        sidebarOverlay.addEventListener('click', function() {
-            sidebar.classList.remove('show');
-            sidebarOverlay.classList.remove('show');
-        });
-
-        // Handle window resize to reset sidebar state
-        window.addEventListener('resize', function() {
-            loadSidebarState();
-        });
-
-    </script>
+@stack('scripts')
+</body>
 
 </body>
 </html>

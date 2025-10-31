@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'accurate_account_id',
+        'status'
     ];
 
     /**
@@ -43,4 +45,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function accurateAccount()
+    {
+        return $this->belongsTo(AccurateAccount::class, 'accurate_account_id');
+    }
 }
