@@ -143,8 +143,8 @@
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center page-header mb-4 flex-wrap gap-3">
         <h4><i class="bi bi-people me-2"></i> Daftar User</h4>
-        <a href="{{ route('users.create') }}" class="btn btn-light text-dark fw-semibold">
-            <i class="bi bi-plus-circle me-1"></i> Tambah User
+        <a href="{{ route('admin.index') }}" class="btn btn-light text-dark fw-semibold">
+            <i class="bi bi-house me-1"></i> Kembali ke Dashboard
         </a>
     </div>
 

@@ -1,5 +1,5 @@
-{{-- 🔹 Tombol Export PDF --}}
-<div class="desktop-table">
+{{-- 🔹 Tabel Desktop --}}
+<div class="desktop-table" data-total="{{ $items->count() }}" data-original="{{ $totalItems ?? 0 }}">
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
             <div class="table-responsive rounded">
@@ -15,7 +15,9 @@
                     </thead>
                     <tbody>
                         @forelse ($items as $item)
-                            <tr onclick="window.location='{{ route('karyawan.show', ['encrypted' => Hashids::encode($item['id'])]) }}'" style="cursor: pointer;">
+                            <tr onclick="window.location='{{ Auth::user()->status === 'RESELLER' 
+                                ? route('reseller.detail', ['encrypted' => Hashids::encode($item['id'])]) 
+                                : route('karyawan.show', ['encrypted' => Hashids::encode($item['id'])]) }}'" style="cursor: pointer;">
                                 <td class="text-center" style="padding: 12px;"><span>{{ $item['no'] ?? '-' }}</span></td>
                                 <td>
                                     <div class="fw-semibold">{{ $item['name'] }}</div>
@@ -67,6 +69,7 @@
                             <span class="harga-nominal">{{ number_format($item['price'] ?? 0, 0, ',', '.') }}</span>
                         </div>
                     </div>
+                    <div class="product-code text-muted small mt-1">{{ $item['no'] ?? '-' }}</div>
                     @if(!empty($item['itemCategory']['name']))
                         <div class="product-meta mt-1">{{ $item['itemCategory']['name'] }}</div>
                     @endif
@@ -80,7 +83,9 @@
                                 {{ $unit }}
                             </strong>
                         </div>
-                        <a href="{{ route('karyawan.show', ['encrypted' => Hashids::encode($item['id'])]) }}" class="btn btn-success btn-sm btn-detail">Detail</a>
+                        <a href="{{ Auth::user()->status === 'RESELLER' 
+                                ? route('reseller.detail', ['encrypted' => Hashids::encode($item['id'])]) 
+                                : route('karyawan.show', ['encrypted' => Hashids::encode($item['id'])]) }}" class="btn btn-success btn-sm btn-detail">Detail</a>
                     </div>
                 </div>
             </div>

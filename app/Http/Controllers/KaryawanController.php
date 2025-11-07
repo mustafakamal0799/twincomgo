@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Helpers\AccurateGlobal;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Http;
 
@@ -57,8 +59,17 @@ class KaryawanController extends Controller
             'branchName' => $branchName, // 🔹 tambahan penting
         ]);
 
-        $prices['user'] = $defaultResp['d']['unitPrice']
-            ?? ($defaultResp['d']['unitPriceRule'][0]['price'] ?? 0);
+        
+        $userPrice = $defaultResp['d']['unitPrice']
+        ?? ($defaultResp['d']['unitPriceRule'][0]['price'] ?? 0);
+
+        $discountRule = $defaultResp['d']['discountRule'][0] ?? null;
+        if ($discountRule && isset($discountRule['discount']) && is_numeric($discountRule['discount'])) {
+            $discountPercent = floatval($discountRule['discount']);
+            $userPrice -= ($userPrice * $discountPercent / 100);
+        }
+        
+        $prices['user'] = $userPrice;
 
         // Harga RESELLER
         $resellerResp = Http::withHeaders([
@@ -81,8 +92,6 @@ class KaryawanController extends Controller
             $resellerPrice -= ($resellerPrice * $discountPercent / 100);
         }
         $prices['reseller'] = $resellerPrice;
-
-        $item['price'] = $prices['user'];
 
         // ============================================================
         // 🔹 Ambil gudang & update stok real-time (pakai pool)
@@ -131,24 +140,37 @@ class KaryawanController extends Controller
         // ============================================================
         // 🔹 Pisah berdasarkan tipe gudang
         // ============================================================
+
+        // Konsinyasi
         $warehousesKonsinyasi = $warehouses->filter(fn($wh) =>
             isset($wh['description']) && Str::contains(strtolower($wh['description']), 'konsinyasi')
         )->values();
 
+        //Store
         $storeNames = [
             'TSTORE KAYUTANGI', 'TSTORE BANJARBARU A. YANI', 'TSTORE BANJARBARU P. BATUR',
             'TSTORE BELITUNG', 'TSTORE MARTAPURA', 'TDC',
-            'STORE PALANGKARAYA', 'LANDASAN ULIN', 'PANDA STORE BANJARBARU',
+            'STORE PALANGKARAYA', 'LANDASAN ULIN',
         ];
         $warehousesStore = $warehouses->filter(fn($wh) =>
             in_array(strtoupper($wh['name'] ?? ''), $storeNames)
         )->values();
+        
+        //Panda
+        $pandaNames = [
+            'PANDA STORE BANJARBARU', 'PANDA SC BANJARBARU',
+        ];
+        $warehousesPanda = $warehouses->filter(fn($wh) =>
+            in_array(strtoupper($wh['name'] ?? ''), $pandaNames)
+        )->values();
 
+        //Reseller
         $resellerNames = ['RESELLER ZAKI', 'RESELLER MARDANI'];
         $warehousesReseller = $warehouses->filter(fn($wh) =>
             in_array(strtoupper($wh['name'] ?? ''), $resellerNames)
         )->values();
 
+        //Tsc
         $tscNames = [
             'TSC BANJARBARU A. YANI', 'TSC BANJARBARU P. BATUR', 'TSC BELITUNG',
             'TSC KAYUTANGI', 'TSC LANDASAN ULIN', 'TSC MARTAPURA', 'TSC PALANGKARAYA',
@@ -164,6 +186,8 @@ class KaryawanController extends Controller
             'warehousesStore'     => $warehousesStore,
             'warehousesReseller'  => $warehousesReseller,
             'warehousesTsc'       => $warehousesTsc,
+            'warehousesPanda'     => $warehousesPanda,
+            'totalPanda'          => $warehousesPanda->sum('balance'),
             'totalKonsinyasi'     => $warehousesKonsinyasi->sum('balance'),
             'totalStore'          => $warehousesStore->sum('balance'),
             'totalReseller'       => $warehousesReseller->sum('balance'),
@@ -194,7 +218,13 @@ class KaryawanController extends Controller
         ]);
 
         $userPrice = $defaultResp['d']['unitPrice']
-            ?? ($defaultResp['d']['unitPriceRule'][0]['price'] ?? 0);
+        ?? ($defaultResp['d']['unitPriceRule'][0]['price'] ?? 0);
+
+        $discountRule = $defaultResp['d']['discountRule'][0] ?? null;
+        if ($discountRule && isset($discountRule['discount']) && is_numeric($discountRule['discount'])) {
+            $discountPercent = floatval($discountRule['discount']);
+            $userPrice -= ($userPrice * $discountPercent / 100);
+        }
 
         // Harga RESELLER
         $resellerResp = Http::withHeaders([
@@ -221,4 +251,209 @@ class KaryawanController extends Controller
             'reseller' => $resellerPrice,
         ]);
     }
+
+    public function getBranches(Request $request)
+    {
+        $page = (int) $request->query('page', 1);
+
+        $acc = AccurateGlobal::token();
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
+
+        $baseUrl = 'https://public.accurate.id/accurate/api';
+
+        $resp = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'X-Session-ID'  => $session,
+        ])->get("{$baseUrl}/branch/list.do", [
+            'sp.page' => $page,
+            'sp.pageSize' => 50,
+        ]);
+
+        $json = $resp->json();
+
+        $data = collect($json['d'] ?? [])->map(fn($b) => [
+            'id' => $b['id'] ?? null,
+            'name' => $b['name'] ?? 'Tanpa Nama',
+        ])->values();
+
+        return response()->json([
+            'data' => $data,
+            'totalPage' => $json['sp']['pageCount'] ?? 1,
+        ]);
+    }
+
+    public function exportPdf($encrypted, Request $request)
+    {
+        // ============================================================
+        // 🔹 Decode ID Item
+        // ============================================================
+        $decoded = Hashids::decode($encrypted);
+        $id = $decoded[0] ?? null;
+        if (!$id) {
+            abort(404, 'ID item tidak valid');
+        }
+
+        // ============================================================
+        // 🔹 Ambil Token & Session Accurate
+        // ============================================================
+        $acc = AccurateGlobal::token();
+        $token = $acc['access_token'];
+        $session = $acc['session_id'];
+
+        $branchName      = $request->input('branchName');
+        $priceType       = $request->input('priceType', 'all');
+        $warehouseFilter = (array) $request->input('warehouses', []);
+        $baseUrl         = 'https://public.accurate.id/accurate/api';
+
+        // ============================================================
+        // 🔹 Ambil Data Detail Item
+        // ============================================================
+        $resp = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'X-Session-ID'  => $session,
+        ])->get("{$baseUrl}/item/detail.do", ['id' => $id]);
+
+        $item = $resp->json()['d'] ?? null;
+        if (!$item) {
+            abort(404, 'Data item tidak ditemukan.');
+        }
+
+        // ============================================================
+        // 🔹 Ambil Harga Cabang (USER & RESELLER)
+        // ============================================================
+        $prices = [];
+
+        // Harga USER
+        if ($priceType === 'all' || $priceType === 'user') {
+            $respUser = Http::withHeaders([
+                'Authorization' => "Bearer {$token}",
+                'X-Session-ID'  => $session,
+            ])->get("{$baseUrl}/item/get-selling-price.do", [
+                'id'         => $id,
+                'branchName' => $branchName,
+            ]);
+
+            $price = $respUser['d']['unitPrice']
+                ?? ($respUser['d']['unitPriceRule'][0]['price'] ?? 0);
+
+            $disc = $respUser['d']['discountRule'][0]['discount'] ?? null;
+            if ($disc) {
+                $price -= ($price * floatval($disc) / 100);
+            }
+
+            $prices['user'] = $price;
+        }
+
+        // Harga RESELLER
+        if ($priceType === 'all' || $priceType === 'reseller') {
+            $respReseller = Http::withHeaders([
+                'Authorization' => "Bearer {$token}",
+                'X-Session-ID'  => $session,
+            ])->get("{$baseUrl}/item/get-selling-price.do", [
+                'id'                   => $id,
+                'priceCategoryName'    => 'RESELLER',
+                'discountCategoryName' => 'RESELLER',
+                'branchName'           => $branchName,
+            ]);
+
+            $price = $respReseller['d']['unitPrice']
+                ?? ($respReseller['d']['unitPriceRule'][0]['price'] ?? 0);
+
+            $disc = $respReseller['d']['discountRule'][0]['discount'] ?? null;
+            if ($disc) {
+                $price -= ($price * floatval($disc) / 100);
+            }
+
+            $prices['reseller'] = $price;
+        }
+
+        // ============================================================
+        // 🔹 Ambil Data Gudang (Filter dan Kelompokkan)
+        // ============================================================
+        $warehouses = collect($item['detailWarehouseData'] ?? [])->map(function ($wh) {
+            $unitParts  = explode(' ', $wh['balanceUnit']);
+            $wh['unit'] = $unitParts[1] ?? null;
+            return $wh;
+        })->filter(fn($w) => isset($w['balance']) && $w['balance'] > 0);
+
+        $groups = [
+            'store'      => [
+                'TSTORE KAYUTANGI', 'TSTORE BANJARBARU A. YANI', 'TSTORE BANJARBARU P. BATUR',
+                'TSTORE BELITUNG', 'TSTORE MARTAPURA', 'TDC',
+                'STORE PALANGKARAYA', 'LANDASAN ULIN',
+            ],
+            'tsc'        => [
+                'TSC BANJARBARU A. YANI', 'TSC BANJARBARU P. BATUR', 'TSC BELITUNG',
+                'TSC KAYUTANGI', 'TSC LANDASAN ULIN', 'TSC MARTAPURA', 'TSC PALANGKARAYA',
+            ],
+            'reseller'   => ['RESELLER ZAKI', 'RESELLER MARDANI'],
+            'konsinyasi' => ['KONSINYASI'],
+            'panda'      => ['PANDA STORE BANJARBARU', 'PANDA SC BANJARBARU'],
+        ];
+
+        $filteredGroups = [];
+        foreach ($groups as $key => $names) {
+            $filteredGroups[$key] = $warehouses
+                ->filter(fn($w) => in_array(strtoupper($w['name'] ?? ''), $names))
+                ->values();
+        }
+
+        // Filter lokasi sesuai permintaan user
+        if (!empty($warehouseFilter)) {
+            foreach ($filteredGroups as $key => $group) {
+                if (!in_array($key, $warehouseFilter)) {
+                    unset($filteredGroups[$key]);
+                }
+            }
+        }
+
+        // ============================================================
+        // 🔹 Ambil Semua Gambar Item dari Accurate
+        // ============================================================
+        $imagesBase64 = [];
+        if (!empty($item['detailItemImage']) && is_array($item['detailItemImage'])) {
+            $imageList = array_filter($item['detailItemImage'], fn($img) => !empty($img['fileName']));
+
+            foreach ($imageList as $img) {
+                $fileName = $img['fileName'];
+                $imageUrl = 'https://public.accurate.id' . $fileName . '?session=' . $session;
+
+                try {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $token,
+                        'X-Session-ID'  => $session,
+                    ])->get($imageUrl);
+
+                    if ($response->successful()) {
+                        $imagesBase64[] = 'data:image/jpeg;base64,' . base64_encode($response->body());
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning("Gagal mengambil gambar {$fileName}: " . $e->getMessage());
+                }
+            }
+        }
+
+        // ============================================================
+        // 🔹 Generate PDF
+        // ============================================================
+        $pdf = Pdf::loadView('reseller.karyawan.pdf', [
+            'item'       => $item,
+            'images'     => $imagesBase64,
+            'prices'     => $prices,
+            'priceType'  => $priceType,
+            'branchName' => $branchName,
+            'warehouses' => $filteredGroups,
+            'session'    => $session,
+        ])->setPaper('a4', 'portrait');
+
+        // Sanitasi nama file PDF
+        $cleanName = preg_replace('/[\/\\\\:*?"<>|]+/', '-', $item['name'] ?? 'produk');
+
+        // ============================================================
+        // 🔹 Return PDF Stream
+        // ============================================================
+        return $pdf->stream("Detail_{$cleanName}.pdf");
+    }
+
 }

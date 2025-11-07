@@ -239,6 +239,18 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- 🌟 Pagination Section --}}
+        @if ($activities->hasPages())
+            <div class="d-flex justify-content-between align-items-center flex-wrap px-4 py-3 border-top bg-light rounded-bottom">
+                <div class="text-muted small mb-2 mb-md-0">
+                    Menampilkan <strong>{{ $activities->firstItem() }}</strong>–<strong>{{ $activities->lastItem() }}</strong> dari <strong>{{ $activities->total() }}</strong> log aktivitas
+                </div>
+                <div class="pagination-container mb-0">
+                    {{ $activities->onEachSide(0)->links('vendor.pagination.bootstrap-5') }}
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 
