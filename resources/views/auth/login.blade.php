@@ -15,16 +15,74 @@
 
 
     <style>
-        body {
+       :root {
+            --primary: #0d9488;
+            --primary-dark: #0f766e;
+            --primary-darker: #115e59;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background-image: url('{{ asset('images/bg5.jpg') }}');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
-            min-height: 100vh;
-            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background Elements */
+        .bg-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            opacity: 0.1;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .shape-3 {
+            width: 150px;
+            height: 150px;
+            top: 50%;
+            right: 10%;
+        }
+
 
         .card.login-card {
             max-width: 1000px;
@@ -142,6 +200,13 @@
     </style>
 </head>
 <body>
+    {{-- Background Shapes --}}
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+    
     <div id="loader-display" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0, 0, 0, 0.377); z-index:1050; display:flex; justify-content:center; align-items:center;">
         <dotlottie-wc
         src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
@@ -200,7 +265,7 @@
                             </div>
                         </div>
                         <div class="text-end mt-3">
-                            <small><a href="{{ route('password.request') }}" style="text-decoration: none">Lupa password?</a></small>
+                            <small><a href="{{ route('showForgotForm') }}" style="text-decoration: none">Lupa password?</a></small>
                         </div>
                         <div class="d-grid mt-4">
                             {{-- <button type="submit" class="btn btn-primary">Login</button> --}}

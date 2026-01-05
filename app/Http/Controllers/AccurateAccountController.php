@@ -45,7 +45,7 @@ class AccurateAccountController extends Controller
             'status'            => $data['status'],
         ]);
 
-        return redirect()->route('aa.index')->with('ok','Kepala berhasil dibuat.');
+        return redirect()->route('aa.index')->with('ok','Token berhasil dibuat.');
     }
 
     public function edit($id)
@@ -88,13 +88,13 @@ class AccurateAccountController extends Controller
 
         $row->update($payload);
 
-        return redirect()->route('aa.index')->with('ok','Kepala berhasil diperbarui.');
+        return redirect()->route('aa.index')->with('ok','Token berhasil diperbarui.');
     }
 
     public function destroy($id)
     {
         $row = AccurateAccount::findOrFail($id);
         $row->delete();
-        return redirect()->route('aa.index')->with('ok','Kepala dihapus.');
+        return redirect()->route('aa.index')->with('ok','Token dihapus.');
     }
 }

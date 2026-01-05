@@ -19,6 +19,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="{{asset('css/layout.css')}}">
+    <!-- Alpine Plugins -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Alpine Core -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     @stack('styles')
 </head>
@@ -68,7 +73,7 @@
 
     {{-- Footer --}}
     <footer>
-        <small>© {{ date('Y') }} Cv Twin Group — All Rights Reserved.</small>
+        <small>© {{ date('Y') }} CV. TWIN GROUP — All Rights Reserved.</small>
     </footer>
 
     

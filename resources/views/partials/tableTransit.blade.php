@@ -1,6 +1,6 @@
 @php use Illuminate\Support\Str; @endphp
 
-@forelse ($warehousesStore as $wh)
+@forelse ($warehousesTsc as $wh)
 <tr>
     <td>{{ $wh['name'] }}</td>
 
@@ -12,6 +12,6 @@
 </tr>
 @empty
 <tr>
-    <td colspan="3" class="text-center text-muted">Tidak ada gudang store</td>
+    <td colspan="3" class="text-center text-muted">Tidak ada gudang Transit</td>
 </tr>
 @endforelse

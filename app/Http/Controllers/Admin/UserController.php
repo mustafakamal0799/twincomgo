@@ -54,7 +54,7 @@ class UserController extends Controller
             'accurate_account_id' => $data['accurate_account_id'] ?? null,
         ]);
 
-        return redirect()->route('users2.index')->with('ok', 'User berhasil dibuat.');
+        return redirect()->route('admin.user')->with('ok', 'User berhasil dibuat.');
     }
 
     public function edit($id)
@@ -89,7 +89,7 @@ class UserController extends Controller
 
         $user->update($payload);
 
-        return redirect()->route('users2.index')->with('ok', 'User diperbarui.');
+        return redirect()->route('admin.user')->with('ok', 'User diperbarui.');
     }
 
     public function destroy($id)
@@ -100,6 +100,6 @@ class UserController extends Controller
         }
         $user->delete();
 
-        return redirect()->route('users2.index')->with('ok', 'User dihapus.');
+        return redirect()->route('admin.user')->with('ok', 'User dihapus.');
     }
 }

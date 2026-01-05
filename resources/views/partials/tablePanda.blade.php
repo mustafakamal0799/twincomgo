@@ -1,33 +1,17 @@
-@forelse($warehousesPanda as $wh)
-    <tr>
-        <td>{{ $wh['name'] }}</td>
-        <td class="text-center">{{ $wh['balance']}}</td>
-        @php
-            $balanceUnit = trim(str_replace(['[', ']'], '', $wh['balanceUnit']));
-            $stock = $stokNew[$wh['id']]['balance'] ?? $wh['balance'];
-            $ratio2 = $ratio ?? null;
+@php use Illuminate\Support\Str; @endphp
 
-            preg_match_all('/\b(PCS|METER|ROLL|DUS|PAKET|MTR|POTONG|BATANG|BOX|PACK)\b/i', $balanceUnit, $matches);
-            
-            preg_match('/^(\d+)/', $balanceUnit, $firstNumberMatch);
-            $firstNumber = isset($firstNumberMatch[1]) ? (int)$firstNumberMatch[1] : null;
+@forelse ($warehousesPanda as $wh)
+<tr>
+    <td>{{ $wh['name'] }}</td>
 
-            $showBalanceUnit = false;
+    <td class="text-center" id="stock_{{ Str::slug($wh['name']) }}">
+        {{ $wh['balance'] }}
+    </td>
 
-            if (count($matches[0]) > 1) {
-                $showBalanceUnit = true;
-            } elseif ($ratio2 && $firstNumber !== $stock) {
-                $showBalanceUnit = true;
-            }
-
-            $unitOnly = preg_replace('/^[\d.,]+\s+/', '', $balanceUnit);
-        @endphp
-        <td class="text-center">
-            {{ $showBalanceUnit ? $balanceUnit : $unitOnly }}
-        </td>
-    </tr>
+    <td class="text-center">{{ $wh['unit_display'] }}</td>
+</tr>
 @empty
-    <tr>
-        <td colspan="3" class="text-center text-muted">Tidak ada gudang store</td>
-    </tr>
+<tr>
+    <td colspan="3" class="text-center text-muted">Tidak ada gudang panda</td>
+</tr>
 @endforelse

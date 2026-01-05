@@ -11,10 +11,6 @@
                 </li>
             @endif
 
-            <li class="page-item disabled">
-                <span class="page-link">Halaman {{ $page }} / {{ $pageCount }}</span>
-            </li>
-
             @if($page < $pageCount)
                 <li class="page-item">
                     <a href="?page={{ $page + 1 }}&{{ $queryString }}" class="page-link page-link-ajax">Next &raquo;</a>

@@ -29,7 +29,12 @@
                                     <div class="harga-grid">
                                         <span class="harga-rp">Rp</span>
                                         <span class="harga-nominal">
-                                            {{ is_numeric($item['price'] ?? null) ? number_format($item['price'], 0, ',', '.') : '-' }}
+                                            <span 
+                                                class="item-price"
+                                                data-id="{{ $item['id'] }}"
+                                                data-mode="{{ $filters['priceMode'] === 'reseller' ? 'RESELLER' : 'USER' }}"
+                                                data-lazy-price
+                                            >Loading…</span>
                                         </span>
                                     </div>
                                 </td>
@@ -62,13 +67,21 @@
         @forelse($items as $item)
             <div class="col-12">
                 <div class="product-card">
-                    <div class="d-flex justify-content-between align-items-start">
+                    <div class="top-row">
                         <div class="product-title">{{ $item['name'] }}</div>
                         <div class="harga-grid">
                             <span class="harga-rp">Rp</span>
-                            <span class="harga-nominal">{{ number_format($item['price'] ?? 0, 0, ',', '.') }}</span>
+                            <span class="harga-nominal">
+                                <span 
+                                    class="item-price"
+                                    data-id="{{ $item['id'] }}"
+                                    data-mode="{{ $filters['priceMode'] === 'reseller' ? 'RESELLER' : 'USER' }}"
+                                    data-lazy-price
+                                >Loading…</span>
+                            </span>
                         </div>
                     </div>
+
                     <div class="product-code text-muted small mt-1">{{ $item['no'] ?? '-' }}</div>
                     @if(!empty($item['itemCategory']['name']))
                         <div class="product-meta mt-1">{{ $item['itemCategory']['name'] }}</div>

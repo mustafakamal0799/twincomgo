@@ -1,566 +1,450 @@
-@extends('layout')
+@extends(Auth::check() && Auth::user()->status === 'admin' ? 'layouts.admin' : 'layouts.app')
 
-@section('content')
-@if($status == 'admin')
-    <style>
-        .card-full {
-            height: 90vh;
-        }
-    </style>
-@else
-    <style>
-        .card-full {
-            height: calc(100vh - 60px);
-            display: flex;
-            flex-direction: column;
-        }
-    </style>
-@endif
+@section('title', 'Daftar Produk')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/item-users.css') }}">
+<link rel="stylesheet" href="{{ asset('css/item-index.css') }}">
 @endpush
 
-<div class="container-fluid px-0">
-    <div class="row g-0 row-wrap">
-        <div class="col-12">
-            <div class="{{$status === 'admin' ? 'card mb-4 card-full border-0 rounded' : 'card mb-4 card-full border-0 rounded-0'}}">
-                <div class="{{$status === 'admin' ? 'card-header p-3 rounded' : 'card-header p-3 shadow-sm border-0'}}">
-                    <div class="row align-items-center">
-                        <h3>DAFTAR ITEM</h3>                      
-                        <form action="{{ route('items.index') }}" method="GET" id="filterForm">                            
-                            <div class="row g-3 mt-2">
-                                <div class="col-6 col-md-2">
-                                    <label for="stok_ada" class="form-label">Stok Ready</label>
-                                    <select class="form-select shadow-sm" name="stok_ada" id="stok_ada" style="border-radius: 20px;">
-                                        <option value="1" {{ request('stok_ada') == '1' ? 'selected' : '' }}>Ya</option>
-                                        <option value="0" {{ request('stok_ada') == '0' ? 'selected' : '' }}>Tidak</option>
-                                    </select>
-                                </div>
-                                <div class="col-6 col-md-2">
-                                    <label for="category_search" class="form-label">Cari Kategori </label>
-                                    <select id="category_search" placeholder="Pilih / Cari Kategori">
-                                        <option></option>
-                                        @foreach ($allCategoriesForTomSelect as $cat)
-                                            <option value="{{ $cat['id'] }}" {{ request('category_id') == $cat['id'] ? 'selected' : '' }}>
-                                                {{ $cat['text'] }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <input type="hidden" name="category_id" id="itemCategoryId" value="{{ request('category_id') }}">
-                                </div>
-                                <div class="col-6 col-md-2">
-                                    <label for="min_price" class="form-label">Harga Minimum</label>
-                                    <div class="input-group" style="border-radius: 20px;">                                            
-                                        <span class="input-group-text shadow-sm" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
-                                        <input type="text" name="min_price" id="min_price" class="form-control shadow-sm" value="{{ old('min_price', request('min_price', $min_price ?? '')) }}" min="0" placeholder="Min Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-2">
-                                    <label for="max_price" class="form-label">Harga Maksimum</label>
-                                    <div class="input-group" style="border-radius: 20px;"> 
-                                        <span class="input-group-text shadow-sm" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">Rp</span>
-                                        <input type="text" name="max_price" id="max_price" class="form-control shadow-sm" value="{{ old('max_price', request('max_price', $max_price ?? '')) }}" min="0" placeholder="Max Harga" style="border-start-end-radius: 20px; border-end-end-radius: 20px;">
-                                    </div>
-                                </div>                                    
-                                <div class="col-12 col-md-4">
-                                    <div class="d-flex flex-wrap align-items-end gap-2">
-                                        <!-- Input Pencarian -->
-                                        <div style="min-width: 250px; flex-grow: 1;">
-                                            <label for="search" class="form-label">
-                                                Gunakan % untuk kombinasi kata pencarian.
-                                            </label>
-                                            <div class="input-group" style="border-radius: 20px;">
-                                                <input type="text" name="search" id="search" class="form-control shadow-sm" placeholder="Kode / Nama Barang" value="{{ request('search') }}" style="border-end-start-radius: 20px; border-start-start-radius: 20px;">
-                                                <button class="btn btn-light shadow-sm" id="btnSearch" style="border-start-end-radius: 20px; border-end-end-radius: 20px; border: 1px solid #ced4da;" data-bs-toggle="tooltip" data-bs-placement="top" title="Cari">
-                                                    <i class="bi bi-search"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-    
-                                        <!-- Tombol Aksi -->
-                                        <div class="d-flex gap-2">
-                                            <button type="button" id="btnResetFilter" class="btn d-flex align-items-center gap-1 btn-icon shadow-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Reset" style="border-radius: 20px; background-color: #192f6e; color: #ffffff;">
-                                                <i class="bi bi-arrow-clockwise"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>       
-                    </div>
-                </div>
-                <div class="card-body p-0 bg-light position-relative" style="height: auto; ">
-                    @if (count($items) > 0)
-                    <div class="table-responsive p-0 table-scroll-container" id="table-container" data-pagecount="{{ $pageCount ?? 1 }}">
-                        <table class="table align-items-center mb-0 table-hover">
-                            <thead>
-                                <tr class="text-center">
-                                    <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-kode">Kode</th>
-                                    <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-name">Nama Item</th>
-                                    <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-harga">Harga</th>
-                                    <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-stok">Stok</th>
-                                    <th class="position-sticky top-0 z-10 text-uppercase text-xxs font-weight-bolder opacity-7 th-satuan">Satuan</th>
-                                </tr>
-                            </thead>
-                            <tbody id="item-table-body">
-                                @include('partials.item-rows', ['items' => $items])
-                            </tbody>
-                        </table>                         
-                    </div>
-                    <div id="loader" style="display: none;">
-                        <div class="loader-overlay d-flex flex-column align-items-center justify-content-center py-4">
-                            <div class="d-flex justify-content-center align-items-center mb-4">
-                                <dotlottie-wc
-                                src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
-                                style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
-                                speed="1"
-                                autoplay
-                                loop
-                                ></dotlottie-wc>
-                            </div>
-                            <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">
-                                Mohon tunggu...
-                            </p>
-                        </div>
-                    </div>
+@section('content')
+<div class="px-4 py-4">
+    @include('items.partials.filter')
 
-                    @else
-                        @if(request('search'))
-                            <div class="alert p-4">
-                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                    <strong>{{ request('search') }} tidak ada,</strong> cek kembali penulisan kode atau nama barang!!!
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            </div>
-                        @endif
-                    @endif                                   
-                </div>
-                <div class="card-footer p-2" style="box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.26); z-index: 100; background-color: #f7f7f7;">
-                    <div class="d-flex justify-content-between align-items-center p-2">
-                        <!-- Kiri: nama aplikasi -->
-                        <div class="fw-bold">
-                        TWINCOMGO
-                        </div>
-                        <!-- Tengah: tombol load more -->
-                        <div>
-                            <button id="load-more-btn" class="button" style="box-shadow:0 2px 2px rgb(0,0,0);">
-                                <span class="button-content">Load More</span>
-                            </button>
-                            <span id="footer-status" class="text-muted small d-none"></span>
-                        </div>
-                        <!-- Kanan: informasi halaman -->
-                        <div id="page-indicator" class="text-muted small">
-                        Halaman <span id="current-page">1</span> / 
-                        <span id="total-pages">{{ $pageCount ?? 1 }}</span>
-                        </div>
-                        
-                    </div>
-                </div>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 class="fw-bold text-white text-shadow-sm mb-2 mb-md-0">
+            <i class="bi bi-box-seam me-2"></i> Daftar Produk
+        </h4>
+
+        <div class="d-flex gap-2">
+            {{-- Tambahan tombol lain bisa di sini kalau mau (misal export Excel) --}}
+            <div class="d-flex align-items-center">
+                <p class="mb-0 text-white">item perpage : </p>
             </div>
+            <select id="per_page" class="form-select form-select-sm" style="width: 80px;">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+            <a href="#" id="btn-export-pdf" class="btn btn-danger shadow-sm" data-export-url="{{ route('items.exportPdf') }}">
+                <i class="bi bi-filetype-pdf me-1"></i> Preview PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- 🔹 Kontainer hasil produk -->
+    <div id="item-container">
+        @include('items.partials.item-table', ['items' => $items])
+    </div>
+
+    <!-- 🔹 Kontainer pagination -->
+    <div id="pagination-container" class="mt-3 d-flex justify-content-center">
+        @include('items.partials.pagination', [
+            'page' => $page,
+            'pageCount' => $pageCount,
+            'queryParams' => request()->except('page')
+        ])
+    </div>
+</div>
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000">
+    <div id="toastFilterError" class="toast align-items-center text-bg-warning border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold">
+                Filter harga terlalu sempit.<br>Perbesar rentang harganya.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     </div>
 </div>
-
+@endsection
 
 @push('scripts')
-    <script>
-        // TomSelect untuk kategori
-        document.addEventListener("DOMContentLoaded", function () {
-            const catEl = document.getElementById('category_search');
-            if (!catEl) return;
-            if (catEl.dataset.tsInit === '1') return; // anti double init
-            catEl.dataset.tsInit = '1';
-
-            const selectedCategoryId = catEl.value; // aman: cuma lokal di callback
-            new TomSelect("#category_search", {
-                valueField: 'id',
-                create: false,
-                labelField: 'text',
-                plugins: ['remove_button'],
-                searchField: 'text',
-                maxOptions: 9999,
-                placeholder: 'Pilih / Cari Kategori',
-                allowEmptyOption: false,
-                onChange: function(value) {
-                    console.log('Kategori dipilih:', value);
-                    // Set value ke hidden input agar bisa dikirim ke backend
-                    document.getElementById('itemCategoryId').value = value;
-                    performSearch(); // fungsi pencarian milikmu
-                }
-            });
-        });
-    </script>
-@endpush
-
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const itemContainer        = document.getElementById("item-container");
+    const paginationContainer  = document.getElementById("pagination-container");
+    const filterForm           = document.getElementById("filter-form");
+    const headerTotalBtn       = document.querySelector("#header-total-items");
+    const categorySelect       = document.getElementById("category_search");
 
-    function setLoadMoreLoading(isLoading) {
-        const btn = document.getElementById('load-more-btn');
-        if (!btn) return;
-        const span = btn.querySelector('.button-content');
-        if (isLoading) {
-            btn.disabled = true;
-            span.textContent = 'Loading...';
-        } else {
-            btn.disabled = false;
-            span.textContent = 'Load More';
-        }
+    // ========= DETEKSI USER FORCE DARI URL =========
+    const urlParams = new URL(window.location.href).searchParams;
+    if (urlParams.get("force") === "1") {
+        // User ini datang dari wait-page / override
+        localStorage.setItem("force_item_queue", "1");
     }
 
+    // Helper: apakah user ini termasuk "user antrian" (force mode)?
+    function isForceUser() {
+        return localStorage.getItem("force_item_queue") === "1";
+    }
 
-    // Helper: jalankan search sambil disable tombol, aktifkan lagi ketika loading selesai
-    function triggerSearchWithBtnLock() {
-        const btnSearch = document.getElementById('btnSearch');
-        if (btnSearch) btnSearch.disabled = true;
+    // Helper: apply force=1 ke URL kalau user antrian
+    function applyForceToUrl(rawUrl) {
+        const u = new URL(rawUrl, window.location.origin);
 
-        performSearch();
+        if (isForceUser()) {
+            u.searchParams.set("force", "1");
+        }
 
-        (function waitUnlock() {
-            if (!loading) {                 // loading milikmu: false = fetch selesai
-            if (btnSearch) btnSearch.disabled = false;
-            return;
+        return u;
+    }
+
+    const perPageSelect = document.getElementById("per_page");
+    if (perPageSelect) {
+        perPageSelect.addEventListener("change", function () {
+            submitFilterAjax();
+        });
+    }
+
+    let currentPage = parseInt(
+        new URL(window.location.href).searchParams.get("page") || "1",
+        10
+    );
+    let isLoading = false; // cegah spam klik
+
+    // ==============================
+    // 1. INIT TOM-SELECT (sekali saja)
+    // ==============================
+    if (categorySelect && !categorySelect.dataset.tsInit) {
+        categorySelect.dataset.tsInit = "1";
+
+        new TomSelect("#category_search", {
+            valueField: "id",
+            create: false,
+            labelField: "text",
+            plugins: ["remove_button"],
+            searchField: "text",
+            maxOptions: 9999,
+            allowEmptyOption: false,
+            onChange(value) {
+                // update hidden input + submit filter pakai AJAX
+                const hidden = document.getElementById("itemCategoryId");
+                if (hidden) hidden.value = value || "";
+                submitFilterAjax();
+            },
+        });
+    }
+
+    // =================================================
+    // 2. FUNGSI SHOW/HIDE LOADER RINGAN (tanpa Lottie)
+    // =================================================
+    function showInlineLoader() {
+        if (!itemContainer) return;
+
+        let overlay = itemContainer.querySelector(".loading-overlay");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.className =
+                "loading-overlay d-flex flex-column justify-content-center align-items-center";
+            overlay.innerHTML = `
+                <div class="spinner-border text-light" role="status" style="width:3rem;height:3rem;"></div>
+            `;
+            itemContainer.appendChild(overlay);
+        }
+        overlay.style.display = "flex";
+    }
+
+    function hideInlineLoader() {
+        if (!itemContainer) return;
+        const overlay = itemContainer.querySelector(".loading-overlay");
+        if (overlay) overlay.style.display = "none";
+    }
+
+    // ===========================================
+    // 3. FUNGSI UTAMA LOAD PAGE VIA AJAX (ANTI LAG)
+    // ===========================================
+    async function loadPage(url, options = {}) {
+        if (!itemContainer || !paginationContainer) return;
+        if (isLoading) return;          // cegah double request
+        isLoading = true;
+        showInlineLoader();
+
+        try {
+            // pastikan URL absolut + injek force=1 kalau perlu
+            const urlObj = applyForceToUrl(url);
+            currentPage = parseInt(urlObj.searchParams.get("page") || "1", 10);
+
+            // // simpan URL terakhir untuk dipakai lagi
+            // localStorage.setItem("last_item_list_url", urlObj.toString());
+            // sessionStorage.setItem("last_item_list_url", urlObj.toString());
+
+            const response = await fetch(urlObj.toString(), {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            if (!response.ok) {
+                // 🔍 Deteksi apakah ini error dari FILTER HARGA
+                const urlTest = new URL(url, window.location.origin);
+                const minP = urlTest.searchParams.get("min_price");
+                const maxP = urlTest.searchParams.get("max_price");
+
+                // 🔥 Jika filter harga aktif dan server error → notif khusus
+                if ((minP || maxP) && response.status === 500) {
+                    hideInlineLoader();
+                    isLoading = false;
+
+                    const overlays = itemContainer.querySelectorAll(".loading-overlay");
+                    overlays.forEach(o => o.remove());
+
+                    showFilterToast();
+
+                    return; // STOP proses disini
+                }
+
+                // Error AJAX biasa → tetap tangani dengan cara default
+                throw new Error("HTTP " + response.status);
             }
-            requestAnimationFrame(waitUnlock);
-        })();
+
+            const html = await response.text();
+
+            // pakai wrapper <div> biasa (lebih ringan dari DOMParser)
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = html;
+
+            const newItemContainer = wrapper.querySelector("#item-container");
+            const newPagination    = wrapper.querySelector("#pagination-container");
+
+            if (newItemContainer) {
+                // ganti isi tanpa bikin elemen baru di luar
+                itemContainer.innerHTML = newItemContainer.innerHTML;
+                reloadPricesAfterAjax();
+            }
+            if (newPagination) {
+                paginationContainer.innerHTML = newPagination.innerHTML;
+                reloadPricesAfterAjax();
+            }
+
+            if (!options.skipHistory) {
+                history.pushState(
+                    { url: urlObj.toString() },
+                    "",
+                    urlObj.toString()
+                );
+            }
+
+            // update total item di header (pakai data-total / data-original)
+            const totalElement = wrapper.querySelector("[data-total]");
+            if (totalElement && headerTotalBtn) {
+                const originalCount =
+                    totalElement.dataset.original ||
+                    totalElement.dataset.total ||
+                    "0";
+
+                headerTotalBtn.textContent = Number(
+                    originalCount
+                ).toLocaleString("id-ID");
+            }
+
+            // scroll ke atas sedikit biar user tidak bingung
+            if (!options.noScroll) {
+                window.scrollTo({ top: 0, behavior: "instant" });
+            }
+        } catch (err) {
+            console.error(err);
+            const overlays = itemContainer.querySelectorAll(".loading-overlay");
+            overlays.forEach(o => o.remove());
+            // tampilkan pesan error ringan di bawah loader
+            if (itemContainer) {
+                let errorBox = itemContainer.querySelector(".load-error-message");
+                if (!errorBox) {
+                    errorBox = document.createElement("div");
+                    errorBox.className = "load-error-message text-danger text-center mt-2";
+                    itemContainer.appendChild(errorBox);
+                }
+                errorBox.textContent = "Gagal memuat data. Coba lagi.";
+            }
+        } finally {
+            hideInlineLoader();
+            isLoading = false;
+        }
     }
-    // Input pencarian
-    const searchInput = document.getElementById('search');
-    let typingTimer;
-    const doneTypingInterval = 1000; // waktu tunggu (ms) sebelum submit otomatis
 
-    searchInput.addEventListener('input', function () {
-        const btnSearch = document.getElementById('btnSearch');
-        if (btnSearch) btnSearch.disabled = true;   // langsung disable saat user mulai mengetik
-        
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => {
-            triggerSearchWithBtnLock();
-        }, doneTypingInterval);
-    });
-
-    searchInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            e.preventDefault(); // blokir Enter supaya tidak submit form
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const categorySelect = document.getElementById('itemCategoryId');
-        const stokReadySelect = document.getElementById('stok_ada');
-        const btnSearch = document.getElementById('btnSearch');
-        const resetBtn = document.getElementById('btnResetFilter');
-
-        if (categorySelect) {
-            categorySelect.addEventListener('change', function () {
-                performSearch();
-            });
+    // ==================================
+    // 4. SUBMIT FILTER DENGAN AJAX
+    // ==================================
+    function buildFilterUrl() {
+        const params = new URLSearchParams(filterForm ? new FormData(filterForm) : {});
+    
+        // >>> Inject manual per_page because select is outside form
+        const perPageSelect = document.getElementById("per_page");
+        if (perPageSelect) {
+            params.set("per_page", perPageSelect.value);
         }
 
-        if (stokReadySelect) {
-            stokReadySelect.addEventListener('change', function () {
-                performSearch();
-            });
+        // force=1 logic tetap
+        if (isForceUser()) {
+            params.set("force", "1");
         }
 
-        if (btnSearch && !btnSearch.__bound) {
-            let searchBtnLocked = false;
+        return "{{ route('items.index') }}?" + params.toString();
+    }
 
-            btnSearch.addEventListener('click', function (e) {
+    function submitFilterAjax() {
+        const url = buildFilterUrl();
+        loadPage(url);
+    }
+
+    if (filterForm) {
+        filterForm.addEventListener("submit", function (e) {
             e.preventDefault();
-
-            // ⛔ Stop kalau semua filter kosong
-            if (filtersEmpty()) {
-                // opsional: kasih feedback kecil
-                btnSearch.classList.add('btn-reset'); // pakai kelasmu untuk efek kecil
-                setTimeout(() => btnSearch.classList.remove('btn-reset'), 300);
-                return;
-            }
-
-            if (searchBtnLocked) return;           // abaikan klik dobel
-            searchBtnLocked = true;
-            btnSearch.disabled = true;             // feedback ke user
-
-            performSearch();
-
-            // Lepas lock begitu "loading" selesai (pakai flag loading yang sudah ada)
-            (function waitUnlock() {
-                if (!loading) {                      // loading = false -> fetch selesai
-                searchBtnLocked = false;
-                btnSearch.disabled = false;
-                return;
-                }
-                requestAnimationFrame(waitUnlock);   // cek lagi frame berikutnya
-            })();
-            });
-
-            btnSearch.__bound = true; // cegah double-binding
-        }
-
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function () {
-                // bersihkan UI
-            document.getElementById('stok_ada').value = '1';
-            document.getElementById('category_search').tomselect?.clear();
-            document.getElementById('itemCategoryId').value = '';
-            document.getElementById('min_price').value = '';
-            document.getElementById('max_price').value = '';
-            document.getElementById('search').value = '';
-
-            // Bersihkan query string di URL (tanpa reload)
-            history.replaceState({}, '', '{{ route("items.index") }}');
-
-            // Paksa ambil daftar awal (page 1) via AJAX
-            queryString = '';          // penting: kosongkan query
-            resetPagination();         // page=1, flags reset, show loader
-            loadData('');              // ambil /item?page=1 (default)
-            });
-        }
-    });
-
-    // Format input harga
-    document.getElementById('max_price').addEventListener('input', function (e) {
-        let value = e.target.value.replace(/[^,\d]/g, '');
-        const split = value.split(',');
-        let sisa = split[0].length % 3;
-        let rupiah = split[0].substr(0, sisa);
-        const ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-
-        if (ribuan) {
-            const separator = sisa ? '.' : '';
-            rupiah += separator + ribuan.join('.');
-        }
-
-        e.target.value = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
-    });
-
-    document.getElementById('min_price').addEventListener('input', function (e) {
-        let value = e.target.value.replace(/[^,\d]/g, '');
-        const split = value.split(',');
-        let sisa = split[0].length % 3;
-        let rupiah = split[0].substr(0, sisa);
-        const ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-
-        if (ribuan) {
-            const separator = sisa ? '.' : '';
-            rupiah += separator + ribuan.join('.');
-        }
-
-        e.target.value = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
-    });
-
-    // Variabel global untuk pagination dan filter
-    let page = 2;
-    let loading = false;
-    let allDataLoaded = false;
-    let maxEmptyPageSkip = parseInt(document.getElementById('table-container').dataset.pagecount) || 1;
-    let emptyPageCount = 0;
-
-    console.log('Max empty page skip:', maxEmptyPageSkip);
-
-    const container = document.getElementById('table-container');
-    const loader = document.getElementById('loader');
-    const loadMoreBtn = document.getElementById('load-more-btn');
-
-    let queryString = ''; // akan diupdate di performSearch()
-
-    function buildQueryStringFromURL() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const parts = [];
-        for (const key of ['search', 'min_price', 'max_price', 'stok_ada', 'category_id']) {
-            const value = urlParams.get(key);
-            if (value) {
-                parts.push(`${key}=${encodeURIComponent(value)}`);
-            }
-        }
-        return parts.length ? '&' + parts.join('&') : '';
+            submitFilterAjax();
+        });
     }
 
-    queryString = buildQueryStringFromURL();
+    // ==================================
+    // 5. EKSPORT PDF (IKUT FILTER + PAGE)
+    // ==================================
+    document.addEventListener("click", function (e) {
+        const btn = e.target.closest("#btn-export-pdf");
+        if (!btn) return;
 
-    function resetPagination() {
-        page = 1;
-        const tableEl = document.getElementById('table-container');
-        const totalFromDataset = tableEl && tableEl.dataset ? (parseInt(tableEl.dataset.pagecount) || 1) : 1;
-        setPageIndicator(1, totalFromDataset);
-
-        loading = false;
-        allDataLoaded = false;
-        emptyPageCount = 0;
-
-        const footerStatus = document.getElementById('footer-status');
-        if (footerStatus) footerStatus.classList.add('d-none');   // <- sembunyikan pesan footer
-
-        loader.innerHTML = `<div class="loader-overlay d-flex flex-column align-items-center justify-content-center py-4">
-            <div class="d-flex justify-content-center align-items-center mb-4">
-            <dotlottie-wc src="https://lottie.host/bfcdecd5-f791-4410-a25e-4e1ac854a90d/b6lBLjfRT3.json"
-                style="width: 100%; max-width: 300px; height: auto; display: block; margin: auto;"
-                speed="1" autoplay loop>
-            </dotlottie-wc>
-            </div>
-            <p style="color: white; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); font-weight: 500; margin-top: -50px">Mohon tunggu...</p>
-        </div>`;
-        loader.style.display = 'block';
-
-        loadMoreBtn.style.display = 'block';                        // <- tampilkan tombol lagi
-        document.getElementById('item-table-body').innerHTML = '';
-    }
-
-    function getEmptyMessage() {
-        const stokAda = document.getElementById('stok_ada')?.value;
-        if (stokAda === '0') return 'Stok kosong.';                 // filter stok=0 tapi tidak ada hasil
-        return 'Tidak ada/Stok kosong.';                        // filter lain: keyword/kategori/harga
-    }
-
-    function loadData(currentQueryString) {
-        if (loading || allDataLoaded) return;
-        loading = true;
-        loader.style.display = 'block';
-        setLoadMoreLoading(true);
-        let appendedThisRound = false;   // <- lacak ada baris yang berhasil ditambah
-        
-        const fetchPage = (targetPage) => {
-            console.log(`Fetching page ${targetPage} => /item?page=${targetPage}${currentQueryString}`);
-            return fetch(`/item?page=${targetPage}${currentQueryString}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            }).then(res => res.json());
-        };
-
-        const tryNextPage = () => {
-            if (page > maxEmptyPageSkip) {
-                // Semua page sudah dicoba
-                loader.style.display = 'none';
-                loadMoreBtn.style.display = 'none';
-
-                const footerStatus = document.getElementById('footer-status');
-                const tbody = document.getElementById('item-table-body');
-                const hasAnyRows = !!tbody && tbody.querySelector('tr') !== null;  // << cek tabel sudah ada data sebelumnya
-
-                if (footerStatus) {
-                    footerStatus.textContent = (hasAnyRows || appendedThisRound)
-                    ? 'Semua data sudah dimuat.'
-                    : getEmptyMessage(); // 'Stok kosong.' atau 'Tidak ada data yang cocok.'
-                    footerStatus.classList.remove('d-none');
-                }
-
-                allDataLoaded = true;
-                loading = false;
-                return;
-            }
-
-            fetchPage(page).then(({ html, pageCount }) => {
-            if (page === 1 && pageCount) {
-                maxEmptyPageSkip = pageCount;
-                if (totalPagesEl) totalPagesEl.textContent = String(pageCount);
-            }
-
-            if (html && html.trim() !== '') {
-                document.getElementById('item-table-body').insertAdjacentHTML('beforeend', html);
-                appendedThisRound = true;
-                setPageIndicator(page, maxEmptyPageSkip);
-
-                page++; // siapkan untuk next page
-                loader.style.display = 'none';
-                loading = false;
-                setLoadMoreLoading(false);
-            } else {
-                // halaman kosong → lanjut ke halaman berikutnya
-                page++;
-                tryNextPage();
-            }
-            }).catch(() => {
-            loader.innerHTML = '<p class="text-danger text-center">Terjadi kesalahan saat mengambil data.</p>';
-            loading = false;
-            setLoadMoreLoading(false);
-            });
-        };
-
-        tryNextPage();
-    }
-
-
-    const currentPageEl = document.getElementById('current-page');
-    const totalPagesEl  = document.getElementById('total-pages');
-
-    function setPageIndicator(curr, total) {
-        if (currentPageEl) currentPageEl.textContent = String(curr);
-        if (totalPagesEl)  totalPagesEl.textContent  = String(total);
-    }
-
-    function filtersEmpty() {
-        const keyword    = document.getElementById('search')?.value.trim() || '';
-        const minPrice   = document.getElementById('min_price')?.value.trim() || '';
-        const maxPrice   = document.getElementById('max_price')?.value.trim() || '';
-        const stokAda    = document.getElementById('stok_ada')?.value ?? ''; // stokAda punya default "1" di UI kamu
-        const categoryId = document.getElementById('itemCategoryId')?.value || '';
-
-        // Kalau kamu ingin "Stok Ready = 1" dianggap default (tidak dihitung filter),
-        // anggap kosong ketika stokAda == '1'
-        const stokConsideredEmpty = (stokAda === '');
-
-        return (
-        keyword === '' &&
-        minPrice === '' &&
-        maxPrice === '' &&
-        categoryId === '' &&
-        stokConsideredEmpty
-        );
-    }
-
-    function performSearch() {
-        // ⛔ kalau kosong semua, jangan request apa pun
-        if (filtersEmpty()) {
-            // kalau sebelumnya ada query di URL, kita bersihkan & reset tabel awal
-            if (window.location.search) {
-            history.replaceState({}, '', '{{ route("items.index") }}'); // bersihkan query string
-            }
-            // reset tampilan ke kondisi awal (tanpa memanggil API)
-            document.getElementById('item-table-body').innerHTML = '';
-            loader.style.display = 'none';
-            loadMoreBtn.style.display = 'none';
+        e.preventDefault();
+        if (!filterForm) {
+            window.open(btn.dataset.exportUrl, "_blank");
             return;
         }
 
-        const keyword = document.getElementById('search')?.value || '';
-        const minPrice = document.getElementById('min_price')?.value || '';
-        const maxPrice = document.getElementById('max_price')?.value || '';
-        const stokAda = document.getElementById('stok_ada')?.value || '';
-        const categoryId = document.getElementById('itemCategoryId')?.value || '';
+        const params = new URLSearchParams(new FormData(filterForm));
+        // >>> PERBAIKAN UTAMA <<<
+        const perPageSelect = document.getElementById("per_page");
+        if (perPageSelect) {
+            params.set("per_page", perPageSelect.value);
+        }
 
-        // Build query string
-        const parts = [];
-        if (keyword) parts.push(`search=${encodeURIComponent(keyword)}`);
-        if (minPrice) parts.push(`min_price=${encodeURIComponent(minPrice)}`);
-        if (maxPrice) parts.push(`max_price=${encodeURIComponent(maxPrice)}`);
-        if (stokAda) parts.push(`stok_ada=${encodeURIComponent(stokAda)}`);
-        if (categoryId) parts.push(`category_id=${encodeURIComponent(categoryId)}`);
+        params.set("page", currentPage.toString());
 
-        queryString = parts.length ? '&' + parts.join('&') : '';
+        const pdfUrl = `${btn.dataset.exportUrl}?${params.toString()}`;
+        window.open(pdfUrl, "_blank");
+    });
 
-        // Reset dan load ulang data dari page 1
-        resetPagination();
+    // ==================================
+    // 6. PAGINATION KLIK AJAX (EVENT DELEGATION)
+    // ==================================
+    document.addEventListener("click", function (e) {
+        const link = e.target.closest(".page-link-ajax");
+        if (!link) return;
+        e.preventDefault();
 
-        maxEmptyPageSkip = parseInt(document.getElementById('table-container').dataset.pagecount) || 1;
-        console.log("Max empty page skip (refreshed):", maxEmptyPageSkip);
+        // loadPage sudah inject force=1 lewat applyForceToUrl,
+        // jadi cukup kirim href apa adanya
+        loadPage(link.href);
+    });
 
-        loadData(queryString);
+    // ==================================
+    // 7. SIMPAN URL AWAL (FIRST LOAD)
+    // ==================================
+    const currentUrl = window.location.href;
+    if (!localStorage.getItem("last_item_list_url")) {
+        localStorage.setItem("last_item_list_url", currentUrl);
+    }
+    if (!sessionStorage.getItem("last_item_list_url")) {
+        sessionStorage.setItem("last_item_list_url", currentUrl);
     }
 
-    // Scroll to bottom trigger
-    container.addEventListener('scroll', () => {
-        const nearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
-        if (nearBottom && !loading) {
-            loadData(queryString);
+    window.addEventListener("popstate", function (e) {
+        if (e.state && e.state.url) {
+            loadPage(e.state.url, {
+                skipHistory: true,
+                noScroll: true
+            });
+        }
+    });
+});
+
+// Format Rupiah (tetap sama, cuma dirapikan dikit)
+function formatRupiahFilter(el) {
+    if (!el || !el.value) return;
+    const value = el.value.replace(/\D/g, "");
+    el.value = new Intl.NumberFormat("id-ID").format(value);
+}
+
+// =========================================================
+// ===============  GLOBAL LAZY PRICE ENGINE ===============
+// =========================================================
+
+// Format angka Rupiah
+function formatRupiah(angka) {
+    return new Intl.NumberFormat("id-ID").format(angka);
+}
+
+// Ambil ulang semua item harga setelah pagination / filtering
+function collectLazyPrices() {
+    const map = {};        // untuk menghilangkan duplikat per product ID
+
+    document.querySelectorAll("[data-lazy-price]").forEach(el => {
+        const id   = el.dataset.id;
+        const mode = el.dataset.mode;
+
+        if (!id) return;
+
+        // kalau id belum pernah disimpan, baru masukin
+        if (!map[id]) {
+            map[id] = { id, mode };
         }
     });
 
-    // Load more button
-    loadMoreBtn.addEventListener('click', () => {
-        if (!loading && !allDataLoaded) {
-            loadData(queryString);
-        }
-    });
+    // hasil akhir: 1 item Accurate = 1 entry
+    window.lazyPrices = Object.values(map);
+}
 
+// Loader harga
+async function loadPrices() {
+    if (!window.lazyPrices || window.lazyPrices.length === 0) return;
+
+    const forceMode = localStorage.getItem("force_item_queue") === "1";
+
+    for (let item of window.lazyPrices) {
+
+        let targets = document.querySelectorAll(
+            `[data-id="${item.id}"][data-lazy-price]`
+        );
+
+        if (targets.length === 0) continue;
+
+        // kasih efek loading
+        targets.forEach(t => t.innerHTML = "…");
+
+        try {
+            let url = `/ajax/price?id=${item.id}&mode=${item.mode}`;
+            if (forceMode) {
+                url += "&force=1";
+            }
+
+            let res = await fetch(url);
+            let data = await res.json();
+            let price = new Intl.NumberFormat("id-ID").format(data.price ?? 0);
+
+            targets.forEach(t => t.innerHTML = price);
+
+        } catch (e) {
+            targets.forEach(t => t.innerHTML = "0");
+        }
+
+        await new Promise(r => setTimeout(r, 150));
+    }
+}
+
+// =========================================================
+// ====  PENTING!! CALL ENGINE SETIAP KALI DOM DIGANTI  ====
+// =========================================================
+
+// Call untuk first load
+document.addEventListener("DOMContentLoaded", () => {
+    collectLazyPrices();
+    loadPrices();
+});
+
+// Fungsi bantu agar AJAX pagination/filter ikut reload harga
+function reloadPricesAfterAjax() {
+    collectLazyPrices();
+    loadPrices();
+}
+
+function showFilterToast() {
+    const toastEl = document.getElementById("toastFilterError");
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
 </script>
 
-@endsection
+@endpush
+

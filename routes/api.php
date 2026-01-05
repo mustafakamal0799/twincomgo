@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AccurateController;
-use App\Http\Controllers\ApiLoginController;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\TestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,22 +16,10 @@ use App\Http\Controllers\ApiLoginController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::get('/branches', [BranchController::class, 'index']);
+Route::get('/total', [ItemController::class, 'getTotalItems']);
 
-Route::get('/accurate/customers', [AccurateController::class, 'getCustomers']);
-Route::get('/accurate/items', [AccurateController::class, 'getItems']);
-
-Route::middleware('auth:sanctum')->get('/accurate/items/detail/{id}', [AccurateController::class, 'getItemDetails']);
-
-
-Route::post('/login', [ApiLoginController::class, 'login']);
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [ApiLoginController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-});
-// Route::get('/accurate/items/detail/{id}', [AccurateController::class, 'detailItems']);          
+Route::get('/test', [TestController::class, 'index']);
+Route::get('/category', [TestController::class, 'getCategory']);
+Route::get('/items', [ItemController::class, 'index']);
+Route::get('/price', [ItemController::class, 'ajaxPrice']);

@@ -4,12 +4,26 @@
 <meta charset="UTF-8">
 <title>Daftar Produk - Twincomgo</title>
 <style>
+
+    /* === VARIABEL WARNA PROFESIONAL === */
+    :root {
+        --primary: #1a5632;
+        --primary-dark: #0f3d22;
+        --primary-light: #2e8b57;
+        --gray-dark: #2d3748;
+        --gray-medium: #4a5568;
+        --gray-light: #718096;
+        --gray-ultralight: #f7fafc;
+        --border: #e2e8f0;
+    }
+
     /* === BASE === */
     body {
         font-family: DejaVu Sans, sans-serif;
         font-size: 11.5px;
         color: #333;
-        margin: 25px 30px 50px 30px;
+        margin: 0 0 0 0;
+        margin-bottom: 60px;
     }
 
     /* === HEADER === */
@@ -33,6 +47,44 @@
         color: #136b35;
     }
 
+    /* === FOOTER === */
+    footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 45px;
+        font-size: 9px;
+        color: #666;
+        padding: 5px 25px 0 25px;
+        border-top: 1px solid #2c5aa0;
+        background-color: #fff;
+    }
+
+    .footer-content {
+        display: flex;
+        justify-content: space-between;
+        height: 100%;
+        align-items: center;
+    }
+
+    .footer-left {
+        text-align: left;
+        flex: 1;
+    }
+    .footer-right {
+        text-align: right;
+        flex: 0 0 auto;
+    }
+    .page-number::after {
+        content: counter(page);
+    }
+    .company-address {
+        font-size: 8px;
+        margin-top: 2px;
+        color: #888;
+    }
+
     /* === SUBTITLE / FILTER INFO === */
     .subtitle {
         text-align: center;
@@ -46,6 +98,7 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 5px;
+        margin-bottom: 5px;
     }
     th, td {
         border: 1px solid #ccc;
@@ -61,20 +114,7 @@
 
     .text-center { text-align: center; }
     .text-end { text-align: right; }
-
-    /* === FOOTER === */
-    footer {
-        position: fixed;
-        bottom: 15px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 10px;
-        color: #777;
-        border-top: 1px solid #ccc;
-        padding-top: 5px;
-    }
-
+    
     /* === LOGO PLACEHOLDER SAFE === */
     .logo-placeholder {
         font-size: 12px;
@@ -83,6 +123,25 @@
         padding: 10px;
         display: inline-block;
         border-radius: 4px;
+    }
+
+    /* === METADATA SECTION === */
+    .metadata {
+        display: flex;
+        justify-content: space-between;
+        /* border-bottom: 1px solid var(--border); */
+        font-size: 10px;
+        color: var(--gray-medium);
+    }
+
+    .metadata-left, .metadata-right {
+        font-size: 10px;
+        text-align: right;
+        color: var(--gray-medium);
+    }
+
+    .metadata-right {
+        text-align: right;
     }
 
 </style>
@@ -104,24 +163,26 @@
         </div>
     </div>
 
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <div>Dicetak oleh: {{ auth()->user()->name ?? 'System' }} | {{ now()->format('d M Y | H:i') }}</div>
+                <div class="company-address">CV TWIN GROUP - Jl. Kampung Baru RT.03 RW.02 Jl.Seroja No.11 Landasan Ulin, Banjarbaru</div>
+            </div>
+            <div class="footer-right">
+                Hal. <span class="page-number"></span>
+            </div>
+        </div>
+    </footer>
+
     {{-- 🔹 SUBTITLE --}}
-    <div class="subtitle">
-        Harga: 
-        <strong>
-            {{ strtoupper($filters['priceMode'] ?? 'USER') === 'DEFAULT' ? 'USER' : strtoupper($filters['priceMode'] ?? 'USER') }}
-        </strong> |
-        Stok: <strong>{{ ($filters['stokAda'] ?? '1') == '1' ? 'Ready' : 'Semua' }}</strong>
-        @if(!empty($filters['search']))
-            | Pencarian: "<strong>{{ $filters['search'] }}</strong>"
-        @endif
-        @if(!empty($filters['minPrice']) || !empty($filters['maxPrice']))
-            | Harga: 
-            <strong>
-                {{ $filters['minPrice'] ? 'Rp ' . number_format($filters['minPrice'], 0, ',', '.') : '0' }}
-                –
-                {{ $filters['maxPrice'] ? 'Rp ' . number_format($filters['maxPrice'], 0, ',', '.') : '∞' }}
-            </strong>
-        @endif
+    <div class="metadata">
+        <div class="metadata-left">
+            {{ now()->translatedFormat('l, d F Y') }}            
+        </div>
+        <div class="metadata-right">
+            PROD-{{ now()->format('Ymd-His') }}
+        </div>
     </div>
 
     {{-- 🔹 TABLE --}}
@@ -153,11 +214,6 @@
             @endforelse
         </tbody>
     </table>
-
-    {{-- 🔹 FOOTER --}}
-    <footer>
-        Dicetak pada {{ now()->format('d M Y, H:i') }} | Twincomgo
-    </footer>
 
 </body>
 </html>
