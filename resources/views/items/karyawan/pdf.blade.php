@@ -273,7 +273,7 @@ tfoot tr {
 <header>
     <div class="header-container">
         <div class="logo-section">
-            <img src="{{ public_path('images/logo-hijau.png') }}" alt="Twincomgo Logo" style="margin-bottom:10px;">
+            <img src="{{ base_path('images/logo-hijau.png') }}" alt="Twincomgo Logo" style="margin-bottom:10px;">
             <div class="company-info">
                 <div class="company-name">CV. TWIN GROUP</div>
                 <div class="company-tagline">Sistem Informasi Stok Barang</div>

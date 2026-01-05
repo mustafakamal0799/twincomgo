@@ -151,8 +151,8 @@
     {{-- 🔹 HEADER --}}
     <div class="header">
         {{-- Ganti URL di bawah dengan asset logo kamu --}}
-        @if(file_exists(public_path('images/logo-hijau-tua.png')))
-            <img src="{{ public_path('images/logo-hijau-tua.png') }}" alt="Twincomgo Logo">
+        @if(file_exists(base_path('images/logo-hijau-tua.png')))
+            <img src="{{ base_path('images/logo-hijau-tua.png') }}" alt="Twincomgo Logo">
         @else
             <div class="logo-placeholder">[ LOGO TWINCOMGO ]</div>
         @endif
